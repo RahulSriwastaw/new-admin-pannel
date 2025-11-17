@@ -1,10 +1,10 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
-  "/(main)/creators/page": "app/(main)/creators/page.js",
   "/(auth)/login/page": "app/(auth)/login/page.js",
   "/(main)/moderation/page": "app/(main)/moderation/page.js",
+  "/page": "app/page.js",
+  "/(main)/creators/page": "app/(main)/creators/page.js",
   "/(main)/templates/page": "app/(main)/templates/page.js",
   "/(main)/users/page": "app/(main)/users/page.js",
-  "/page": "app/page.js",
   "/(main)/dashboard/page": "app/(main)/dashboard/page.js"
 }

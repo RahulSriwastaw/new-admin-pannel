@@ -48,6 +48,10 @@ export const adminAnalyticsApi = {
 
 export const adminUsersApi = {
   list: () => request('/admin/users'),
+  ban: (id: string) => request(`/admin/users/${id}/ban`, { method: 'POST' }),
+  unban: (id: string) => request(`/admin/users/${id}/unban`, { method: 'POST' }),
+  verify: (id: string) => request(`/admin/users/${id}/verify`, { method: 'POST' }),
+  addPoints: (id: string, points: number) => request(`/admin/users/${id}/points`, { method: 'POST', body: JSON.stringify({ points }) }),
 }
 
 export const adminTemplatesApi = {
@@ -56,4 +60,9 @@ export const adminTemplatesApi = {
 
 export const adminCreatorsApi = {
   list: () => request('/admin/creators'),
+  approve: (id: string) => request(`/admin/creators/${id}/approve`, { method: 'POST' }),
+  reject: (id: string, reason: string) => request(`/admin/creators/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) }),
+  ban: (id: string) => request(`/admin/creators/${id}/ban`, { method: 'POST' }),
+  unban: (id: string) => request(`/admin/creators/${id}/unban`, { method: 'POST' }),
+  verify: (id: string) => request(`/admin/creators/${id}/verify`, { method: 'POST' }),
 }

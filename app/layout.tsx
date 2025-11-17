@@ -1,5 +1,6 @@
 import './globals.css'
 import type { ReactNode } from 'react'
+import AuthGate from '@/components/AuthGate'
 
 export const metadata = {
   title: 'Rupantar AI Admin',
@@ -10,6 +11,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
+        <AuthGate />
         <div className="min-h-screen">
           <header className="border-b border-gray-800">
             <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
