@@ -56,6 +56,9 @@ export const adminUsersApi = {
 
 export const adminTemplatesApi = {
   list: () => request('/admin/templates'),
+  approve: (id: string) => request(`/admin/templates/${id}/approve`, { method: 'POST' }),
+  reject: (id: string, reason: string) => request(`/admin/templates/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) }),
+  delete: (id: string) => request(`/admin/templates/${id}`, { method: 'DELETE' }),
 }
 
 export const adminCreatorsApi = {
