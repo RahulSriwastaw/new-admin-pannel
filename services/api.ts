@@ -1,7 +1,13 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const BACKEND_BASE = (process.env.NEXT_PUBLIC_BACKEND_URL || '')
+  .replace(/\/$/, '')
+  || (process.env.NEXT_PUBLIC_API_URL || '')
+  .replace(/\/$/, '')
+  .replace(/\/api$/, '')
+  || 'http://localhost:8080';
+const API_BASE = `${BACKEND_BASE}/api`;
 
 async function request(path: string, init?: RequestInit) {
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',

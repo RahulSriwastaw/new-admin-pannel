@@ -18,7 +18,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const token = localStorage.getItem("admin_token")
     if (!token) {
-      window.location.href = "/(auth)/login"
+      window.location.href = "/login"
       return
     }
     adminAnalyticsApi.dashboard()
