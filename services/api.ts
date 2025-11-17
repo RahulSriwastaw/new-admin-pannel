@@ -47,6 +47,7 @@ export const adminAnalyticsApi = {
 }
 
 export const adminAIConfigApi = {
+  list: () => request('/admin/ai-config'),
   getActive: () => request('/admin/ai-config/active'),
   createOrUpdate: (data: any) => request('/admin/ai-config', { method: 'POST', body: JSON.stringify(data) }),
   activate: (id: string) => request(`/admin/ai-config/${id}/activate`, { method: 'POST' }),

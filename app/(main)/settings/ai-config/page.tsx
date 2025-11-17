@@ -13,71 +13,163 @@ type ActiveConfig = {
 
 export default function AIConfigPage() {
   const [active, setActive] = useState<ActiveConfig | null>(null)
-  const [form, setForm] = useState<any>({ provider: 'google_gemini', name: 'Gemini', apiKey: '', projectId: '', modelVersion: '' })
+  const [list, setList] = useState<any[]>([])
   const [message, setMessage] = useState<string | null>(null)
   const [testing, setTesting] = useState(false)
+  const [form, setForm] = useState<any>({ provider: 'openai', name: 'OpenAI', apiKey: '', modelVersion: '' })
 
   useEffect(() => {
     adminAIConfigApi.getActive().then(setActive).catch(()=>{})
+    adminAIConfigApi.list().then(setList).catch(()=>{})
   }, [])
 
-  const submit = async () => {
+  const onProviderChange = (p: string) => {
+    const presets: Record<string, any> = {
+      openai: { provider: 'openai', name: 'OpenAI', apiKey: '', modelVersion: 'dall-e-3' },
+      stability: { provider: 'stability', name: 'Stability', apiKey: '', modelVersion: 'stable-diffusion-xl-1024-v1-0' },
+      google_gemini: { provider: 'google_gemini', name: 'Gemini', apiKey: '', projectId: '', modelVersion: '' },
+      minimax: { provider: 'minimax', name: 'MiniMax', apiKey: '', endpoint: '' },
+      custom: { provider: 'custom', name: 'Custom', endpoint: '', apiKey: '', settings: {} },
+    }
+    setForm(presets[p] || { provider: p, name: p, apiKey: '' })
+  }
+
+  const saveSettings = async () => {
     setMessage(null)
     try {
-      const res = await adminAIConfigApi.createOrUpdate({ ...form, isActive: true })
-      const id = res?.config?.id || res?.id || active?.id
-      if (id) await adminAIConfigApi.activate(id)
-      setMessage('Configuration saved and activated')
-      const a = await adminAIConfigApi.getActive(); setActive(a)
+      const payload = { ...form, isActive: false }
+      if (form.provider === 'custom' && typeof form.settings === 'string') {
+        try { (payload as any).settings = JSON.parse(form.settings || '{}') } catch { (payload as any).settings = {} }
+      }
+      const res = await adminAIConfigApi.createOrUpdate(payload)
+      const nextList = await adminAIConfigApi.list(); setList(nextList)
+      setMessage('Settings saved')
     } catch (e: any) {
-      setMessage(e?.message || 'Failed to save config')
+      setMessage(e?.message || 'Failed to save settings')
     }
   }
 
-  const test = async () => {
+  const activateProvider = async (id?: string) => {
+    setMessage(null)
+    const targetId = id || active?.id
+    if (!targetId) return
+    try {
+      await adminAIConfigApi.activate(targetId)
+      const a = await adminAIConfigApi.getActive(); setActive(a)
+      const nextList = await adminAIConfigApi.list(); setList(nextList)
+      setMessage('Provider activated')
+    } catch (e: any) {
+      setMessage(e?.message || 'Failed to activate')
+    }
+  }
+
+  const testProvider = async () => {
     if (!active?.id) return
     setTesting(true)
-    try { const res = await adminAIConfigApi.test(active.id); setMessage(res?.message || 'Test successful') } catch (e: any) { setMessage(e?.message || 'Test failed') } finally { setTesting(false) }
+    try {
+      const res = await adminAIConfigApi.test(active.id)
+      const msg = res?.success ? `Test successful (${res?.provider || active.provider} - ${res?.model || active.name})` : 'Test failed'
+      setMessage(msg)
+    } catch (e: any) {
+      setMessage(e?.message || 'Test failed')
+    } finally {
+      setTesting(false)
+    }
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <h2 className="text-xl font-semibold">AI Configuration</h2>
       {message && <p className="text-sm">{message}</p>}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="card p-4 space-y-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="card p-4 space-y-3">
           <label>Provider</label>
-          <select className="bg-gray-900 border border-gray-700 rounded p-2" value={form.provider} onChange={e=> setForm({ ...form, provider: e.target.value })}>
-            <option value="google_gemini">Google Gemini</option>
-            <option value="openai">OpenAI DALL·E</option>
+          <select className="bg-gray-900 border border-gray-700 rounded p-2" value={form.provider} onChange={e=> onProviderChange(e.target.value)}>
+            <option value="openai">OpenAI</option>
             <option value="stability">Stability AI</option>
+            <option value="google_gemini">Google Gemini</option>
             <option value="minimax">MiniMax</option>
             <option value="custom">Custom</option>
           </select>
           <label>Name</label>
-          <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.name} onChange={e=> setForm({ ...form, name: e.target.value })} />
-          <label>API Key</label>
-          <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.apiKey} onChange={e=> setForm({ ...form, apiKey: e.target.value })} />
-          {form.provider==='google_gemini' && (<>
-            <label>Project ID</label>
-            <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.projectId} onChange={e=> setForm({ ...form, projectId: e.target.value })} />
-          </>)}
-          <label>Model Version</label>
-          <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.modelVersion} onChange={e=> setForm({ ...form, modelVersion: e.target.value })} />
-          <button className="px-3 py-2 rounded bg-primary" onClick={submit}>Save & Activate</button>
+          <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.name || ''} onChange={e=> setForm({ ...form, name: e.target.value })} />
+
+          {(form.provider === 'openai' || form.provider === 'stability') && (
+            <>
+              <label>API Key</label>
+              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.apiKey || ''} onChange={e=> setForm({ ...form, apiKey: e.target.value })} />
+              <label>Model Version</label>
+              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.modelVersion || ''} onChange={e=> setForm({ ...form, modelVersion: e.target.value })} />
+            </>
+          )}
+
+          {form.provider === 'google_gemini' && (
+            <>
+              <label>API Key</label>
+              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.apiKey || ''} onChange={e=> setForm({ ...form, apiKey: e.target.value })} />
+              <label>Project ID</label>
+              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.projectId || ''} onChange={e=> setForm({ ...form, projectId: e.target.value })} />
+            </>
+          )}
+
+          {form.provider === 'minimax' && (
+            <>
+              <label>API Key</label>
+              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.apiKey || ''} onChange={e=> setForm({ ...form, apiKey: e.target.value })} />
+              <label>Endpoint (optional)</label>
+              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.endpoint || ''} onChange={e=> setForm({ ...form, endpoint: e.target.value })} />
+            </>
+          )}
+
+          {form.provider === 'custom' && (
+            <>
+              <label>Endpoint</label>
+              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.endpoint || ''} onChange={e=> setForm({ ...form, endpoint: e.target.value })} />
+              <label>API Key</label>
+              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.apiKey || ''} onChange={e=> setForm({ ...form, apiKey: e.target.value })} />
+              <label>Body JSON</label>
+              <textarea className="bg-gray-900 border border-gray-700 rounded p-2 h-32" value={typeof form.settings === 'string' ? form.settings : JSON.stringify(form.settings || {}, null, 2)} onChange={e=> setForm({ ...form, settings: e.target.value })} />
+            </>
+          )}
+
+          <div className="flex gap-2 pt-2">
+            <button className="px-3 py-2 rounded bg-primary" onClick={saveSettings}>Save Settings</button>
+            <button className="px-3 py-2 rounded bg-gray-700" onClick={() => activateProvider()}>Activate Provider</button>
+            <button className="px-3 py-2 rounded bg-gray-700" disabled={!active?.id || testing} onClick={testProvider}>{testing ? 'Testing...' : 'Test Provider'}</button>
+          </div>
         </div>
-        <div className="card p-4 space-y-2">
-          <div className="font-semibold">Active</div>
+
+        <div className="card p-4 space-y-3">
+          <div className="font-semibold">Active Configuration</div>
           {active ? (
             <div className="text-sm">
               <div>Provider: {active.provider}</div>
               <div>Name: {active.name}</div>
-              <div>Status: {active.isActive ? 'Active' : 'Inactive'}</div>
-              <button className="mt-2 px-3 py-2 rounded bg-gray-700" onClick={test} disabled={testing}>{testing ? 'Testing...' : 'Test API'}</button>
+              <div>Model: {active.modelVersion || '-'}</div>
+              <div>Cost/Image: {active.costPerImage ?? 0}</div>
             </div>
           ) : (
             <div className="text-sm opacity-70">No active configuration</div>
           )}
+
+          <div className="font-semibold pt-4">Saved Configurations</div>
+          <div className="space-y-2">
+            {Array.isArray(list) && list.length > 0 ? (
+              list.map((c: any) => (
+                <div key={c._id || c.id} className="flex items-center justify-between border border-gray-800 rounded p-2 text-sm">
+                  <div>
+                    <div className="font-medium">{c.name}</div>
+                    <div className="opacity-70">{c.provider}</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button className="px-2 py-1 rounded bg-gray-700" onClick={() => activateProvider(c._id || c.id)}>Activate</button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-sm opacity-70">No saved configurations</div>
+            )}
+          </div>
         </div>
       </div>
     </div>
