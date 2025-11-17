@@ -1,17 +1,26 @@
-const BACKEND_BASE = (process.env.NEXT_PUBLIC_BACKEND_URL || '')
-  .replace(/\/$/, '')
-  || (process.env.NEXT_PUBLIC_API_URL || '')
-  .replace(/\/$/, '')
-  .replace(/\/api$/, '')
-  || 'http://localhost:8080';
+function normalizeBackendBase() {
+  const source = (process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || '').trim();
+  if (!source) return 'http://localhost:8080';
+  try {
+    const u = new URL(source);
+    return `${u.protocol}//${u.host}`; // strip any path like /api/admin
+  } catch {
+    // If not a full URL, strip any trailing path segments including /api and beyond
+    return source.replace(/\/(api)(\/.*)?$/i, '').replace(/\/$/, '');
+  }
+}
+
+const BACKEND_BASE = normalizeBackendBase();
 const API_BASE = `${BACKEND_BASE}/api`;
 
 async function request(path: string, init?: RequestInit) {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : undefined;
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
-      ...(init?.headers || {})
+      ...(init?.headers || {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
     },
     cache: 'no-store'
   })
@@ -31,6 +40,10 @@ export const adminAuthApi = {
 
 export const adminAnalyticsApi = {
   dashboard: () => request('/admin/analytics/dashboard'),
+  revenue: (period: 'daily' | 'weekly' | 'monthly' = 'monthly') => request(`/admin/analytics/revenue?period=${period}`),
+  users: (period: 'daily' | 'weekly' | 'monthly' = 'monthly') => request(`/admin/analytics/users?period=${period}`),
+  topTemplates: () => request('/admin/analytics/templates'),
+  topCreators: () => request('/admin/analytics/creators'),
 }
 
 export const adminUsersApi = {
