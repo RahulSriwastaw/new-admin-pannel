@@ -46,6 +46,13 @@ export const adminAnalyticsApi = {
   topCreators: () => request('/admin/analytics/creators'),
 }
 
+export const adminAIConfigApi = {
+  getActive: () => request('/admin/ai-config/active'),
+  createOrUpdate: (data: any) => request('/admin/ai-config', { method: 'POST', body: JSON.stringify(data) }),
+  activate: (id: string) => request(`/admin/ai-config/${id}/activate`, { method: 'POST' }),
+  test: (id: string) => request(`/admin/ai-config/${id}/test`, { method: 'POST' }),
+}
+
 export const adminUsersApi = {
   list: () => request('/admin/users'),
   ban: (id: string) => request(`/admin/users/${id}/ban`, { method: 'POST' }),
