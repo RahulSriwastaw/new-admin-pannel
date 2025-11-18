@@ -29,6 +29,7 @@ export default function AIConfigPage() {
       stability: { provider: 'stability', name: 'Stability', apiKey: '', modelVersion: 'stable-diffusion-xl-1024-v1-0' },
       google_gemini: { provider: 'google_gemini', name: 'Gemini', apiKey: '', projectId: '', modelVersion: '' },
       minimax: { provider: 'minimax', name: 'MiniMax', apiKey: '', endpoint: '' },
+      minimax_i2i: { provider: 'minimax_i2i', name: 'MiniMax I2I', apiKey: '', endpoint: 'https://api.minimax.chat/v1/image/i2i', strength: 0.6 },
       custom: { provider: 'custom', name: 'Custom', endpoint: '', apiKey: '', settings: {} },
       quick_tools: { provider: 'quick_tools', name: 'Quick Tools', backgroundRemovalAPIKey: '', removeBgEndpoint: '', upscaleAPIKey: '', upscaleEndpoint: '', faceEnhanceAPIKey: '', faceEnhanceEndpoint: '', compressionAPIKey: '', compressionEndpoint: '' },
     }
@@ -41,6 +42,10 @@ export default function AIConfigPage() {
       const payload: any = { ...form, isActive: false }
       if (form.provider === 'custom' && typeof form.settings === 'string') {
         try { payload.settings = JSON.parse(form.settings || '{}') } catch { payload.settings = {} }
+      }
+      if (form.provider === 'minimax_i2i') {
+        payload.strength = Number(form.strength ?? 0.6)
+        payload.endpoint = form.endpoint || 'https://api.minimax.chat/v1/image/i2i'
       }
       if (form.provider === 'quick_tools') {
         payload.settings = {
@@ -106,7 +111,9 @@ export default function AIConfigPage() {
             <option value="stability">Stability AI</option>
             <option value="google_gemini">Google Gemini</option>
             <option value="minimax">MiniMax</option>
+            <option value="minimax_i2i">MiniMax I2I</option>
             <option value="custom">Custom</option>
+            <option value="quick_tools">Quick Tools</option>
           </select>
           <label>Name</label>
           <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.name || ''} onChange={e=> setForm({ ...form, name: e.target.value })} />
@@ -135,6 +142,16 @@ export default function AIConfigPage() {
               <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.apiKey || ''} onChange={e=> setForm({ ...form, apiKey: e.target.value })} />
               <label>Endpoint (optional)</label>
               <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.endpoint || ''} onChange={e=> setForm({ ...form, endpoint: e.target.value })} />
+            </>
+          )}
+          {form.provider === 'minimax_i2i' && (
+            <>
+              <label>API Key</label>
+              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.apiKey || ''} onChange={e=> setForm({ ...form, apiKey: e.target.value })} />
+              <label>Endpoint</label>
+              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.endpoint || 'https://api.minimax.chat/v1/image/i2i'} onChange={e=> setForm({ ...form, endpoint: e.target.value })} />
+              <label>Strength</label>
+              <input type="number" step="0.1" min="0" max="1" className="bg-gray-900 border border-gray-700 rounded p-2" value={form.strength ?? 0.6} onChange={e=> setForm({ ...form, strength: Number(e.target.value) })} />
             </>
           )}
 
