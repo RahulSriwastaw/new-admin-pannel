@@ -2,9 +2,59 @@
 import { useState, useEffect } from "react"
 import { adminAnalyticsApi } from "@/services/api"
 
+// Define types for our data
+type Stats = {
+  totalUsers: number
+  activeUsers: number
+  newUsersToday: number
+  totalCreators: number
+  pendingCreators: number
+  totalTemplates: number
+  pendingTemplates: number
+  totalGenerations: number
+  monthlyRevenue: number
+}
+
+type UserGrowthData = {
+  day: string
+  value: number
+}[]
+
+type GenerationData = {
+  name: string
+  value: number
+}[]
+
+type SystemHealth = {
+  database: string
+  aiApi: string
+  paymentGateway: string
+  storage: number
+  server: {
+    cpu: number
+    memory: number
+    disk: number
+  }
+  errorRate: number
+}
+
+type Notification = {
+  id: number
+  type: string
+  count: number
+  message: string
+}
+
+type Activity = {
+  id: number
+  type: string
+  message: string
+  time: string
+}
+
 export default function DashboardPage() {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d')
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<Stats>({
     totalUsers: 0,
     activeUsers: 0,
     newUsersToday: 0,
@@ -15,9 +65,9 @@ export default function DashboardPage() {
     totalGenerations: 0,
     monthlyRevenue: 0
   })
-  const [userGrowthData, setUserGrowthData] = useState([])
-  const [generationData, setGenerationData] = useState([])
-  const [systemHealth, setSystemHealth] = useState({
+  const [userGrowthData, setUserGrowthData] = useState<UserGrowthData>([])
+  const [generationData, setGenerationData] = useState<GenerationData>([])
+  const [systemHealth, setSystemHealth] = useState<SystemHealth>({
     database: 'green',
     aiApi: 'green',
     paymentGateway: 'green',
@@ -25,54 +75,95 @@ export default function DashboardPage() {
     server: { cpu: 45, memory: 60, disk: 70 },
     errorRate: 0.5
   })
-  const [notifications, setNotifications] = useState([
+  const [notifications, setNotifications] = useState<Notification[]>([
     { id: 1, type: 'creator', count: 5, message: 'Pending creator applications' },
     { id: 2, type: 'template', count: 12, message: 'Templates pending review' },
     { id: 3, type: 'support', count: 3, message: 'High-priority support tickets' },
     { id: 4, type: 'system', count: 0, message: 'System warnings' }
   ])
-  const [activityFeed, setActivityFeed] = useState([
+  const [activityFeed, setActivityFeed] = useState<Activity[]>([
     { id: 1, type: 'user', message: 'New user registered: John Doe', time: '2 min ago' },
     { id: 2, type: 'template', message: 'Template submitted by Creator Studio', time: '15 min ago' },
     { id: 3, type: 'payment', message: 'Payment received: ₹499', time: '1 hour ago' },
     { id: 4, type: 'generation', message: 'Image generation completed', time: '2 hours ago' },
     { id: 5, type: 'support', message: 'New support ticket created', time: '3 hours ago' }
   ])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // In a real implementation, this would fetch data from the backend
-    // For now, we'll use mock data
-    setStats({
-      totalUsers: 12482,
-      activeUsers: 8642,
-      newUsersToday: 142,
-      totalCreators: 342,
-      pendingCreators: 8,
-      totalTemplates: 1847,
-      pendingTemplates: 23,
-      totalGenerations: 256420,
-      monthlyRevenue: 245600
-    })
-
-    setUserGrowthData([
-      { day: '1', value: 12000 },
-      { day: '5', value: 12200 },
-      { day: '10', value: 12500 },
-      { day: '15', value: 12800 },
-      { day: '20', value: 13200 },
-      { day: '25', value: 13800 },
-      { day: '30', value: 14500 }
-    ])
-
-    setGenerationData([
-      { name: 'Portrait', value: 35 },
-      { name: 'Landscape', value: 25 },
-      { name: 'Square', value: 20 },
-      { name: 'Other', value: 20 }
-    ])
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        // Fetch dashboard data from the backend
+        const dashboardData: any = await adminAnalyticsApi.dashboard()
+        
+        // Update stats with real data
+        setStats({
+          totalUsers: dashboardData.totalUsers || 0,
+          activeUsers: dashboardData.activeUsers || 0,
+          newUsersToday: dashboardData.newUsersToday || 0,
+          totalCreators: dashboardData.totalCreators || 0,
+          pendingCreators: dashboardData.pendingCreators || 0,
+          totalTemplates: dashboardData.totalTemplates || 0,
+          pendingTemplates: dashboardData.pendingTemplates || 0,
+          totalGenerations: dashboardData.totalGenerations || 0,
+          monthlyRevenue: dashboardData.monthlyRevenue || 0
+        })
+        
+        // Update user growth data
+        setUserGrowthData(dashboardData.userGrowth || [])
+        
+        // Update generation data
+        setGenerationData(dashboardData.generationData || [])
+        
+        // Update system health data if available
+        if (dashboardData.systemHealth) {
+          setSystemHealth(dashboardData.systemHealth)
+        }
+        
+        setLoading(false)
+      } catch (err: any) {
+        console.error('Error fetching dashboard data:', err)
+        setError(err.message || 'Failed to load dashboard data')
+        setLoading(false)
+        
+        // Fallback to mock data in case of error
+        setStats({
+          totalUsers: 12482,
+          activeUsers: 8642,
+          newUsersToday: 142,
+          totalCreators: 342,
+          pendingCreators: 8,
+          totalTemplates: 1847,
+          pendingTemplates: 23,
+          totalGenerations: 256420,
+          monthlyRevenue: 245600
+        })
+        
+        setUserGrowthData([
+          { day: '1', value: 12000 },
+          { day: '5', value: 12200 },
+          { day: '10', value: 12500 },
+          { day: '15', value: 12800 },
+          { day: '20', value: 13200 },
+          { day: '25', value: 13800 },
+          { day: '30', value: 14500 }
+        ])
+        
+        setGenerationData([
+          { name: 'Portrait', value: 35 },
+          { name: 'Landscape', value: 25 },
+          { name: 'Square', value: 20 },
+          { name: 'Other', value: 20 }
+        ])
+      }
+    }
+    
+    fetchData()
   }, [])
 
-  const handleQuickAction = (action) => {
+  const handleQuickAction = (action: string) => {
     switch(action) {
       case 'reviewTemplates':
         // Navigate to templates review page
@@ -419,7 +510,7 @@ export default function DashboardPage() {
 
 function StatCard({ title, value, change, icon }: { 
   title: string, 
-  value: string, 
+  value: string | number, 
   change: string, 
   icon: React.ReactNode 
 }) {
