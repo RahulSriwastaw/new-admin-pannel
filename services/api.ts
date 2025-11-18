@@ -77,3 +77,29 @@ export const adminCreatorsApi = {
   unban: (id: string) => request(`/admin/creators/${id}/unban`, { method: 'POST' }),
   verify: (id: string) => request(`/admin/creators/${id}/verify`, { method: 'POST' }),
 }
+
+export const adminTransactionsApi = {
+  list: (period: 'daily' | 'weekly' | 'monthly' = 'monthly') => request(`/admin/transactions?period=${period}`),
+  get: (id: string) => request(`/admin/transactions/${id}`),
+  refund: (id: string) => request(`/admin/transactions/${id}/refund`, { method: 'POST' }),
+}
+
+export const adminSupportApi = {
+  list: (status?: string, priority?: string) => {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (priority) params.append('priority', priority);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return request(`/admin/support${query}`);
+  },
+  get: (id: string) => request(`/admin/support/${id}`),
+  reply: (id: string, message: string) => request(`/admin/support/${id}/reply`, { 
+    method: 'POST', 
+    body: JSON.stringify({ message }) 
+  }),
+  close: (id: string) => request(`/admin/support/${id}/close`, { method: 'POST' }),
+  assign: (id: string, adminId: string) => request(`/admin/support/${id}/assign`, { 
+    method: 'POST', 
+    body: JSON.stringify({ adminId }) 
+  }),
+}

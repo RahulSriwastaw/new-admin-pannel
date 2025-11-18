@@ -1,236 +1,296 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { adminAIConfigApi } from "@/services/api"
 
-type ActiveConfig = {
+type AIModel = {
   id: string
-  provider: string
   name: string
+  provider: string
+  apiKey: string
   isActive: boolean
-  modelVersion?: string
-  costPerImage?: number
+  config: {
+    model?: string
+    quality?: string
+    style?: string
+    safetySettings?: any
+  }
 }
 
 export default function AIConfigPage() {
-  const [active, setActive] = useState<ActiveConfig | null>(null)
-  const [list, setList] = useState<any[]>([])
-  const [message, setMessage] = useState<string | null>(null)
-  const [testing, setTesting] = useState(false)
-  const [form, setForm] = useState<any>({ provider: 'openai', name: 'OpenAI', apiKey: '', modelVersion: '' })
+  const [models, setModels] = useState<AIModel[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [activeModel, setActiveModel] = useState<string | null>(null)
+  const [showForm, setShowForm] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    provider: 'gemini',
+    apiKey: '',
+    model: '',
+    quality: 'standard',
+    style: 'vivid'
+  })
 
   useEffect(() => {
-    adminAIConfigApi.getActive().then(setActive).catch(()=>{})
-    adminAIConfigApi.list().then(setList).catch(()=>{})
+    loadModels()
   }, [])
 
-  const onProviderChange = (p: string) => {
-    const presets: Record<string, any> = {
-      openai: { provider: 'openai', name: 'OpenAI', apiKey: '', modelVersion: 'dall-e-3' },
-      stability: { provider: 'stability', name: 'Stability', apiKey: '', modelVersion: 'stable-diffusion-xl-1024-v1-0' },
-      google_gemini: { provider: 'google_gemini', name: 'Gemini', apiKey: '', projectId: '', modelVersion: '' },
-      minimax: { provider: 'minimax', name: 'MiniMax', apiKey: '', endpoint: '' },
-      minimax_i2i: { provider: 'minimax_i2i', name: 'MiniMax I2I', apiKey: '', endpoint: 'https://api.minimax.chat/v1/image/i2i', strength: 0.6 },
-      custom: { provider: 'custom', name: 'Custom', endpoint: '', apiKey: '', settings: {} },
-      quick_tools: { provider: 'quick_tools', name: 'Quick Tools', backgroundRemovalAPIKey: '', removeBgEndpoint: '', upscaleAPIKey: '', upscaleEndpoint: '', faceEnhanceAPIKey: '', faceEnhanceEndpoint: '', compressionAPIKey: '', compressionEndpoint: '' },
-    }
-    setForm(presets[p] || { provider: p, name: p, apiKey: '' })
-  }
-
-  const saveSettings = async () => {
-    setMessage(null)
+  const loadModels = async () => {
     try {
-      const payload: any = { ...form, isActive: false }
-      if (form.provider === 'custom' && typeof form.settings === 'string') {
-        try { payload.settings = JSON.parse(form.settings || '{}') } catch { payload.settings = {} }
-      }
-      if (form.provider === 'minimax_i2i') {
-        payload.strength = Number(form.strength ?? 0.6)
-        payload.endpoint = form.endpoint || 'https://api.minimax.chat/v1/image/i2i'
-      }
-      if (form.provider === 'quick_tools') {
-        payload.settings = {
-          backgroundRemovalAPIKey: form.backgroundRemovalAPIKey || '',
-          removeBgEndpoint: form.removeBgEndpoint || '',
-          upscaleAPIKey: form.upscaleAPIKey || '',
-          upscaleEndpoint: form.upscaleEndpoint || '',
-          faceEnhanceAPIKey: form.faceEnhanceAPIKey || '',
-          faceEnhanceEndpoint: form.faceEnhanceEndpoint || '',
-          compressionAPIKey: form.compressionAPIKey || '',
-          compressionEndpoint: form.compressionEndpoint || '',
-        }
-        delete payload.apiKey
-        delete payload.endpoint
-        delete payload.modelVersion
-        delete payload.projectId
-      }
-      const res = await adminAIConfigApi.createOrUpdate(payload)
-      const nextList = await adminAIConfigApi.list(); setList(nextList)
-      setMessage('Settings saved')
-    } catch (e: any) {
-      setMessage(e?.message || 'Failed to save settings')
-    }
-  }
-
-  const activateProvider = async (id?: string) => {
-    setMessage(null)
-    const targetId = id || active?.id
-    if (!targetId) return
-    try {
-      await adminAIConfigApi.activate(targetId)
-      const a = await adminAIConfigApi.getActive(); setActive(a)
-      const nextList = await adminAIConfigApi.list(); setList(nextList)
-      setMessage('Provider activated')
-    } catch (e: any) {
-      setMessage(e?.message || 'Failed to activate')
-    }
-  }
-
-  const testProvider = async () => {
-    if (!active?.id) return
-    setTesting(true)
-    try {
-      const res = await adminAIConfigApi.test(active.id)
-      const msg = res?.success ? `Test successful (${res?.provider || active.provider} - ${res?.model || active.name})` : 'Test failed'
-      setMessage(msg)
-    } catch (e: any) {
-      setMessage(e?.message || 'Test failed')
+      setLoading(true)
+      const data = await adminAIConfigApi.list()
+      setModels(data)
+      const active = data.find((m: any) => m.isActive)
+      if (active) setActiveModel(active.id)
+    } catch (err: any) {
+      setError(err?.message || "Failed to load AI models")
     } finally {
-      setTesting(false)
+      setLoading(false)
     }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const modelData = {
+        name: formData.name,
+        provider: formData.provider,
+        apiKey: formData.apiKey,
+        config: {
+          model: formData.model,
+          quality: formData.quality,
+          style: formData.style
+        }
+      }
+      
+      await adminAIConfigApi.createOrUpdate(modelData)
+      setShowForm(false)
+      setFormData({
+        name: '',
+        provider: 'gemini',
+        apiKey: '',
+        model: '',
+        quality: 'standard',
+        style: 'vivid'
+      })
+      loadModels()
+    } catch (err: any) {
+      setError(err?.message || "Failed to save model")
+    }
+  }
+
+  const handleActivate = async (id: string) => {
+    try {
+      await adminAIConfigApi.activate(id)
+      setActiveModel(id)
+      loadModels()
+    } catch (err: any) {
+      setError(err?.message || "Failed to activate model")
+    }
+  }
+
+  const handleTest = async (id: string) => {
+    try {
+      const result = await adminAIConfigApi.test(id)
+      alert(`Test successful! Response time: ${result.responseTime}ms`)
+    } catch (err: any) {
+      setError(err?.message || "Test failed")
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4EFF9B]"></div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold">AI Configuration</h2>
-      {message && <p className="text-sm">{message}</p>}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="card p-4 space-y-3">
-          <label>Provider</label>
-          <select className="bg-gray-900 border border-gray-700 rounded p-2" value={form.provider} onChange={e=> onProviderChange(e.target.value)}>
-            <option value="openai">OpenAI</option>
-            <option value="stability">Stability AI</option>
-            <option value="google_gemini">Google Gemini</option>
-            <option value="minimax">MiniMax</option>
-            <option value="minimax_i2i">MiniMax I2I</option>
-            <option value="custom">Custom</option>
-            <option value="quick_tools">Quick Tools</option>
-          </select>
-          <label>Name</label>
-          <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.name || ''} onChange={e=> setForm({ ...form, name: e.target.value })} />
-
-          {(form.provider === 'openai' || form.provider === 'stability') && (
-            <>
-              <label>API Key</label>
-              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.apiKey || ''} onChange={e=> setForm({ ...form, apiKey: e.target.value })} />
-              <label>Model Version</label>
-              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.modelVersion || ''} onChange={e=> setForm({ ...form, modelVersion: e.target.value })} />
-            </>
-          )}
-
-          {form.provider === 'google_gemini' && (
-            <>
-              <label>API Key</label>
-              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.apiKey || ''} onChange={e=> setForm({ ...form, apiKey: e.target.value })} />
-              <label>Project ID</label>
-              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.projectId || ''} onChange={e=> setForm({ ...form, projectId: e.target.value })} />
-            </>
-          )}
-
-          {form.provider === 'minimax' && (
-            <>
-              <label>API Key</label>
-              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.apiKey || ''} onChange={e=> setForm({ ...form, apiKey: e.target.value })} />
-              <label>Endpoint (optional)</label>
-              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.endpoint || ''} onChange={e=> setForm({ ...form, endpoint: e.target.value })} />
-            </>
-          )}
-          {form.provider === 'minimax_i2i' && (
-            <>
-              <label>API Key</label>
-              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.apiKey || ''} onChange={e=> setForm({ ...form, apiKey: e.target.value })} />
-              <label>Endpoint</label>
-              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.endpoint || 'https://api.minimax.chat/v1/image/i2i'} onChange={e=> setForm({ ...form, endpoint: e.target.value })} />
-              <label>Strength</label>
-              <input type="number" step="0.1" min="0" max="1" className="bg-gray-900 border border-gray-700 rounded p-2" value={form.strength ?? 0.6} onChange={e=> setForm({ ...form, strength: Number(e.target.value) })} />
-            </>
-          )}
-
-          {form.provider === 'custom' && (
-            <>
-              <label>Endpoint</label>
-              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.endpoint || ''} onChange={e=> setForm({ ...form, endpoint: e.target.value })} />
-              <label>API Key</label>
-              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.apiKey || ''} onChange={e=> setForm({ ...form, apiKey: e.target.value })} />
-              <label>Body JSON</label>
-              <textarea className="bg-gray-900 border border-gray-700 rounded p-2 h-32" value={typeof form.settings === 'string' ? form.settings : JSON.stringify(form.settings || {}, null, 2)} onChange={e=> setForm({ ...form, settings: e.target.value })} />
-            </>
-          )}
-
-          {form.provider === 'quick_tools' && (
-            <>
-              <p className="text-sm opacity-70">Configure API keys and endpoints for quick tools</p>
-              <label>Background Removal API Key</label>
-              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.backgroundRemovalAPIKey || ''} onChange={e=> setForm({ ...form, backgroundRemovalAPIKey: e.target.value })} />
-              <label>Background Removal Endpoint</label>
-              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.removeBgEndpoint || ''} onChange={e=> setForm({ ...form, removeBgEndpoint: e.target.value })} />
-
-              <label>Upscale API Key</label>
-              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.upscaleAPIKey || ''} onChange={e=> setForm({ ...form, upscaleAPIKey: e.target.value })} />
-              <label>Upscale Endpoint</label>
-              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.upscaleEndpoint || ''} onChange={e=> setForm({ ...form, upscaleEndpoint: e.target.value })} />
-
-              <label>Face Enhance API Key</label>
-              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.faceEnhanceAPIKey || ''} onChange={e=> setForm({ ...form, faceEnhanceAPIKey: e.target.value })} />
-              <label>Face Enhance Endpoint</label>
-              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.faceEnhanceEndpoint || ''} onChange={e=> setForm({ ...form, faceEnhanceEndpoint: e.target.value })} />
-
-              <label>Compression API Key</label>
-              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.compressionAPIKey || ''} onChange={e=> setForm({ ...form, compressionAPIKey: e.target.value })} />
-              <label>Compression Endpoint</label>
-              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.compressionEndpoint || ''} onChange={e=> setForm({ ...form, compressionEndpoint: e.target.value })} />
-            </>
-          )}
-
-          <div className="flex gap-2 pt-2">
-            <button className="px-3 py-2 rounded bg-primary" onClick={saveSettings}>Save Settings</button>
-            <button className="px-3 py-2 rounded bg-gray-700" onClick={() => activateProvider()}>Activate Provider</button>
-            <button className="px-3 py-2 rounded bg-gray-700" disabled={!active?.id || testing} onClick={testProvider}>{testing ? 'Testing...' : 'Test Provider'}</button>
-          </div>
-        </div>
-
-        <div className="card p-4 space-y-3">
-          <div className="font-semibold">Active Configuration</div>
-          {active ? (
-            <div className="text-sm">
-              <div>Provider: {active.provider}</div>
-              <div>Name: {active.name}</div>
-              <div>Model: {active.modelVersion || '-'}</div>
-              <div>Cost/Image: {active.costPerImage ?? 0}</div>
-            </div>
-          ) : (
-            <div className="text-sm opacity-70">No active configuration</div>
-          )}
-
-          <div className="font-semibold pt-4">Saved Configurations</div>
-          <div className="space-y-2">
-            {Array.isArray(list) && list.length > 0 ? (
-              list.map((c: any) => (
-                <div key={c._id || c.id} className="flex items-center justify-between border border-gray-800 rounded p-2 text-sm">
-                  <div>
-                    <div className="font-medium">{c.name}</div>
-                    <div className="opacity-70">{c.provider}</div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button className="px-2 py-1 rounded bg-gray-700" onClick={() => activateProvider(c._id || c.id)}>Activate</button>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-sm opacity-70">No saved configurations</div>
-            )}
-          </div>
-        </div>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">AI Configuration</h1>
+        <button
+          onClick={() => setShowForm(true)}
+          className="px-4 py-2 bg-[#4EFF9B] text-[#0D221A] font-medium rounded-lg hover:bg-[#3ad485] transition-colors"
+        >
+          Add New Model
+        </button>
       </div>
+
+      {error && (
+        <div className="bg-red-900/50 border border-red-700 rounded-lg p-4">
+          <p className="text-red-300">{error}</p>
+        </div>
+      )}
+
+      {/* Model List */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {models.map((model) => (
+          <div 
+            key={model.id} 
+            className={`bg-[#15362B] rounded-2xl p-6 border ${
+              activeModel === model.id 
+                ? 'border-[#4EFF9B] shadow-lg shadow-[#4EFF9B]/20' 
+                : 'border-[#4EFF9B]/20'
+            } backdrop-blur-sm transition-all`}
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="font-semibold text-lg">{model.name}</h3>
+                <p className="text-[#A0C4B5] text-sm">{model.provider}</p>
+              </div>
+              {model.isActive && (
+                <span className="px-2 py-1 bg-[#4EFF9B]/20 text-[#4EFF9B] text-xs rounded-full">
+                  Active
+                </span>
+              )}
+            </div>
+
+            <div className="space-y-3 mb-6">
+              <div>
+                <p className="text-[#A0C4B5] text-sm">Model</p>
+                <p className="text-[#E9F5EE]">{model.config.model || 'Not specified'}</p>
+              </div>
+              <div>
+                <p className="text-[#A0C4B5] text-sm">Quality</p>
+                <p className="text-[#E9F5EE]">{model.config.quality || 'Standard'}</p>
+              </div>
+              <div>
+                <p className="text-[#A0C4B5] text-sm">Style</p>
+                <p className="text-[#E9F5EE]">{model.config.style || 'Vivid'}</p>
+              </div>
+            </div>
+
+            <div className="flex space-x-2">
+              {!model.isActive && (
+                <button
+                  onClick={() => handleActivate(model.id)}
+                  className="flex-1 px-3 py-2 bg-[#112C23] hover:bg-[#4EFF9B]/20 rounded-lg transition-colors text-sm"
+                >
+                  Activate
+                </button>
+              )}
+              <button
+                onClick={() => handleTest(model.id)}
+                className="flex-1 px-3 py-2 bg-[#112C23] hover:bg-[#4EFF9B]/20 rounded-lg transition-colors text-sm"
+              >
+                Test
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Add Model Form */}
+      {showForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#15362B] rounded-2xl p-6 border border-[#4EFF9B]/20 w-full max-w-md">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">Add AI Model</h2>
+              <button 
+                onClick={() => setShowForm(false)}
+                className="text-[#A0C4B5] hover:text-[#E9F5EE]"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#A0C4B5] mb-2">Model Name</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="w-full px-4 py-2 bg-[#112C23] border border-[#4EFF9B]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4EFF9B]/50"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#A0C4B5] mb-2">Provider</label>
+                <select
+                  value={formData.provider}
+                  onChange={(e) => setFormData({...formData, provider: e.target.value})}
+                  className="w-full px-4 py-2 bg-[#112C23] border border-[#4EFF9B]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4EFF9B]/50"
+                >
+                  <option value="gemini">Google Gemini</option>
+                  <option value="dalle">DALL-E 3</option>
+                  <option value="stability">Stability AI</option>
+                  <option value="custom">Custom API</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#A0C4B5] mb-2">API Key</label>
+                <input
+                  type="password"
+                  value={formData.apiKey}
+                  onChange={(e) => setFormData({...formData, apiKey: e.target.value})}
+                  className="w-full px-4 py-2 bg-[#112C23] border border-[#4EFF9B]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4EFF9B]/50"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#A0C4B5] mb-2">Model Version</label>
+                <input
+                  type="text"
+                  value={formData.model}
+                  onChange={(e) => setFormData({...formData, model: e.target.value})}
+                  className="w-full px-4 py-2 bg-[#112C23] border border-[#4EFF9B]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4EFF9B]/50"
+                  placeholder="e.g., imagen-3.0, dall-e-3"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#A0C4B5] mb-2">Quality</label>
+                  <select
+                    value={formData.quality}
+                    onChange={(e) => setFormData({...formData, quality: e.target.value})}
+                    className="w-full px-4 py-2 bg-[#112C23] border border-[#4EFF9B]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4EFF9B]/50"
+                  >
+                    <option value="standard">Standard</option>
+                    <option value="hd">HD</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#A0C4B5] mb-2">Style</label>
+                  <select
+                    value={formData.style}
+                    onChange={(e) => setFormData({...formData, style: e.target.value})}
+                    className="w-full px-4 py-2 bg-[#112C23] border border-[#4EFF9B]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4EFF9B]/50"
+                  >
+                    <option value="vivid">Vivid</option>
+                    <option value="natural">Natural</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="flex-1 px-4 py-2 bg-[#112C23] hover:bg-[#4EFF9B]/20 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-[#4EFF9B] text-[#0D221A] font-medium rounded-lg hover:bg-[#3ad485] transition-colors"
+                >
+                  Save Model
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
