@@ -30,6 +30,7 @@ export default function AIConfigPage() {
       google_gemini: { provider: 'google_gemini', name: 'Gemini', apiKey: '', projectId: '', modelVersion: '' },
       minimax: { provider: 'minimax', name: 'MiniMax', apiKey: '', endpoint: '' },
       custom: { provider: 'custom', name: 'Custom', endpoint: '', apiKey: '', settings: {} },
+      quick_tools: { provider: 'quick_tools', name: 'Quick Tools', backgroundRemovalAPIKey: '', removeBgEndpoint: '', upscaleAPIKey: '', upscaleEndpoint: '', faceEnhanceAPIKey: '', faceEnhanceEndpoint: '', compressionAPIKey: '', compressionEndpoint: '' },
     }
     setForm(presets[p] || { provider: p, name: p, apiKey: '' })
   }
@@ -37,9 +38,25 @@ export default function AIConfigPage() {
   const saveSettings = async () => {
     setMessage(null)
     try {
-      const payload = { ...form, isActive: false }
+      const payload: any = { ...form, isActive: false }
       if (form.provider === 'custom' && typeof form.settings === 'string') {
-        try { (payload as any).settings = JSON.parse(form.settings || '{}') } catch { (payload as any).settings = {} }
+        try { payload.settings = JSON.parse(form.settings || '{}') } catch { payload.settings = {} }
+      }
+      if (form.provider === 'quick_tools') {
+        payload.settings = {
+          backgroundRemovalAPIKey: form.backgroundRemovalAPIKey || '',
+          removeBgEndpoint: form.removeBgEndpoint || '',
+          upscaleAPIKey: form.upscaleAPIKey || '',
+          upscaleEndpoint: form.upscaleEndpoint || '',
+          faceEnhanceAPIKey: form.faceEnhanceAPIKey || '',
+          faceEnhanceEndpoint: form.faceEnhanceEndpoint || '',
+          compressionAPIKey: form.compressionAPIKey || '',
+          compressionEndpoint: form.compressionEndpoint || '',
+        }
+        delete payload.apiKey
+        delete payload.endpoint
+        delete payload.modelVersion
+        delete payload.projectId
       }
       const res = await adminAIConfigApi.createOrUpdate(payload)
       const nextList = await adminAIConfigApi.list(); setList(nextList)
@@ -129,6 +146,31 @@ export default function AIConfigPage() {
               <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.apiKey || ''} onChange={e=> setForm({ ...form, apiKey: e.target.value })} />
               <label>Body JSON</label>
               <textarea className="bg-gray-900 border border-gray-700 rounded p-2 h-32" value={typeof form.settings === 'string' ? form.settings : JSON.stringify(form.settings || {}, null, 2)} onChange={e=> setForm({ ...form, settings: e.target.value })} />
+            </>
+          )}
+
+          {form.provider === 'quick_tools' && (
+            <>
+              <p className="text-sm opacity-70">Configure API keys and endpoints for quick tools</p>
+              <label>Background Removal API Key</label>
+              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.backgroundRemovalAPIKey || ''} onChange={e=> setForm({ ...form, backgroundRemovalAPIKey: e.target.value })} />
+              <label>Background Removal Endpoint</label>
+              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.removeBgEndpoint || ''} onChange={e=> setForm({ ...form, removeBgEndpoint: e.target.value })} />
+
+              <label>Upscale API Key</label>
+              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.upscaleAPIKey || ''} onChange={e=> setForm({ ...form, upscaleAPIKey: e.target.value })} />
+              <label>Upscale Endpoint</label>
+              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.upscaleEndpoint || ''} onChange={e=> setForm({ ...form, upscaleEndpoint: e.target.value })} />
+
+              <label>Face Enhance API Key</label>
+              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.faceEnhanceAPIKey || ''} onChange={e=> setForm({ ...form, faceEnhanceAPIKey: e.target.value })} />
+              <label>Face Enhance Endpoint</label>
+              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.faceEnhanceEndpoint || ''} onChange={e=> setForm({ ...form, faceEnhanceEndpoint: e.target.value })} />
+
+              <label>Compression API Key</label>
+              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.compressionAPIKey || ''} onChange={e=> setForm({ ...form, compressionAPIKey: e.target.value })} />
+              <label>Compression Endpoint</label>
+              <input className="bg-gray-900 border border-gray-700 rounded p-2" value={form.compressionEndpoint || ''} onChange={e=> setForm({ ...form, compressionEndpoint: e.target.value })} />
             </>
           )}
 

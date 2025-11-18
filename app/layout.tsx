@@ -22,6 +22,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                 <a href="/creators" className="hover:text-primary">Creators</a>
                 <a href="/templates" className="hover:text-primary">Templates</a>
                 <a href="/moderation" className="hover:text-primary">Moderation</a>
+                <a href="/settings/ai-config" className="hover:text-primary">AI Configuration</a>
               </nav>
             </div>
           </header>
