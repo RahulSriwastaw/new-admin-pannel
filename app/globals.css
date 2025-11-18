@@ -3,22 +3,56 @@
 @tailwind utilities;
 
 :root {
-  --bg: #0b0f1a;
-  --card: #111827;
-  --text: #e5e7eb;
+  /* Dark green/teal background */
+  --background: #0D221A;
+  /* Darker shade for panels */
+  --panel: #112C23;
+  /* Card background */
+  --card: #15362B;
+  /* Neon green highlights */
+  --highlight: #4EFF9B;
+  /* Light mint white text */
+  --text: #E9F5EE;
+  /* Soft grey for icons */
+  --icon: #A0C4B5;
 }
 
 html, body {
   height: 100%;
-}
-
-body {
-  background-color: var(--bg);
+  background-color: var(--background);
   color: var(--text);
+  font-family: 'Inter', sans-serif;
 }
 
+/* Custom card styling with glow effect */
 .card {
   background-color: var(--card);
-  border-radius: 0.75rem;
-  border: 1px solid #1f2937;
+  border-radius: 16px;
+  border: 1px solid #4EFF9B20;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  border-color: #4EFF9B40;
+  box-shadow: 0 6px 25px rgba(78, 255, 155, 0.1);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #112C23;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4EFF9B;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3ad485;
 }
