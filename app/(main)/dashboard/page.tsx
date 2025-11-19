@@ -125,7 +125,14 @@ export default function DashboardPage() {
         setLoading(false)
       } catch (err: any) {
         console.error('Error fetching dashboard data:', err)
-        setError(err.message || 'Failed to load dashboard data')
+        // More specific error handling
+        let errorMessage = 'Failed to load dashboard data'
+        if (err.message) {
+          errorMessage = err.message
+        } else if (err.toString() !== '[object Object]') {
+          errorMessage = err.toString()
+        }
+        setError(errorMessage)
         setLoading(false)
         
         // Fallback to mock data in case of error
@@ -188,6 +195,19 @@ export default function DashboardPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Welcome back, Admin</h1>
           <p className="text-[#A0C4B5]">Here's what's happening with your platform today.</p>
+          {error && (
+            <div className="mt-4 p-4 bg-red-900/50 border border-red-500/50 rounded-lg">
+              <p className="text-red-300">Error: {error}</p>
+              <p className="text-sm text-red-200 mt-2">
+                Displaying mock data due to connection issues. Please check:
+              </p>
+              <ul className="text-sm text-red-200 mt-1 list-disc list-inside">
+                <li>If the backend server is running</li>
+                <li>If the API URL is correctly configured in your environment variables</li>
+                <li>Your network connection</li>
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* Notifications Center */}
