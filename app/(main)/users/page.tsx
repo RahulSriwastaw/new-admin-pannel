@@ -31,33 +31,81 @@ export default function UsersPage() {
   const [usersPerPage] = useState(10)
   const [showUserDetail, setShowUserDetail] = useState<User | null>(null)
   const [activeTab, setActiveTab] = useState("profile")
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Mock data fallback
+  const mockUsers: User[] = [
+    {
+      _id: "1",
+      name: "John Doe",
+      email: "john@example.com",
+      phone: "+1234567890",
+      role: "user",
+      points: 1250,
+      registrationDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      lastActivity: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      status: "active",
+    },
+    {
+      _id: "2",
+      name: "Jane Smith",
+      email: "jane@example.com",
+      role: "creator",
+      points: 3500,
+      registrationDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+      lastActivity: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      status: "active",
+    },
+    {
+      _id: "3",
+      name: "Mike Johnson",
+      email: "mike@example.com",
+      role: "user",
+      points: 500,
+      registrationDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+      lastActivity: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+      status: "suspended",
+    },
+  ]
 
   useEffect(() => {
-    adminUsersApi.list().then(setUsers).catch(e => setError(e?.message || "Failed to load users"))
+    setIsLoading(true)
+    adminUsersApi.list()
+      .then((data) => {
+        setUsers(data)
+        setError(null)
+      })
+      .catch((e) => {
+        console.error('Failed to load users from API:', e)
+        setError(e?.message || "Failed to load users from API")
+        // Use mock data as fallback
+        setUsers(mockUsers)
+      })
+      .finally(() => setIsLoading(false))
   }, [])
 
   useEffect(() => {
     let result = [...users]
-    
+
     // Apply search filter
     if (searchTerm) {
-      result = result.filter(user => 
+      result = result.filter(user =>
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user._id.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
-    
+
     // Apply role filter
     if (roleFilter !== "all") {
       result = result.filter(user => (user.role || "user") === roleFilter)
     }
-    
+
     // Apply status filter
     if (statusFilter !== "all") {
       result = result.filter(user => (user.status || "active") === statusFilter)
     }
-    
+
     // Apply sorting
     result.sort((a, b) => {
       let aValue, bValue
@@ -78,14 +126,14 @@ export default function UsersPage() {
           aValue = a.name.toLowerCase()
           bValue = b.name.toLowerCase()
       }
-      
+
       if (sortOrder === "asc") {
         return aValue > bValue ? 1 : -1
       } else {
         return aValue < bValue ? 1 : -1
       }
     })
-    
+
     setFilteredUsers(result)
   }, [users, searchTerm, roleFilter, statusFilter, sortBy, sortOrder])
 
@@ -96,9 +144,9 @@ export default function UsersPage() {
   }
 
   const handleSelectUser = (id: string) => {
-    setSelectedUsers(prev => 
-      prev.includes(id) 
-        ? prev.filter(userId => userId !== id) 
+    setSelectedUsers(prev =>
+      prev.includes(id)
+        ? prev.filter(userId => userId !== id)
         : [...prev, id]
     )
   }
@@ -141,9 +189,9 @@ export default function UsersPage() {
           </button>
         </div>
       </div>
-      
+
       {error && <p className="text-red-400">{error}</p>}
-      
+
       {/* Filters and Search */}
       <div className="bg-[#15362B] rounded-2xl p-6 border border-[#4EFF9B]/20 shadow-lg backdrop-blur-sm">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -157,7 +205,7 @@ export default function UsersPage() {
               className="w-full px-4 py-2 bg-[#112C23] border border-[#4EFF9B]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4EFF9B]/50"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-[#A0C4B5] mb-2">Role</label>
             <select
@@ -171,7 +219,7 @@ export default function UsersPage() {
               <option value="admin">Admins</option>
             </select>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-[#A0C4B5] mb-2">Status</label>
             <select
@@ -185,7 +233,7 @@ export default function UsersPage() {
               <option value="banned">Banned</option>
             </select>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-[#A0C4B5] mb-2">Sort By</label>
             <div className="flex space-x-2">
@@ -209,7 +257,7 @@ export default function UsersPage() {
           </div>
         </div>
       </div>
-      
+
       {/* Bulk Actions */}
       {selectedUsers.length > 0 && (
         <div className="bg-[#15362B] rounded-2xl p-4 border border-[#4EFF9B]/20 shadow-lg backdrop-blur-sm">
@@ -226,7 +274,7 @@ export default function UsersPage() {
                 <option>Add Points</option>
                 <option>Delete Selected</option>
               </select>
-              <button 
+              <button
                 onClick={() => handleBulkAction("execute")}
                 className="px-4 py-2 bg-[#4EFF9B] text-[#0D221A] font-medium rounded-lg hover:bg-[#3ad485] transition-colors"
               >
@@ -236,7 +284,7 @@ export default function UsersPage() {
           </div>
         </div>
       )}
-      
+
       {/* Users Table */}
       <div className="bg-[#15362B] rounded-2xl p-6 border border-[#4EFF9B]/20 shadow-lg backdrop-blur-sm">
         <div className="overflow-x-auto">
@@ -295,11 +343,10 @@ export default function UsersPage() {
                       <div className="text-xs text-[#A0C4B5]">{u.phone || "N/A"}</div>
                     </td>
                     <td className="py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        u.role === "admin" ? "bg-purple-900/50 text-purple-400" :
-                        u.role === "creator" ? "bg-blue-900/50 text-blue-400" :
-                        "bg-gray-900/50 text-gray-400"
-                      }`}>
+                      <span className={`px-2 py-1 rounded-full text-xs ${u.role === "admin" ? "bg-purple-900/50 text-purple-400" :
+                          u.role === "creator" ? "bg-blue-900/50 text-blue-400" :
+                            "bg-gray-900/50 text-gray-400"
+                        }`}>
                         {u.role || "user"}
                       </span>
                     </td>
@@ -311,17 +358,16 @@ export default function UsersPage() {
                       {u.lastActivity ? new Date(u.lastActivity).toLocaleDateString() : "N/A"}
                     </td>
                     <td className="py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        u.status === "banned" ? "bg-red-900/50 text-red-400" :
-                        u.status === "inactive" ? "bg-yellow-900/50 text-yellow-400" :
-                        "bg-green-900/50 text-green-400"
-                      }`}>
+                      <span className={`px-2 py-1 rounded-full text-xs ${u.status === "banned" ? "bg-red-900/50 text-red-400" :
+                          u.status === "inactive" ? "bg-yellow-900/50 text-yellow-400" :
+                            "bg-green-900/50 text-green-400"
+                        }`}>
                         {u.status || "active"}
                       </span>
                     </td>
                     <td className="py-4">
                       <div className="flex space-x-2">
-                        <button 
+                        <button
                           onClick={() => handleViewUser(u)}
                           className="px-3 py-1 text-sm bg-[#112C23] hover:bg-[#4EFF9B]/20 rounded-lg transition-colors"
                         >
@@ -338,7 +384,7 @@ export default function UsersPage() {
             </tbody>
           </table>
         </div>
-        
+
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex justify-between items-center mt-6 pt-4 border-t border-[#112C23]">
@@ -357,11 +403,10 @@ export default function UsersPage() {
                 <button
                   key={i}
                   onClick={() => setCurrentPage(i + 1)}
-                  className={`px-3 py-1 rounded-lg ${
-                    currentPage === i + 1 
-                      ? 'bg-[#4EFF9B] text-[#0D221A]' 
+                  className={`px-3 py-1 rounded-lg ${currentPage === i + 1
+                      ? 'bg-[#4EFF9B] text-[#0D221A]'
                       : 'bg-[#112C23] hover:bg-[#4EFF9B]/20'
-                  }`}
+                    }`}
                 >
                   {i + 1}
                 </button>
@@ -377,14 +422,14 @@ export default function UsersPage() {
           </div>
         )}
       </div>
-      
+
       {/* User Detail Modal */}
       {showUserDetail && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-[#15362B] rounded-2xl p-6 border border-[#4EFF9B]/20 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold">User Details</h2>
-              <button 
+              <button
                 onClick={() => setShowUserDetail(null)}
                 className="text-[#A0C4B5] hover:text-[#E9F5EE]"
               >
@@ -393,7 +438,7 @@ export default function UsersPage() {
                 </svg>
               </button>
             </div>
-            
+
             {/* User Header */}
             <div className="flex items-center mb-6 p-4 bg-[#112C23] rounded-xl">
               <div className="w-16 h-16 rounded-full bg-[#4EFF9B] text-[#0D221A] flex items-center justify-center text-2xl font-bold mr-4">
@@ -403,78 +448,71 @@ export default function UsersPage() {
                 <h3 className="text-xl font-semibold">{showUserDetail.name}</h3>
                 <p className="text-[#A0C4B5]">{showUserDetail.email}</p>
                 <div className="flex space-x-2 mt-2">
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    showUserDetail.role === "admin" ? "bg-purple-900/50 text-purple-400" :
-                    showUserDetail.role === "creator" ? "bg-blue-900/50 text-blue-400" :
-                    "bg-gray-900/50 text-gray-400"
-                  }`}>
+                  <span className={`px-2 py-1 rounded-full text-xs ${showUserDetail.role === "admin" ? "bg-purple-900/50 text-purple-400" :
+                      showUserDetail.role === "creator" ? "bg-blue-900/50 text-blue-400" :
+                        "bg-gray-900/50 text-gray-400"
+                    }`}>
                     {showUserDetail.role || "user"}
                   </span>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    showUserDetail.status === "banned" ? "bg-red-900/50 text-red-400" :
-                    showUserDetail.status === "inactive" ? "bg-yellow-900/50 text-yellow-400" :
-                    "bg-green-900/50 text-green-400"
-                  }`}>
+                  <span className={`px-2 py-1 rounded-full text-xs ${showUserDetail.status === "banned" ? "bg-red-900/50 text-red-400" :
+                      showUserDetail.status === "inactive" ? "bg-yellow-900/50 text-yellow-400" :
+                        "bg-green-900/50 text-green-400"
+                    }`}>
                     {showUserDetail.status || "active"}
                   </span>
                 </div>
               </div>
             </div>
-            
+
             {/* Tabs */}
             <div className="flex border-b border-[#112C23] mb-6">
               <button
-                className={`px-4 py-2 font-medium ${
-                  activeTab === "profile"
+                className={`px-4 py-2 font-medium ${activeTab === "profile"
                     ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
                     : "text-[#A0C4B5] hover:text-[#E9F5EE]"
-                }`}
+                  }`}
                 onClick={() => setActiveTab("profile")}
               >
                 Profile
               </button>
               <button
-                className={`px-4 py-2 font-medium ${
-                  activeTab === "activity"
+                className={`px-4 py-2 font-medium ${activeTab === "activity"
                     ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
                     : "text-[#A0C4B5] hover:text-[#E9F5EE]"
-                }`}
+                  }`}
                 onClick={() => setActiveTab("activity")}
               >
                 Activity
               </button>
               <button
-                className={`px-4 py-2 font-medium ${
-                  activeTab === "transactions"
+                className={`px-4 py-2 font-medium ${activeTab === "transactions"
                     ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
                     : "text-[#A0C4B5] hover:text-[#E9F5EE]"
-                }`}
+                  }`}
                 onClick={() => setActiveTab("transactions")}
               >
                 Transactions
               </button>
               <button
-                className={`px-4 py-2 font-medium ${
-                  activeTab === "content"
+                className={`px-4 py-2 font-medium ${activeTab === "content"
                     ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
                     : "text-[#A0C4B5] hover:text-[#E9F5EE]"
-                }`}
+                  }`}
                 onClick={() => setActiveTab("content")}
               >
                 Content
               </button>
               <button
-                className={`px-4 py-2 font-medium ${
-                  activeTab === "actions"
+                className={`px-4 py-2 font-medium ${activeTab === "actions"
                     ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
                     : "text-[#A0C4B5] hover:text-[#E9F5EE]"
-                }`}
+                  }`}
                 onClick={() => setActiveTab("actions")}
               >
                 Actions
               </button>
             </div>
-            
+
             {/* Tab Content */}
             {activeTab === "profile" && (
               <div className="space-y-6">
@@ -496,7 +534,7 @@ export default function UsersPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="bg-[#112C23] rounded-xl p-4">
                     <h4 className="font-medium mb-4">Account Information</h4>
                     <div className="space-y-3">
@@ -519,7 +557,7 @@ export default function UsersPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-end space-x-3">
                   <button className="px-4 py-2 bg-[#112C23] hover:bg-[#4EFF9B]/20 rounded-lg transition-colors">
                     Edit Profile
@@ -530,7 +568,7 @@ export default function UsersPage() {
                 </div>
               </div>
             )}
-            
+
             {activeTab === "activity" && (
               <div className="space-y-4">
                 <div className="bg-[#112C23] rounded-xl p-4">
@@ -554,7 +592,7 @@ export default function UsersPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="bg-[#112C23] rounded-xl p-4">
                     <h4 className="font-medium mb-4">Usage Statistics</h4>
@@ -573,7 +611,7 @@ export default function UsersPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="bg-[#112C23] rounded-xl p-4">
                     <h4 className="font-medium mb-4">Device Information</h4>
                     <div className="space-y-3">
@@ -594,7 +632,7 @@ export default function UsersPage() {
                 </div>
               </div>
             )}
-            
+
             {activeTab === "transactions" && (
               <div className="space-y-4">
                 <div className="bg-[#112C23] rounded-xl p-4">
@@ -632,7 +670,7 @@ export default function UsersPage() {
                     </table>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-end">
                   <button className="px-4 py-2 bg-[#112C23] hover:bg-[#4EFF9B]/20 rounded-lg transition-colors">
                     Export Transaction History
@@ -640,7 +678,7 @@ export default function UsersPage() {
                 </div>
               </div>
             )}
-            
+
             {activeTab === "content" && (
               <div className="space-y-4">
                 <div className="bg-[#112C23] rounded-xl p-4">
@@ -660,14 +698,14 @@ export default function UsersPage() {
                     ))}
                   </div>
                 </div>
-                
+
                 <div className="bg-[#112C23] rounded-xl p-4">
                   <h4 className="font-medium mb-4">Flagged Content</h4>
                   <p className="text-[#A0C4B5]">No flagged content found</p>
                 </div>
               </div>
             )}
-            
+
             {activeTab === "actions" && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -695,7 +733,7 @@ export default function UsersPage() {
                       </button>
                     </div>
                   </div>
-                  
+
                   <div className="bg-[#112C23] rounded-xl p-4">
                     <h4 className="font-medium mb-4">Send Notification</h4>
                     <div className="space-y-4">
@@ -731,7 +769,7 @@ export default function UsersPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="bg-[#112C23] rounded-xl p-4">
                   <h4 className="font-medium mb-4">Account Actions</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
