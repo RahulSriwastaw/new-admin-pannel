@@ -1,6 +1,6 @@
 function normalizeBackendBase() {
   const source = (process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || '').trim();
-  if (!source) return 'http://localhost:8080';
+  if (!source) return ''; // Use relative path for Next.js rewrites
   try {
     const u = new URL(source);
     return `${u.protocol}//${u.host}`; // strip any path like /api/admin
@@ -11,7 +11,7 @@ function normalizeBackendBase() {
 }
 
 const BACKEND_BASE = normalizeBackendBase();
-const API_BASE = `${BACKEND_BASE}/api/v1`;
+const API_BASE = BACKEND_BASE ? `${BACKEND_BASE}/api/v1` : '/api/v1';
 
 async function request(path: string, init?: RequestInit) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : undefined;
