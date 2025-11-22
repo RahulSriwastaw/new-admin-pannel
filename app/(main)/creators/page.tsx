@@ -69,89 +69,18 @@ export default function CreatorsPage() {
   const [verificationStatus, setVerificationStatus] = useState("all")
 
   useEffect(() => {
-    // Mock data for demonstration
-    setPendingApplications([
-      {
-        id: 'APP-001',
-        name: 'John Creator',
-        email: 'john@example.com',
-        phone: '+91 9876543210',
-        username: 'john_creator',
-        appliedDate: '2023-06-15',
-        daysPending: 3,
-        socialLinks: {
-          facebook: 'https://facebook.com/john',
-          youtube: 'https://youtube.com/john',
-          instagram: 'https://instagram.com/john',
-          telegram: 'https://t.me/john',
-          whatsapp: '+91 9876543210'
-        },
-        demoTemplates: [
-          {
-            id: 'TEMP-001',
-            imageUrl: '',
-            prompt: 'A beautiful landscape with mountains and sunset',
-            qualityScore: 85,
-            originalityScore: 92,
-            contentCheck: 'safe'
-          },
-          {
-            id: 'TEMP-002',
-            imageUrl: '',
-            prompt: 'Portrait of a young woman with flowers',
-            qualityScore: 78,
-            originalityScore: 88,
-            contentCheck: 'safe'
-          }
-        ]
+    const fetchData = async () => {
+      try {
+        const data = await adminCreatorsApi.list();
+        setApprovedCreators(data.approved || []);
+        setPendingApplications(data.pending || []);
+        setRejectedApplications(data.rejected || []);
+      } catch (err: any) {
+        console.error('Failed to fetch creators:', err);
+        setError(err.message || 'Failed to load creators');
       }
-    ])
-
-    setApprovedCreators([
-      {
-        id: 'CRE-001',
-        name: 'Jane Artist',
-        username: 'jane_artist',
-        joinDate: '2023-05-20',
-        totalTemplates: 42,
-        pendingTemplates: 3,
-        approvedTemplates: 39,
-        totalUses: 1250,
-        totalEarnings: 25600,
-        followers: 1242,
-        averageRating: 4.7,
-        status: 'active',
-        isVerified: true,
-        avatar: ''
-      },
-      {
-        id: 'CRE-002',
-        name: 'Mike Designer',
-        username: 'mike_designer',
-        joinDate: '2023-06-01',
-        totalTemplates: 18,
-        pendingTemplates: 1,
-        approvedTemplates: 17,
-        totalUses: 420,
-        totalEarnings: 8400,
-        followers: 356,
-        averageRating: 4.3,
-        status: 'active',
-        isVerified: false,
-        avatar: ''
-      }
-    ])
-
-    setRejectedApplications([
-      {
-        id: 'REJ-001',
-        name: 'Sarah Smith',
-        email: 'sarah@example.com',
-        rejectionDate: '2023-06-10',
-        reason: 'Low quality templates',
-        reapplyDate: '2023-06-13'
-      }
-    ])
+    };
+    fetchData();
   }, [])
 
   const refresh = () => adminCreatorsApi.list().then(setApprovedCreators)
@@ -205,37 +134,34 @@ export default function CreatorsPage() {
           </button>
         </div>
       </div>
-      
+
       {error && <p className="text-red-400">{error}</p>}
-      
+
       {/* Tabs */}
       <div className="flex border-b border-[#112C23]">
         <button
-          className={`px-4 py-2 font-medium ${
-            activeTab === 'pending'
+          className={`px-4 py-2 font-medium ${activeTab === 'pending'
               ? 'text-[#4EFF9B] border-b-2 border-[#4EFF9B]'
               : 'text-[#A0C4B5] hover:text-[#E9F5EE]'
-          }`}
+            }`}
           onClick={() => setActiveTab('pending')}
         >
           Pending Applications ({pendingApplications.length})
         </button>
         <button
-          className={`px-4 py-2 font-medium ${
-            activeTab === 'approved'
+          className={`px-4 py-2 font-medium ${activeTab === 'approved'
               ? 'text-[#4EFF9B] border-b-2 border-[#4EFF9B]'
               : 'text-[#A0C4B5] hover:text-[#E9F5EE]'
-          }`}
+            }`}
           onClick={() => setActiveTab('approved')}
         >
           Approved Creators ({approvedCreators.length})
         </button>
         <button
-          className={`px-4 py-2 font-medium ${
-            activeTab === 'rejected'
+          className={`px-4 py-2 font-medium ${activeTab === 'rejected'
               ? 'text-[#4EFF9B] border-b-2 border-[#4EFF9B]'
               : 'text-[#A0C4B5] hover:text-[#E9F5EE]'
-          }`}
+            }`}
           onClick={() => setActiveTab('rejected')}
         >
           Rejected Applications ({rejectedApplications.length})
@@ -260,15 +186,14 @@ export default function CreatorsPage() {
                       <h3 className="font-semibold text-lg">{application.name}</h3>
                       <p className="text-[#A0C4B5] text-sm">{application.email}</p>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      application.daysPending > 3 
-                        ? 'bg-orange-900/50 text-orange-400' 
+                    <span className={`px-2 py-1 rounded-full text-xs ${application.daysPending > 3
+                        ? 'bg-orange-900/50 text-orange-400'
                         : 'bg-blue-900/50 text-blue-400'
-                    }`}>
+                      }`}>
                       {application.daysPending} days pending
                     </span>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div>
                       <p className="text-[#A0C4B5] text-sm">Username</p>
@@ -283,15 +208,15 @@ export default function CreatorsPage() {
                       <p>{application.phone}</p>
                     </div>
                   </div>
-                  
+
                   <div className="mb-6">
                     <h4 className="font-medium mb-3">Social Media Links</h4>
                     <div className="flex flex-wrap gap-2">
                       {Object.entries(application.socialLinks).map(([platform, link]) => (
-                        <a 
+                        <a
                           key={platform}
-                          href={link} 
-                          target="_blank" 
+                          href={link}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="px-3 py-1 bg-[#112C23] hover:bg-[#4EFF9B]/20 rounded-lg text-sm transition-colors"
                         >
@@ -300,7 +225,7 @@ export default function CreatorsPage() {
                       ))}
                     </div>
                   </div>
-                  
+
                   <div className="mb-6">
                     <h4 className="font-medium mb-3">Demo Templates</h4>
                     <div className="space-y-4">
@@ -309,11 +234,10 @@ export default function CreatorsPage() {
                           <div className="flex justify-between items-start mb-2">
                             <h5 className="font-medium">Template {index + 1}</h5>
                             <div className="flex space-x-2">
-                              <span className={`px-2 py-1 rounded-full text-xs ${
-                                template.contentCheck === 'safe' 
-                                  ? 'bg-green-900/50 text-green-400' 
+                              <span className={`px-2 py-1 rounded-full text-xs ${template.contentCheck === 'safe'
+                                  ? 'bg-green-900/50 text-green-400'
                                   : 'bg-red-900/50 text-red-400'
-                              }`}>
+                                }`}>
                                 {template.contentCheck}
                               </span>
                             </div>
@@ -333,7 +257,7 @@ export default function CreatorsPage() {
                       ))}
                     </div>
                   </div>
-                  
+
                   <div className="flex space-x-3">
                     <button
                       onClick={() => handleApproveApplication(application)}
@@ -371,7 +295,7 @@ export default function CreatorsPage() {
                   className="w-full px-4 py-2 bg-[#112C23] border border-[#4EFF9B]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4EFF9B]/50"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-[#A0C4B5] mb-2">Sort By</label>
                 <select
@@ -385,7 +309,7 @@ export default function CreatorsPage() {
                   <option value="averageRating">Rating</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-[#A0C4B5] mb-2">Verification</label>
                 <select
@@ -400,7 +324,7 @@ export default function CreatorsPage() {
               </div>
             </div>
           </div>
-          
+
           {approvedCreators.length === 0 ? (
             <div className="bg-[#15362B] rounded-2xl p-12 border border-[#4EFF9B]/20 shadow-lg backdrop-blur-sm text-center">
               <div className="text-5xl mb-4">👤</div>
@@ -427,16 +351,15 @@ export default function CreatorsPage() {
                           Verified
                         </span>
                       )}
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        creator.status === 'active' 
-                          ? 'bg-green-900/50 text-green-400' 
+                      <span className={`px-2 py-1 rounded-full text-xs ${creator.status === 'active'
+                          ? 'bg-green-900/50 text-green-400'
                           : 'bg-gray-900/50 text-gray-400'
-                      }`}>
+                        }`}>
                         {creator.status}
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div>
                       <p className="text-[#A0C4B5] text-sm">Join Date</p>
@@ -455,7 +378,7 @@ export default function CreatorsPage() {
                       <p>{creator.averageRating}/5.0</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex justify-between items-center mb-6">
                     <div>
                       <p className="text-[#A0C4B5] text-sm">Total Earnings</p>
@@ -466,7 +389,7 @@ export default function CreatorsPage() {
                       <p>{creator.totalUses.toLocaleString()}</p>
                     </div>
                   </div>
-                  
+
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleViewCreator(creator)}
@@ -557,7 +480,7 @@ export default function CreatorsPage() {
           <div className="bg-[#15362B] rounded-2xl p-6 border border-[#4EFF9B]/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold">Approve Creator Application</h2>
-              <button 
+              <button
                 onClick={() => setSelectedApplication(null)}
                 className="text-[#A0C4B5] hover:text-[#E9F5EE]"
               >
@@ -566,7 +489,7 @@ export default function CreatorsPage() {
                 </svg>
               </button>
             </div>
-            
+
             <div className="space-y-6">
               <div className="bg-[#112C23] rounded-xl p-4">
                 <h3 className="font-medium mb-3">Applicant Information</h3>
@@ -589,7 +512,7 @@ export default function CreatorsPage() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-[#112C23] rounded-xl p-4">
                 <h3 className="font-medium mb-3">Review Summary</h3>
                 <div className="grid grid-cols-2 gap-4">
@@ -607,7 +530,7 @@ export default function CreatorsPage() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-[#112C23] rounded-xl p-4">
                 <h3 className="font-medium mb-3">Approval Actions</h3>
                 <div className="space-y-4">
@@ -619,7 +542,7 @@ export default function CreatorsPage() {
                       rows={3}
                     ></textarea>
                   </div>
-                  
+
                   <div className="flex space-x-3 pt-4">
                     <button
                       onClick={() => setSelectedApplication(null)}
@@ -646,7 +569,7 @@ export default function CreatorsPage() {
           <div className="bg-[#15362B] rounded-2xl p-6 border border-[#4EFF9B]/20 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold">Creator Profile</h2>
-              <button 
+              <button
                 onClick={() => setShowCreatorDetail(false)}
                 className="text-[#A0C4B5] hover:text-[#E9F5EE]"
               >
@@ -655,7 +578,7 @@ export default function CreatorsPage() {
                 </svg>
               </button>
             </div>
-            
+
             {/* Creator Header */}
             <div className="flex items-center mb-6 p-4 bg-[#112C23] rounded-xl">
               <div className="w-16 h-16 rounded-full bg-[#4EFF9B] text-[#0D221A] flex items-center justify-center text-2xl font-bold mr-4">
@@ -670,71 +593,65 @@ export default function CreatorsPage() {
                       Verified
                     </span>
                   )}
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    selectedCreator.status === 'active' 
-                      ? 'bg-green-900/50 text-green-400' 
+                  <span className={`px-2 py-1 rounded-full text-xs ${selectedCreator.status === 'active'
+                      ? 'bg-green-900/50 text-green-400'
                       : 'bg-gray-900/50 text-gray-400'
-                  }`}>
+                    }`}>
                     {selectedCreator.status}
                   </span>
                 </div>
               </div>
             </div>
-            
+
             {/* Tabs */}
             <div className="flex border-b border-[#112C23] mb-6">
               <button
-                className={`px-4 py-2 font-medium ${
-                  creatorDetailTab === 'profile'
+                className={`px-4 py-2 font-medium ${creatorDetailTab === 'profile'
                     ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
                     : "text-[#A0C4B5] hover:text-[#E9F5EE]"
-                }`}
+                  }`}
                 onClick={() => setCreatorDetailTab('profile')}
               >
                 Profile
               </button>
               <button
-                className={`px-4 py-2 font-medium ${
-                  creatorDetailTab === 'templates'
+                className={`px-4 py-2 font-medium ${creatorDetailTab === 'templates'
                     ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
                     : "text-[#A0C4B5] hover:text-[#E9F5EE]"
-                }`}
+                  }`}
                 onClick={() => setCreatorDetailTab('templates')}
               >
                 Templates
               </button>
               <button
-                className={`px-4 py-2 font-medium ${
-                  creatorDetailTab === 'earnings'
+                className={`px-4 py-2 font-medium ${creatorDetailTab === 'earnings'
                     ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
                     : "text-[#A0C4B5] hover:text-[#E9F5EE]"
-                }`}
+                  }`}
                 onClick={() => setCreatorDetailTab('earnings')}
               >
                 Earnings
               </button>
               <button
-                className={`px-4 py-2 font-medium ${
-                  creatorDetailTab === 'performance'
+                className={`px-4 py-2 font-medium ${creatorDetailTab === 'performance'
                     ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
                     : "text-[#A0C4B5] hover:text-[#E9F5EE]"
-                }`}
+                  }`}
                 onClick={() => setCreatorDetailTab('performance')}
               >
                 Performance
               </button>
               <button
-                className={`px-4 py-2 font-medium ${
-                  creatorDetailTab === 'actions'
+                className={`px-4 py-2 font-medium ${creatorDetailTab === 'actions'
                     ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
                     : "text-[#A0C4B5] hover:text-[#E9F5EE]"
-                }`}
+                  }`}
                 onClick={() => setCreatorDetailTab('actions')}
               >
                 Actions
               </button>
             </div>
-            
+
             {/* Tab Content */}
             {creatorDetailTab === 'profile' && (
               <div className="space-y-6">
@@ -756,7 +673,7 @@ export default function CreatorsPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="bg-[#112C23] rounded-xl p-4">
                     <h4 className="font-medium mb-4">Social Media</h4>
                     <div className="space-y-3">
@@ -775,17 +692,17 @@ export default function CreatorsPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="bg-[#112C23] rounded-xl p-4">
                   <h4 className="font-medium mb-4">Bio</h4>
                   <p className="text-[#A0C4B5]">
-                    Professional digital artist with 5+ years of experience in AI-generated art. 
+                    Professional digital artist with 5+ years of experience in AI-generated art.
                     Specializing in portrait and landscape compositions with a focus on realism and detail.
                   </p>
                 </div>
               </div>
             )}
-            
+
             {creatorDetailTab === 'templates' && (
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
@@ -802,7 +719,7 @@ export default function CreatorsPage() {
                     </button>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {[1, 2, 3, 4, 5, 6].map(i => (
                     <div key={i} className="bg-[#112C23] rounded-xl p-4">
@@ -811,11 +728,10 @@ export default function CreatorsPage() {
                       </div>
                       <h5 className="font-medium mb-1">Beautiful Landscape {i}</h5>
                       <div className="flex justify-between items-center">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          i % 3 === 0 ? 'bg-yellow-900/50 text-yellow-400' :
-                          i % 2 === 0 ? 'bg-green-900/50 text-green-400' :
-                          'bg-gray-900/50 text-gray-400'
-                        }`}>
+                        <span className={`px-2 py-1 rounded-full text-xs ${i % 3 === 0 ? 'bg-yellow-900/50 text-yellow-400' :
+                            i % 2 === 0 ? 'bg-green-900/50 text-green-400' :
+                              'bg-gray-900/50 text-gray-400'
+                          }`}>
                           {i % 3 === 0 ? 'Pending' : i % 2 === 0 ? 'Approved' : 'Rejected'}
                         </span>
                         <div className="flex space-x-1">
@@ -832,7 +748,7 @@ export default function CreatorsPage() {
                 </div>
               </div>
             )}
-            
+
             {creatorDetailTab === 'earnings' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -849,13 +765,13 @@ export default function CreatorsPage() {
                     <p className="text-2xl font-bold">₹8,400</p>
                   </div>
                 </div>
-                
+
                 <div className="bg-[#112C23] rounded-xl p-4">
                   <h4 className="font-medium mb-4">Earnings Graph</h4>
                   <div className="h-48 flex items-end space-x-2">
                     {[60, 80, 45, 90, 70, 85, 65].map((value, index) => (
                       <div key={index} className="flex flex-col items-center flex-1">
-                        <div 
+                        <div
                           className="w-full bg-gradient-to-t from-[#4EFF9B]/70 to-[#4EFF9B] rounded-t-lg"
                           style={{ height: `${value}%` }}
                         ></div>
@@ -864,7 +780,7 @@ export default function CreatorsPage() {
                     ))}
                   </div>
                 </div>
-                
+
                 <div className="bg-[#112C23] rounded-xl p-4">
                   <div className="flex justify-between items-center mb-4">
                     <h4 className="font-medium">Withdrawal History</h4>
@@ -922,7 +838,7 @@ export default function CreatorsPage() {
                 </div>
               </div>
             )}
-            
+
             {creatorDetailTab === 'performance' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -939,13 +855,13 @@ export default function CreatorsPage() {
                     <p className="text-2xl font-bold">{selectedCreator.averageRating}/5.0</p>
                   </div>
                 </div>
-                
+
                 <div className="bg-[#112C23] rounded-xl p-4">
                   <h4 className="font-medium mb-4">Follower Growth</h4>
                   <div className="h-48 flex items-end space-x-2">
                     {[30, 45, 60, 75, 90, 110, 125].map((value, index) => (
                       <div key={index} className="flex flex-col items-center flex-1">
-                        <div 
+                        <div
                           className="w-full bg-gradient-to-t from-[#4EFF9B]/70 to-[#4EFF9B] rounded-t-lg"
                           style={{ height: `${(value / 150) * 100}%` }}
                         ></div>
@@ -954,7 +870,7 @@ export default function CreatorsPage() {
                     ))}
                   </div>
                 </div>
-                
+
                 <div className="bg-[#112C23] rounded-xl p-4">
                   <h4 className="font-medium mb-4">Top Performing Templates</h4>
                   <div className="space-y-3">
@@ -974,7 +890,7 @@ export default function CreatorsPage() {
                 </div>
               </div>
             )}
-            
+
             {creatorDetailTab === 'actions' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1002,7 +918,7 @@ export default function CreatorsPage() {
                       </button>
                     </div>
                   </div>
-                  
+
                   <div className="bg-[#112C23] rounded-xl p-4">
                     <h4 className="font-medium mb-4">Creator Actions</h4>
                     <div className="space-y-3">

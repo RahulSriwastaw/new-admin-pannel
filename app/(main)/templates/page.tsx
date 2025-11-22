@@ -65,179 +65,41 @@ export default function TemplatesPage() {
   const [showTemplateDetail, setShowTemplateDetail] = useState(false)
 
   useEffect(() => {
-    // Mock data for demonstration
-    const mockTemplates: Template[] = [
-      {
-        id: 'TEMP-001',
-        title: 'Beautiful Landscape',
-        description: 'A stunning landscape with mountains and sunset',
-        creator: {
-          id: 'CRE-001',
-          name: 'Jane Artist',
-          username: 'jane_artist'
-        },
-        category: 'Nature',
-        tags: ['landscape', 'mountains', 'sunset'],
-        status: 'pending',
-        pricing: {
-          type: 'free'
-        },
-        thumbnail: '',
-        submissionDate: '2023-06-15',
-        autoChecks: {
-          contentSafety: {
-            nsfwScore: 'safe',
-            violenceScore: 0.1,
-            hateSpeechScore: 0.05,
-            overall: 'pass'
-          },
-          promptQuality: {
-            clarityScore: 85,
-            effectiveness: 90,
-            grammar: 95
-          },
-          imageQuality: {
-            resolution: 92,
-            sharpness: 88,
-            quality: 90
-          },
-          originality: {
-            reverseSearch: false,
-            plagiarism: false,
-            stockPhoto: false
-          }
-        },
-        performance: {
-          totalUses: 120,
-          revenue: 0,
-          averageRating: 4.7,
-          saves: 42
-        }
-      },
-      {
-        id: 'TEMP-002',
-        title: 'Portrait Master',
-        description: 'Professional portrait with detailed facial features',
-        creator: {
-          id: 'CRE-002',
-          name: 'Mike Designer',
-          username: 'mike_designer'
-        },
-        category: 'Portraits',
-        tags: ['portrait', 'face', 'professional'],
-        status: 'approved',
-        pricing: {
-          type: 'premium',
-          price: 50
-        },
-        thumbnail: '',
-        submissionDate: '2023-06-10',
-        autoChecks: {
-          contentSafety: {
-            nsfwScore: 'safe',
-            violenceScore: 0.05,
-            hateSpeechScore: 0.02,
-            overall: 'pass'
-          },
-          promptQuality: {
-            clarityScore: 92,
-            effectiveness: 88,
-            grammar: 97
-          },
-          imageQuality: {
-            resolution: 95,
-            sharpness: 90,
-            quality: 93
-          },
-          originality: {
-            reverseSearch: false,
-            plagiarism: false,
-            stockPhoto: false
-          }
-        },
-        performance: {
-          totalUses: 240,
-          revenue: 12000,
-          averageRating: 4.8,
-          saves: 87
-        }
-      },
-      {
-        id: 'TEMP-003',
-        title: 'Urban Architecture',
-        description: 'Modern city skyline with detailed buildings',
-        creator: {
-          id: 'CRE-001',
-          name: 'Jane Artist',
-          username: 'jane_artist'
-        },
-        category: 'Architecture',
-        tags: ['city', 'buildings', 'urban'],
-        status: 'featured',
-        pricing: {
-          type: 'premium',
-          price: 75
-        },
-        thumbnail: '',
-        submissionDate: '2023-06-05',
-        autoChecks: {
-          contentSafety: {
-            nsfwScore: 'safe',
-            violenceScore: 0.15,
-            hateSpeechScore: 0.08,
-            overall: 'pass'
-          },
-          promptQuality: {
-            clarityScore: 88,
-            effectiveness: 85,
-            grammar: 92
-          },
-          imageQuality: {
-            resolution: 89,
-            sharpness: 87,
-            quality: 88
-          },
-          originality: {
-            reverseSearch: false,
-            plagiarism: false,
-            stockPhoto: true
-          }
-        },
-        performance: {
-          totalUses: 180,
-          revenue: 13500,
-          averageRating: 4.6,
-          saves: 65
-        }
+    const fetchData = async () => {
+      try {
+        const data = await adminTemplatesApi.list();
+        setTemplates(data);
+      } catch (err: any) {
+        console.error('Failed to fetch templates:', err);
+        setError(err.message || 'Failed to load templates');
       }
-    ]
-    
-    setTemplates(mockTemplates)
+    };
+    fetchData();
   }, [])
 
   useEffect(() => {
     let result = [...templates]
-    
+
     // Filter by active tab
     if (activeTab !== 'all') {
       result = result.filter(template => template.status === activeTab)
     }
-    
+
     // Apply search filter
     if (searchTerm) {
-      result = result.filter(template => 
+      result = result.filter(template =>
         template.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         template.creator.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
       )
     }
-    
+
     // Apply category filter
     if (categoryFilter !== "all") {
       result = result.filter(template => template.category === categoryFilter)
     }
-    
+
     // Apply sorting
     result.sort((a, b) => {
       switch (sortBy) {
@@ -251,18 +113,18 @@ export default function TemplatesPage() {
           return 0
       }
     })
-    
+
     setFilteredTemplates(result)
   }, [templates, activeTab, searchTerm, categoryFilter, sortBy])
 
-  const refresh = async () => { 
-    setRefreshing(true); 
-    try { 
-      const t = await adminTemplatesApi.list(); 
-      setTemplates(t) 
-    } finally { 
-      setRefreshing(false) 
-    } 
+  const refresh = async () => {
+    setRefreshing(true);
+    try {
+      const t = await adminTemplatesApi.list();
+      setTemplates(t)
+    } finally {
+      setRefreshing(false)
+    }
   }
 
   const act = async (id: string, fn: () => Promise<any>) => {
@@ -332,73 +194,67 @@ export default function TemplatesPage() {
           </button>
         </div>
       </div>
-      
+
       {error && <p className="text-red-400">{error}</p>}
-      
+
       {/* Tabs */}
       <div className="flex border-b border-[#112C23]">
         <button
-          className={`px-4 py-2 font-medium ${
-            activeTab === 'all'
+          className={`px-4 py-2 font-medium ${activeTab === 'all'
               ? 'text-[#4EFF9B] border-b-2 border-[#4EFF9B]'
               : 'text-[#A0C4B5] hover:text-[#E9F5EE]'
-          }`}
+            }`}
           onClick={() => setActiveTab('all')}
         >
           All Templates
         </button>
         <button
-          className={`px-4 py-2 font-medium ${
-            activeTab === 'pending'
+          className={`px-4 py-2 font-medium ${activeTab === 'pending'
               ? 'text-[#4EFF9B] border-b-2 border-[#4EFF9B]'
               : 'text-[#A0C4B5] hover:text-[#E9F5EE]'
-          }`}
+            }`}
           onClick={() => setActiveTab('pending')}
         >
           Pending Review <span className="ml-1 bg-yellow-900/50 text-yellow-400 rounded-full px-2 py-0.5 text-xs">5</span>
         </button>
         <button
-          className={`px-4 py-2 font-medium ${
-            activeTab === 'approved'
+          className={`px-4 py-2 font-medium ${activeTab === 'approved'
               ? 'text-[#4EFF9B] border-b-2 border-[#4EFF9B]'
               : 'text-[#A0C4B5] hover:text-[#E9F5EE]'
-          }`}
+            }`}
           onClick={() => setActiveTab('approved')}
         >
           Approved
         </button>
         <button
-          className={`px-4 py-2 font-medium ${
-            activeTab === 'rejected'
+          className={`px-4 py-2 font-medium ${activeTab === 'rejected'
               ? 'text-[#4EFF9B] border-b-2 border-[#4EFF9B]'
               : 'text-[#A0C4B5] hover:text-[#E9F5EE]'
-          }`}
+            }`}
           onClick={() => setActiveTab('rejected')}
         >
           Rejected
         </button>
         <button
-          className={`px-4 py-2 font-medium ${
-            activeTab === 'featured'
+          className={`px-4 py-2 font-medium ${activeTab === 'featured'
               ? 'text-[#4EFF9B] border-b-2 border-[#4EFF9B]'
               : 'text-[#A0C4B5] hover:text-[#E9F5EE]'
-          }`}
+            }`}
           onClick={() => setActiveTab('featured')}
         >
           Featured
         </button>
         <button
-          className={`px-4 py-2 font-medium ${
-            activeTab === 'trending'
+          className={`px-4 py-2 font-medium ${activeTab === 'trending'
               ? 'text-[#4EFF9B] border-b-2 border-[#4EFF9B]'
               : 'text-[#A0C4B5] hover:text-[#E9F5EE]'
-          }`}
+            }`}
           onClick={() => setActiveTab('trending')}
         >
           Trending
         </button>
       </div>
-      
+
       {/* Filters */}
       <div className="bg-[#15362B] rounded-2xl p-6 border border-[#4EFF9B]/20 shadow-lg backdrop-blur-sm">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -412,7 +268,7 @@ export default function TemplatesPage() {
               className="w-full px-4 py-2 bg-[#112C23] border border-[#4EFF9B]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4EFF9B]/50"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-[#A0C4B5] mb-2">Category</label>
             <select
@@ -428,7 +284,7 @@ export default function TemplatesPage() {
               <option value="Animals">Animals</option>
             </select>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-[#A0C4B5] mb-2">Sort By</label>
             <select
@@ -441,9 +297,9 @@ export default function TemplatesPage() {
               <option value="category">Category</option>
             </select>
           </div>
-          
+
           <div className="flex items-end">
-            <button 
+            <button
               onClick={refresh}
               disabled={refreshing}
               className="w-full px-4 py-2 bg-[#112C23] hover:bg-[#4EFF9B]/20 rounded-lg transition-colors disabled:opacity-50"
@@ -453,7 +309,7 @@ export default function TemplatesPage() {
           </div>
         </div>
       </div>
-      
+
       {/* Templates Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredTemplates.length === 0 ? (
@@ -489,26 +345,25 @@ export default function TemplatesPage() {
                   </div>
                 )}
               </div>
-              
+
               <h3 className="font-semibold mb-1">{template.title}</h3>
               <p className="text-sm text-[#A0C4B5] mb-2 line-clamp-2">{template.description}</p>
-              
+
               <div className="flex justify-between items-center mb-3">
                 <div className="text-sm">
                   <span className="text-[#A0C4B5]">by </span>
                   <span className="font-medium">{template.creator.name}</span>
                 </div>
                 <div className="text-sm">
-                  <span className={`px-2 py-1 rounded-full ${
-                    template.pricing.type === 'free' 
-                      ? 'bg-green-900/50 text-green-400' 
+                  <span className={`px-2 py-1 rounded-full ${template.pricing.type === 'free'
+                      ? 'bg-green-900/50 text-green-400'
                       : 'bg-purple-900/50 text-purple-400'
-                  }`}>
+                    }`}>
                     {template.pricing.type === 'free' ? 'Free' : `₹${template.pricing.price}`}
                   </span>
                 </div>
               </div>
-              
+
               <div className="flex flex-wrap gap-1 mb-4">
                 {template.tags.slice(0, 3).map((tag, index) => (
                   <span key={index} className="px-2 py-1 bg-[#112C23] text-[#A0C4B5] rounded-full text-xs">
@@ -521,7 +376,7 @@ export default function TemplatesPage() {
                   </span>
                 )}
               </div>
-              
+
               <div className="grid grid-cols-3 gap-2 text-center text-sm mb-4">
                 <div>
                   <p className="text-[#A0C4B5]">Uses</p>
@@ -536,7 +391,7 @@ export default function TemplatesPage() {
                   <p>{template.performance.saves}</p>
                 </div>
               </div>
-              
+
               <div className="flex space-x-2">
                 <button
                   onClick={() => handleViewTemplate(template)}
@@ -590,7 +445,7 @@ export default function TemplatesPage() {
           <div className="bg-[#15362B] rounded-2xl p-6 border border-[#4EFF9B]/20 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold">Template Review</h2>
-              <button 
+              <button
                 onClick={() => setShowTemplateDetail(false)}
                 className="text-[#A0C4B5] hover:text-[#E9F5EE]"
               >
@@ -599,7 +454,7 @@ export default function TemplatesPage() {
                 </svg>
               </button>
             </div>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Visual Section */}
               <div className="lg:col-span-2 space-y-6">
@@ -609,7 +464,7 @@ export default function TemplatesPage() {
                     <span className="text-[#A0C4B5]">Template Image Preview</span>
                   </div>
                 </div>
-                
+
                 <div className="bg-[#112C23] rounded-xl p-4">
                   <h3 className="font-medium mb-4">Additional Examples</h3>
                   <div className="grid grid-cols-3 gap-4">
@@ -621,7 +476,7 @@ export default function TemplatesPage() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Template Information */}
               <div className="space-y-6">
                 <div className="bg-[#112C23] rounded-xl p-4">
@@ -652,18 +507,17 @@ export default function TemplatesPage() {
                     <div>
                       <p className="text-[#A0C4B5] text-sm">Pricing</p>
                       <p>
-                        <span className={`px-2 py-1 rounded-full ${
-                          selectedTemplate.pricing.type === 'free' 
-                            ? 'bg-green-900/50 text-green-400' 
+                        <span className={`px-2 py-1 rounded-full ${selectedTemplate.pricing.type === 'free'
+                            ? 'bg-green-900/50 text-green-400'
                             : 'bg-purple-900/50 text-purple-400'
-                        }`}>
+                          }`}>
                           {selectedTemplate.pricing.type === 'free' ? 'Free' : `₹${selectedTemplate.pricing.price}`}
                         </span>
                       </p>
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Creator Information */}
                 <div className="bg-[#112C23] rounded-xl p-4">
                   <h3 className="font-medium mb-4">Creator</h3>
@@ -691,7 +545,7 @@ export default function TemplatesPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Auto Quality Checks */}
                 <div className="bg-[#112C23] rounded-xl p-4">
                   <h3 className="font-medium mb-4">Auto Quality Checks</h3>
@@ -716,19 +570,18 @@ export default function TemplatesPage() {
                         </div>
                         <div className="flex justify-between">
                           <span>Overall Safety</span>
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            selectedTemplate.autoChecks.contentSafety.overall === 'pass' 
-                              ? 'bg-green-900/50 text-green-400' 
-                              : selectedTemplate.autoChecks.contentSafety.overall === 'review' 
-                                ? 'bg-yellow-900/50 text-yellow-400' 
+                          <span className={`px-2 py-1 rounded-full text-xs ${selectedTemplate.autoChecks.contentSafety.overall === 'pass'
+                              ? 'bg-green-900/50 text-green-400'
+                              : selectedTemplate.autoChecks.contentSafety.overall === 'review'
+                                ? 'bg-yellow-900/50 text-yellow-400'
                                 : 'bg-red-900/50 text-red-400'
-                          }`}>
+                            }`}>
                             {selectedTemplate.autoChecks.contentSafety.overall}
                           </span>
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Prompt Quality */}
                     <div>
                       <p className="text-[#A0C4B5] text-sm mb-2">Prompt Quality</p>
@@ -747,7 +600,7 @@ export default function TemplatesPage() {
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Image Quality */}
                     <div>
                       <p className="text-[#A0C4B5] text-sm mb-2">Image Quality</p>
@@ -766,7 +619,7 @@ export default function TemplatesPage() {
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Originality */}
                     <div>
                       <p className="text-[#A0C4B5] text-sm mb-2">Originality</p>
@@ -789,7 +642,7 @@ export default function TemplatesPage() {
                 </div>
               </div>
             </div>
-            
+
             {/* Review Actions */}
             <div className="mt-6 pt-6 border-t border-[#112C23]">
               <div className="flex justify-end space-x-3">
