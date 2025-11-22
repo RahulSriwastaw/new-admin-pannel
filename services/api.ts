@@ -11,7 +11,7 @@ function normalizeBackendBase() {
 }
 
 const BACKEND_BASE = normalizeBackendBase();
-const API_BASE = `${BACKEND_BASE}/api`;
+const API_BASE = `${BACKEND_BASE}/api/v1`;
 
 async function request(path: string, init?: RequestInit) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : undefined;
@@ -93,13 +93,13 @@ export const adminSupportApi = {
     return request(`/admin/support${query}`);
   },
   get: (id: string) => request(`/admin/support/${id}`),
-  reply: (id: string, message: string) => request(`/admin/support/${id}/reply`, { 
-    method: 'POST', 
-    body: JSON.stringify({ message }) 
+  reply: (id: string, message: string) => request(`/admin/support/${id}/reply`, {
+    method: 'POST',
+    body: JSON.stringify({ message })
   }),
   close: (id: string) => request(`/admin/support/${id}/close`, { method: 'POST' }),
-  assign: (id: string, adminId: string) => request(`/admin/support/${id}/assign`, { 
-    method: 'POST', 
-    body: JSON.stringify({ adminId }) 
+  assign: (id: string, adminId: string) => request(`/admin/support/${id}/assign`, {
+    method: 'POST',
+    body: JSON.stringify({ adminId })
   }),
 }
