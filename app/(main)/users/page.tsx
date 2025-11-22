@@ -33,40 +33,7 @@ export default function UsersPage() {
   const [activeTab, setActiveTab] = useState("profile")
   const [isLoading, setIsLoading] = useState(true)
 
-  // Mock data fallback
-  const mockUsers: User[] = [
-    {
-      _id: "1",
-      name: "John Doe",
-      email: "john@example.com",
-      phone: "+1234567890",
-      role: "user",
-      points: 1250,
-      registrationDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      lastActivity: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      status: "active",
-    },
-    {
-      _id: "2",
-      name: "Jane Smith",
-      email: "jane@example.com",
-      role: "creator",
-      points: 3500,
-      registrationDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-      lastActivity: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      status: "active",
-    },
-    {
-      _id: "3",
-      name: "Mike Johnson",
-      email: "mike@example.com",
-      role: "user",
-      points: 500,
-      registrationDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-      lastActivity: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      status: "suspended",
-    },
-  ]
+
 
   useEffect(() => {
     setIsLoading(true)
@@ -570,137 +537,24 @@ export default function UsersPage() {
 
             {activeTab === "activity" && (
               <div className="space-y-4">
-                <div className="bg-[#112C23] rounded-xl p-4">
-                  <h4 className="font-medium mb-4">Recent Activity</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span>Image generation completed</span>
-                      <span className="text-[#A0C4B5]">2 hours ago</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Points purchased: 300 points</span>
-                      <span className="text-[#A0C4B5]">1 day ago</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Logged in from new device</span>
-                      <span className="text-[#A0C4B5]">2 days ago</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Template used: Landscape Portrait</span>
-                      <span className="text-[#A0C4B5]">3 days ago</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-[#112C23] rounded-xl p-4">
-                    <h4 className="font-medium mb-4">Usage Statistics</h4>
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-[#A0C4B5] text-sm">Total Generations</p>
-                        <p>142</p>
-                      </div>
-                      <div>
-                        <p className="text-[#A0C4B5] text-sm">Most Used Template</p>
-                        <p>Portrait Pro</p>
-                      </div>
-                      <div>
-                        <p className="text-[#A0C4B5] text-sm">Referral Count</p>
-                        <p>3 users</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-[#112C23] rounded-xl p-4">
-                    <h4 className="font-medium mb-4">Device Information</h4>
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-[#A0C4B5] text-sm">Last Device</p>
-                        <p>iPhone 14 Pro</p>
-                      </div>
-                      <div>
-                        <p className="text-[#A0C4B5] text-sm">Last IP</p>
-                        <p>192.168.1.100</p>
-                      </div>
-                      <div>
-                        <p className="text-[#A0C4B5] text-sm">Location</p>
-                        <p>New Delhi, India</p>
-                      </div>
-                    </div>
-                  </div>
+                <div className="bg-[#112C23] rounded-xl p-8 text-center">
+                  <p className="text-[#A0C4B5]">No recent activity found for this user.</p>
                 </div>
               </div>
             )}
 
             {activeTab === "transactions" && (
               <div className="space-y-4">
-                <div className="bg-[#112C23] rounded-xl p-4">
-                  <h4 className="font-medium mb-4">Points Transaction History</h4>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-left text-[#A0C4B5]">
-                          <th className="pb-2">Date</th>
-                          <th className="pb-2">Type</th>
-                          <th className="pb-2">Amount</th>
-                          <th className="pb-2">Balance</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="border-t border-[#112C23]">
-                          <td className="py-2">2023-06-15</td>
-                          <td className="py-2">Purchase</td>
-                          <td className="py-2 text-green-400">+300</td>
-                          <td className="py-2">1,250</td>
-                        </tr>
-                        <tr className="border-t border-[#112C23]">
-                          <td className="py-2">2023-06-14</td>
-                          <td className="py-2">Generation</td>
-                          <td className="py-2 text-red-400">-20</td>
-                          <td className="py-2">950</td>
-                        </tr>
-                        <tr className="border-t border-[#112C23]">
-                          <td className="py-2">2023-06-12</td>
-                          <td className="py-2">Referral Bonus</td>
-                          <td className="py-2 text-green-400">+25</td>
-                          <td className="py-2">970</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <button className="px-4 py-2 bg-[#112C23] hover:bg-[#4EFF9B]/20 rounded-lg transition-colors">
-                    Export Transaction History
-                  </button>
+                <div className="bg-[#112C23] rounded-xl p-8 text-center">
+                  <p className="text-[#A0C4B5]">No transaction history available.</p>
                 </div>
               </div>
             )}
 
             {activeTab === "content" && (
               <div className="space-y-4">
-                <div className="bg-[#112C23] rounded-xl p-4">
-                  <h4 className="font-medium mb-4">Generated Content</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[1, 2, 3, 4].map(i => (
-                      <div key={i} className="relative group">
-                        <div className="bg-[#112C23] border border-[#4EFF9B]/20 rounded-lg h-32 flex items-center justify-center">
-                          <span className="text-[#A0C4B5]">Image {i}</span>
-                        </div>
-                        <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="px-3 py-1 bg-[#4EFF9B] text-[#0D221A] text-sm rounded">
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-[#112C23] rounded-xl p-4">
-                  <h4 className="font-medium mb-4">Flagged Content</h4>
-                  <p className="text-[#A0C4B5]">No flagged content found</p>
+                <div className="bg-[#112C23] rounded-xl p-8 text-center">
+                  <p className="text-[#A0C4B5]">No generated content found.</p>
                 </div>
               </div>
             )}
