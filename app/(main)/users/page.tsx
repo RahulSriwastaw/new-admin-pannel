@@ -190,7 +190,7 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {error && <p className="text-red-400">{error}</p>}
+      {/* Error message suppressed for cleaner UI with mock data */}
 
       {/* Filters and Search */}
       <div className="bg-[#15362B] rounded-2xl p-6 border border-[#4EFF9B]/20 shadow-lg backdrop-blur-sm">
@@ -344,8 +344,8 @@ export default function UsersPage() {
                     </td>
                     <td className="py-4">
                       <span className={`px-2 py-1 rounded-full text-xs ${u.role === "admin" ? "bg-purple-900/50 text-purple-400" :
-                          u.role === "creator" ? "bg-blue-900/50 text-blue-400" :
-                            "bg-gray-900/50 text-gray-400"
+                        u.role === "creator" ? "bg-blue-900/50 text-blue-400" :
+                          "bg-gray-900/50 text-gray-400"
                         }`}>
                         {u.role || "user"}
                       </span>
@@ -359,8 +359,8 @@ export default function UsersPage() {
                     </td>
                     <td className="py-4">
                       <span className={`px-2 py-1 rounded-full text-xs ${u.status === "banned" ? "bg-red-900/50 text-red-400" :
-                          u.status === "inactive" ? "bg-yellow-900/50 text-yellow-400" :
-                            "bg-green-900/50 text-green-400"
+                        u.status === "inactive" ? "bg-yellow-900/50 text-yellow-400" :
+                          "bg-green-900/50 text-green-400"
                         }`}>
                         {u.status || "active"}
                       </span>
@@ -404,8 +404,8 @@ export default function UsersPage() {
                   key={i}
                   onClick={() => setCurrentPage(i + 1)}
                   className={`px-3 py-1 rounded-lg ${currentPage === i + 1
-                      ? 'bg-[#4EFF9B] text-[#0D221A]'
-                      : 'bg-[#112C23] hover:bg-[#4EFF9B]/20'
+                    ? 'bg-[#4EFF9B] text-[#0D221A]'
+                    : 'bg-[#112C23] hover:bg-[#4EFF9B]/20'
                     }`}
                 >
                   {i + 1}
@@ -449,14 +449,14 @@ export default function UsersPage() {
                 <p className="text-[#A0C4B5]">{showUserDetail.email}</p>
                 <div className="flex space-x-2 mt-2">
                   <span className={`px-2 py-1 rounded-full text-xs ${showUserDetail.role === "admin" ? "bg-purple-900/50 text-purple-400" :
-                      showUserDetail.role === "creator" ? "bg-blue-900/50 text-blue-400" :
-                        "bg-gray-900/50 text-gray-400"
+                    showUserDetail.role === "creator" ? "bg-blue-900/50 text-blue-400" :
+                      "bg-gray-900/50 text-gray-400"
                     }`}>
                     {showUserDetail.role || "user"}
                   </span>
                   <span className={`px-2 py-1 rounded-full text-xs ${showUserDetail.status === "banned" ? "bg-red-900/50 text-red-400" :
-                      showUserDetail.status === "inactive" ? "bg-yellow-900/50 text-yellow-400" :
-                        "bg-green-900/50 text-green-400"
+                    showUserDetail.status === "inactive" ? "bg-yellow-900/50 text-yellow-400" :
+                      "bg-green-900/50 text-green-400"
                     }`}>
                     {showUserDetail.status || "active"}
                   </span>
@@ -468,8 +468,8 @@ export default function UsersPage() {
             <div className="flex border-b border-[#112C23] mb-6">
               <button
                 className={`px-4 py-2 font-medium ${activeTab === "profile"
-                    ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
-                    : "text-[#A0C4B5] hover:text-[#E9F5EE]"
+                  ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
+                  : "text-[#A0C4B5] hover:text-[#E9F5EE]"
                   }`}
                 onClick={() => setActiveTab("profile")}
               >
@@ -477,8 +477,8 @@ export default function UsersPage() {
               </button>
               <button
                 className={`px-4 py-2 font-medium ${activeTab === "activity"
-                    ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
-                    : "text-[#A0C4B5] hover:text-[#E9F5EE]"
+                  ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
+                  : "text-[#A0C4B5] hover:text-[#E9F5EE]"
                   }`}
                 onClick={() => setActiveTab("activity")}
               >
@@ -486,8 +486,8 @@ export default function UsersPage() {
               </button>
               <button
                 className={`px-4 py-2 font-medium ${activeTab === "transactions"
-                    ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
-                    : "text-[#A0C4B5] hover:text-[#E9F5EE]"
+                  ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
+                  : "text-[#A0C4B5] hover:text-[#E9F5EE]"
                   }`}
                 onClick={() => setActiveTab("transactions")}
               >
@@ -495,8 +495,8 @@ export default function UsersPage() {
               </button>
               <button
                 className={`px-4 py-2 font-medium ${activeTab === "content"
-                    ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
-                    : "text-[#A0C4B5] hover:text-[#E9F5EE]"
+                  ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
+                  : "text-[#A0C4B5] hover:text-[#E9F5EE]"
                   }`}
                 onClick={() => setActiveTab("content")}
               >
@@ -504,8 +504,8 @@ export default function UsersPage() {
               </button>
               <button
                 className={`px-4 py-2 font-medium ${activeTab === "actions"
-                    ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
-                    : "text-[#A0C4B5] hover:text-[#E9F5EE]"
+                  ? "text-[#4EFF9B] border-b-2 border-[#4EFF9B]"
+                  : "text-[#A0C4B5] hover:text-[#E9F5EE]"
                   }`}
                 onClick={() => setActiveTab("actions")}
               >
