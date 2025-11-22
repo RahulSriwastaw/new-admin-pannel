@@ -134,36 +134,6 @@ export default function DashboardPage() {
         }
         setError(errorMessage)
         setLoading(false)
-
-        // Fallback to mock data in case of error
-        setStats({
-          totalUsers: 12482,
-          activeUsers: 8642,
-          newUsersToday: 142,
-          totalCreators: 342,
-          pendingCreators: 8,
-          totalTemplates: 1847,
-          pendingTemplates: 23,
-          totalGenerations: 256420,
-          monthlyRevenue: 245600
-        })
-
-        setUserGrowthData([
-          { day: '1', value: 12000 },
-          { day: '5', value: 12200 },
-          { day: '10', value: 12500 },
-          { day: '15', value: 12800 },
-          { day: '20', value: 13200 },
-          { day: '25', value: 13800 },
-          { day: '30', value: 14500 }
-        ])
-
-        setGenerationData([
-          { name: 'Portrait', value: 35 },
-          { name: 'Landscape', value: 25 },
-          { name: 'Square', value: 20 },
-          { name: 'Other', value: 20 }
-        ])
       }
     }
 
@@ -260,66 +230,6 @@ export default function DashboardPage() {
               </svg>
             }
           />
-        </div>
-
-        {/* Quick Actions Panel */}
-        <div className="mb-8">
-          <div className="bg-[#15362B] rounded-2xl p-6 border border-[#4EFF9B]/20 shadow-lg backdrop-blur-sm">
-            <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <button
-                onClick={() => handleQuickAction('reviewTemplates')}
-                className="flex flex-col items-center justify-center p-4 bg-[#112C23] rounded-xl hover:bg-[#4EFF9B]/20 transition-colors"
-              >
-                <div className="bg-[#4EFF9B] text-[#0D221A] rounded-full w-10 h-10 flex items-center justify-center mb-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <span className="text-sm">Review Templates</span>
-                <span className="text-xs text-[#4EFF9B] mt-1">{stats.pendingTemplates} pending</span>
-              </button>
-
-              <button
-                onClick={() => handleQuickAction('reviewCreators')}
-                className="flex flex-col items-center justify-center p-4 bg-[#112C23] rounded-xl hover:bg-[#4EFF9B]/20 transition-colors"
-              >
-                <div className="bg-[#4EFF9B] text-[#0D221A] rounded-full w-10 h-10 flex items-center justify-center mb-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <span className="text-sm">Review Creators</span>
-                <span className="text-xs text-[#4EFF9B] mt-1">{stats.pendingCreators} pending</span>
-              </button>
-
-              <button
-                onClick={() => handleQuickAction('checkSupport')}
-                className="flex flex-col items-center justify-center p-4 bg-[#112C23] rounded-xl hover:bg-[#4EFF9B]/20 transition-colors"
-              >
-                <div className="bg-[#4EFF9B] text-[#0D221A] rounded-full w-10 h-10 flex items-center justify-center mb-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                  </svg>
-                </div>
-                <span className="text-sm">Support Tickets</span>
-                <span className="text-xs text-[#4EFF9B] mt-1">3 high priority</span>
-              </button>
-
-              <button
-                onClick={() => handleQuickAction('moderateContent')}
-                className="flex flex-col items-center justify-center p-4 bg-[#112C23] rounded-xl hover:bg-[#4EFF9B]/20 transition-colors"
-              >
-                <div className="bg-[#4EFF9B] text-[#0D221A] rounded-full w-10 h-10 flex items-center justify-center mb-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <span className="text-sm">Moderate Content</span>
-                <span className="text-xs text-[#4EFF9B] mt-1">7 flagged</span>
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Charts and System Health */}

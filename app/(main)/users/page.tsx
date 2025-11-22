@@ -78,8 +78,7 @@ export default function UsersPage() {
       .catch((e) => {
         console.error('Failed to load users from API:', e)
         setError(e?.message || "Failed to load users from API")
-        // Use mock data as fallback
-        setUsers(mockUsers)
+        setUsers([])
       })
       .finally(() => setIsLoading(false))
   }, [])
