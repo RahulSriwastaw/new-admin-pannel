@@ -48,6 +48,9 @@ export interface User {
   status: 'active' | 'banned' | 'pending';
   joinedDate: string;
   avatar?: string;
+  followers?: number;
+  likes?: number;
+  uses?: number;
 }
 
 export interface CreatorApplication {
@@ -132,6 +135,11 @@ export interface FinanceConfig {
   costPerCredit: number;
   currency: string;
   taxRate: number;
+}
+
+export interface ToolConfig {
+  id: string;
+  tools: { key: string; name: string; cost: number; isActive: boolean; provider?: string; apiKey?: string }[];
 }
 
 // Admin Management Types

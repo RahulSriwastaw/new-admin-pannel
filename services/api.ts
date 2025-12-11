@@ -14,7 +14,7 @@ import {
   INITIAL_FINANCE_CONFIG,
   MOCK_CATEGORIES
 } from '../constants';
-import { User, CreatorApplication, Transaction, AIModelConfig, SystemMetrics, Template, AirtableConfig, PointsPackage, PaymentGatewayConfig, SubAdmin, NotificationLog, FinanceConfig, Category } from '../types';
+import { User, CreatorApplication, Transaction, AIModelConfig, SystemMetrics, Template, AirtableConfig, PointsPackage, PaymentGatewayConfig, SubAdmin, NotificationLog, FinanceConfig, Category, ToolConfig } from '../types';
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
@@ -44,14 +44,14 @@ const fetchWithFallback = async <T>(endpoint: string, fallback: T): Promise<T> =
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.warn(`API Error for ${endpoint}: ${response.status} ${response.statusText}`);
+      warn(`API Error for ${endpoint}: ${response.status} ${response.statusText}`);
       return fallback;
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
-    console.warn(`Connection failed for ${endpoint}, using fallback data.`, error);
+    warn(`Connection failed for ${endpoint}, using fallback data.`, error);
     return fallback;
   }
 };
@@ -84,7 +84,7 @@ export const api = {
          return data;
        }
     } catch(e) {
-      console.warn("Backend login failed/unreachable, falling back to local check for Admin Panel access.", e);
+      warn("Backend login failed/unreachable, falling back to local check for Admin Panel access.", e);
     }
     
     // 2. Fallback for Admin Access (if backend is sleeping/down)
@@ -116,7 +116,7 @@ export const api = {
         });
         return true;
       } catch (e) {
-        console.warn("Backend unavailable, simulating profile update");
+        warn("Backend unavailable, simulating profile update");
         return true;
       }
   },
@@ -125,7 +125,55 @@ export const api = {
   getMetrics: () => fetchWithFallback<SystemMetrics>('/admin/metrics', INITIAL_SYSTEM_METRICS),
 
   // Users
-  getUsers: () => fetchWithFallback<User[]>('/admin/users', MOCK_USERS),
+  getUsers: async (): Promise<User[]> => {
+    const users = await fetchWithFallback<User[]>('/admin/users', MOCK_USERS);
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/creators/stats`, { headers: getAuthHeaders() });
+      if (res.ok) {
+        const stats: { userId: string; followers: number; likes: number; uses: number }[] = await res.json();
+        const map = new Map(stats.map(s => [String(s.userId), s]));
+        return users.map(u => {
+          if (u.role === 'creator') {
+            const s = map.get(u.id);
+            return { ...u, followers: s?.followers || 0, likes: s?.likes || 0, uses: s?.uses || 0 };
+          }
+          return u;
+        });
+      }
+    } catch {}
+    return users;
+  },
+
+  setUserTempPassword: async (userId: string, tempPassword: string) => {
+    try {
+      await fetch(`${API_BASE_URL}/admin/users/${userId}/temp-password`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ tempPassword })
+      });
+      return true;
+    } catch (e) {
+      warn('Backend unavailable, simulating temp password set');
+      return true;
+    }
+  },
+
+  // Quick Tools Config
+  getToolsConfig: () => fetchWithFallback<ToolConfig>('/admin/tools/config', { id: 'local', tools: [] }),
+  updateToolsConfig: async (tools: ToolConfig['tools']) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/tools/config`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ tools })
+      });
+      if (res.ok) return await res.json();
+      throw new Error('Failed');
+    } catch (e) {
+      warn('Backend unavailable, simulating tools config update');
+      return { id: 'local', tools } as ToolConfig;
+    }
+  },
 
   createUser: async (userData: any) => {
     try {
@@ -138,9 +186,9 @@ export const api = {
       });
       if (res.ok) return await res.json();
       throw new Error("Failed");
-    } catch (e) {
-      console.warn("Backend unavailable, simulating user creation");
-      return {
+      } catch (e) {
+        warn("Backend unavailable, simulating user creation");
+        return {
           id: `U${Date.now()}`,
           ...userData,
           joinedDate: new Date().toISOString(),
@@ -159,7 +207,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      console.warn("Backend unavailable, simulating user status update");
+      warn("Backend unavailable, simulating user status update");
       return true;
     }
   },
@@ -173,7 +221,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      console.warn("Backend unavailable, simulating user update");
+      warn("Backend unavailable, simulating user update");
       return true;
     }
   },
@@ -187,7 +235,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      console.warn("Backend unavailable, simulating bulk update");
+      warn("Backend unavailable, simulating bulk update");
       return true;
     }
   },
@@ -205,7 +253,7 @@ export const api = {
       if (res.ok) return await res.json();
       throw new Error("Failed");
     } catch (e) {
-      console.warn("Backend unavailable, simulating add creator");
+      warn("Backend unavailable, simulating add creator");
       return { 
         ...data, 
         id: `APP_NEW_${Date.now()}`, 
@@ -248,7 +296,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      console.warn("Backend unavailable, simulating approval success");
+      warn("Backend unavailable, simulating approval success");
       return true; // Optimistic
     }
   },
@@ -261,7 +309,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      console.warn("Backend unavailable, simulating rejection success");
+      warn("Backend unavailable, simulating rejection success");
       return true; // Optimistic
     }
   },
@@ -349,7 +397,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      console.warn("Backend unavailable, simulating finance config update");
+      warn("Backend unavailable, simulating finance config update");
       return true;
     }
   },
@@ -367,7 +415,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      console.warn("Failed to toggle model on backend, updating local state only.");
+      warn("Failed to toggle model on backend, updating local state only.");
       return false; 
     }
   },
@@ -381,7 +429,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      console.warn("Failed to update cost on backend.");
+      warn("Failed to update cost on backend.");
       return true; // Return true to allow UI update in mock mode
     }
   },
@@ -395,7 +443,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      console.warn("Failed to update API key on backend.");
+      warn("Failed to update API key on backend.");
       return true;
     }
   },
@@ -408,7 +456,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      console.warn("Backend unavailable, simulating AI connection test");
+      warn("Backend unavailable, simulating AI connection test");
       await new Promise(resolve => setTimeout(resolve, 1500));
       return Math.random() > 0.1; // 90% success chance
     }
@@ -423,7 +471,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-       console.warn("Failed to update model details on backend.");
+       warn("Failed to update model details on backend.");
        return true;
     }
   },
@@ -436,7 +484,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      console.warn("Failed to clear cache on backend.");
+      warn("Failed to clear cache on backend.");
       return true;
     }
   },
@@ -451,7 +499,7 @@ export const api = {
       if (res.ok) return await res.json();
       throw new Error("Failed");
     } catch (e) {
-      console.warn("Backend unavailable, simulating adding model");
+      warn("Backend unavailable, simulating adding model");
       return { ...model, id: `AI_${Math.random().toString(36).substr(2, 5)}` };
     }
   },
@@ -478,7 +526,7 @@ export const api = {
       
       throw new Error("Backend upload failed");
     } catch (e) {
-      console.warn("Upload failed, using local blob");
+      warn("Upload failed, using local blob");
       return URL.createObjectURL(file);
     }
   },
@@ -493,7 +541,7 @@ export const api = {
       if (res.ok) return await res.json();
       throw new Error("Failed to add template");
     } catch (e) {
-       console.warn("Backend unavailable, simulating template add");
+       warn("Backend unavailable, simulating template add");
        return { ...template, id: `T${Math.random().toString(36).substr(2, 6)}`, useCount: 0 };
     }
   },
@@ -507,7 +555,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      console.warn("Backend unavailable, simulating template update");
+      warn("Backend unavailable, simulating template update");
       return true;
     }
   },
@@ -549,8 +597,8 @@ export const api = {
        });
        return true;
     } catch (e) {
-       console.warn("Backend unavailable, simulating bulk upload");
-       return true;
+      warn("Backend unavailable, simulating bulk upload");
+      return true;
     }
   },
 
@@ -567,7 +615,7 @@ export const api = {
       }
       throw new Error("Sync Failed");
     } catch (e) {
-      console.warn("Backend unavailable, simulating airtable sync");
+      warn("Backend unavailable, simulating airtable sync");
       return [
         { 
           id: `AT_${Math.random().toString(36).substr(2,4)}`, 
@@ -684,3 +732,6 @@ export const api = {
     }
   }
 };
+const __env = (typeof import.meta !== 'undefined' ? (import.meta as any).env : undefined);
+const DEBUG = (__env?.VITE_DEBUG === 'true') || (typeof process !== 'undefined' && (process as any).env?.VITE_DEBUG === 'true');
+const warn = (...args: any[]) => { if (DEBUG) console.warn(...args); };

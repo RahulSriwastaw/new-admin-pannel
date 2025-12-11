@@ -23,7 +23,7 @@ import {
   INITIAL_FINANCE_CONFIG,
   MOCK_CATEGORIES
 } from './constants';
-import { LogEntry, LogLevel, ConnectionStatus, User, CreatorApplication, Transaction, AIModelConfig, SystemMetrics, Template, AirtableConfig, PointsPackage, PaymentGatewayConfig, SubAdmin, AdminRole, AdminPermission, NotificationLog, NotificationTarget, NotificationType, FinanceConfig, Category } from './types';
+import { LogEntry, LogLevel, ConnectionStatus, User, CreatorApplication, Transaction, AIModelConfig, SystemMetrics, Template, AirtableConfig, PointsPackage, PaymentGatewayConfig, SubAdmin, AdminRole, AdminPermission, NotificationLog, NotificationTarget, NotificationType, FinanceConfig, Category, ToolConfig } from './types';
 import { analyzeErrorLogs, simulateFixApplication } from './services/geminiService';
 import { api } from './services/api';
 import { 
@@ -118,6 +118,7 @@ export default function App() {
   const [creators, setCreators] = useState<CreatorApplication[]>([]);
   const [activeCreatorApp, setActiveCreatorApp] = useState<CreatorApplication | null>(null);
   const [aiModels, setAiModels] = useState<AIModelConfig[]>([]);
+  const [toolsConfig, setToolsConfig] = useState<ToolConfig>({ id: '', tools: [] });
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -349,6 +350,10 @@ export default function App() {
       setFinanceConfig(fetchedFinanceConfig);
       setSubAdmins(fetchedSubAdmins);
       setNotifications(fetchedNotifications);
+      try {
+        const cfg = await api.getToolsConfig();
+        setToolsConfig(cfg);
+      } catch {}
       addLog("Dashboard data synchronized with Backend.", LogLevel.INFO, "Database");
     } catch (e) {
       addLog("Failed to sync some data. Using cached values.", LogLevel.WARN, "System");
@@ -645,7 +650,10 @@ export default function App() {
   // User Management Logic
   const filteredUsers = useMemo(() => {
     let result = users.filter(u => {
-        const matchesSearch = u.name.toLowerCase().includes(userSearchQuery.toLowerCase()) || u.email.toLowerCase().includes(userSearchQuery.toLowerCase());
+        const name = (u.name || '').toLowerCase();
+        const email = (u.email || '').toLowerCase();
+        const query = (userSearchQuery || '').toLowerCase();
+        const matchesSearch = name.includes(query) || email.includes(query);
         const matchesRole = userRoleFilter === 'all' || u.role === userRoleFilter;
         const matchesStatus = userStatusFilter === 'all' || u.status === userStatusFilter;
         return matchesSearch && matchesRole && matchesStatus;
@@ -978,8 +986,10 @@ export default function App() {
     const draftTemplates = templates.filter(t => t.status === 'draft').length;
 
     const filteredTemplates = templates.filter(t => {
-       const matchesSearch = t.title.toLowerCase().includes(templateSearchQuery.toLowerCase()) || 
-                             t.prompt.toLowerCase().includes(templateSearchQuery.toLowerCase());
+       const title = (t.title || '').toLowerCase();
+       const prompt = (t.prompt || '').toLowerCase();
+       const q = (templateSearchQuery || '').toLowerCase();
+       const matchesSearch = title.includes(q) || prompt.includes(q);
        // Safe category check
        const matchesCategory = templateCategoryFilter === 'All' || t.category?.trim() === templateCategoryFilter;
        const matchesStatus = templateFilterStatus === 'all' || t.status === templateFilterStatus;
@@ -2148,7 +2158,7 @@ export default function App() {
                                 <div className={`w-10 h-10 rounded-full overflow-hidden flex items-center justify-center border shrink-0 ${user.status === 'banned' ? 'bg-red-900/20 border-red-500/30' : 'bg-gray-800 border-gray-700'}`}>
                                    {user.avatar ? 
                                      <img src={user.avatar} alt={user.name} className={`w-full h-full object-cover ${user.status === 'banned' ? 'grayscale opacity-70' : ''}`} /> : 
-                                     <span className={`font-bold text-lg ${user.status === 'banned' ? 'text-red-500' : 'text-indigo-400'}`}>{user.name.charAt(0)}</span>
+                                    <span className={`font-bold text-lg ${user.status === 'banned' ? 'text-red-500' : 'text-indigo-400'}`}>{user.name?.charAt(0) || '?'}</span>
                                    }
                                 </div>
                                 <div className="overflow-hidden">
@@ -2307,7 +2317,7 @@ export default function App() {
                                 <div className="w-full h-full rounded-full bg-gray-800 overflow-hidden flex items-center justify-center border border-gray-700 group">
                                        {editUserAvatarPreview ? 
                                          <img src={editUserAvatarPreview} alt="Preview" className="w-full h-full object-cover" /> : 
-                                         <span className="text-indigo-400 font-bold text-2xl">{activeUser.name.charAt(0)}</span>
+                                        <span className="text-indigo-400 font-bold text-2xl">{activeUser?.name?.charAt(0) || '?'}</span>
                                        }
                                        <label htmlFor="edit-avatar-upload" className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
                                            <Camera size={24} className="text-white" />
@@ -2386,6 +2396,30 @@ export default function App() {
                             />
                             <p className="text-[10px] text-gray-500 mt-1">Adjusting this will directly credit/debit user wallet.</p>
                         </div>
+                        <div className="grid grid-cols-3 gap-3">
+                           <div className="col-span-2">
+                              <label className="text-xs text-gray-500 uppercase block mb-1">Temporary Password</label>
+                              <input 
+                                type="password" 
+                                value={(activeUser as any).tempPassword || ''}
+                                onChange={(e) => setActiveUser({ ...activeUser, ...( { tempPassword: e.target.value } as any) })}
+                                className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm font-mono" 
+                                placeholder="Set a temporary password"
+                              />
+                           </div>
+                           <div className="flex items-end">
+                              <button 
+                                onClick={async () => { 
+                                   const temp = (activeUser as any).tempPassword || Math.random().toString(36).slice(2, 10);
+                                   await api.setUserTempPassword(activeUser.id, temp);
+                                   addLog(`Temporary password set for ${activeUser.email}`, LogLevel.SUCCESS, 'AdminPanel');
+                                }} 
+                                className="w-full bg-gray-800 hover:bg-gray-700 text-gray-200 rounded px-3 py-2 text-sm"
+                              >
+                                Set
+                              </button>
+                           </div>
+                        </div>
                     </div>
 
                     <div className="flex gap-3 mt-6">
@@ -2409,14 +2443,18 @@ export default function App() {
 
     const activeCreators = users.filter(u => {
        const isCreator = u.role === 'creator';
-       const matchesSearch = u.name.toLowerCase().includes(creatorSearchQuery.toLowerCase()) || 
-                             u.email.toLowerCase().includes(creatorSearchQuery.toLowerCase());
+        const name = (u.name || '').toLowerCase();
+        const email = (u.email || '').toLowerCase();
+        const query = (creatorSearchQuery || '').toLowerCase();
+       const matchesSearch = name.includes(query) || email.includes(query);
        return isCreator && matchesSearch;
     });
 
     const pendingApplications = creators.filter(app => {
        const isPending = app.status === 'pending';
-       const matchesSearch = app.name.toLowerCase().includes(creatorSearchQuery.toLowerCase());
+       const name = (app.name || '').toLowerCase();
+       const query = (creatorSearchQuery || '').toLowerCase();
+       const matchesSearch = name.includes(query);
        return isPending && matchesSearch;
     });
 
@@ -2615,7 +2653,7 @@ export default function App() {
                                <div className="flex justify-between items-start mb-4">
                                    <div className="flex items-center gap-3">
                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                                           {app.name.charAt(0)}
+                                          {app.name?.charAt(0) || '?'}
                                        </div>
                                        <div>
                                            <h3 className="font-bold text-white text-lg">{app.name}</h3>
@@ -2682,6 +2720,9 @@ export default function App() {
                                </th>
                                <th className="px-6 py-4">Creator</th>
                                <th className="px-6 py-4">Wallet Balance</th>
+                               <th className="px-6 py-4">Followers</th>
+                               <th className="px-6 py-4">Likes</th>
+                               <th className="px-6 py-4">Uses</th>
                                <th className="px-6 py-4">Status</th>
                                <th className="px-6 py-4">Joined</th>
                                <th className="px-6 py-4 text-right">Actions</th>
@@ -2700,7 +2741,7 @@ export default function App() {
                                    </td>
                                    <td className="px-6 py-4 flex items-center gap-3">
                                        <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold border border-indigo-500/30">
-                                           {creator.avatar ? <img src={creator.avatar} alt={creator.name} className="w-full h-full object-cover rounded-full" /> : creator.name.charAt(0)}
+                                          {creator.avatar ? <img src={creator.avatar} alt={creator.name} className="w-full h-full object-cover rounded-full" /> : (creator.name?.charAt(0) || '?')}
                                        </div>
                                        <div>
                                            <div className="font-medium text-white">{creator.name}</div>
@@ -2710,6 +2751,9 @@ export default function App() {
                                    <td className="px-6 py-4 font-mono text-green-400 font-medium">
                                        {creator.points} pts
                                    </td>
+                                   <td className="px-6 py-4 font-mono text-indigo-300">{creator.followers ?? 0}</td>
+                                   <td className="px-6 py-4 font-mono text-pink-300">{creator.likes ?? 0}</td>
+                                   <td className="px-6 py-4 font-mono text-yellow-300">{creator.uses ?? 0}</td>
                                    <td className="px-6 py-4">
                                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${creator.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                                            {creator.status}
@@ -2737,7 +2781,7 @@ export default function App() {
                            ))}
                            {activeCreators.length === 0 && (
                                <tr>
-                                   <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                                   <td colSpan={9} className="px-6 py-12 text-center text-gray-500">
                                        No active creators found matching your search.
                                    </td>
                                </tr>
@@ -2870,6 +2914,70 @@ export default function App() {
                     </div>
                 </div>
             ))}
+        </div>
+        <div className="flex justify-between items-center bg-gray-900 p-4 rounded-xl border border-gray-800 mt-8">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Sparkles size={24} className="text-indigo-400"/> Quick Tools Configuration
+            </h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {toolsConfig.tools.map((t, idx) => (
+            <div key={t.key} className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-bold text-white">{t.name}</h3>
+                  <p className="text-xs text-gray-500 uppercase">{t.key}</p>
+                </div>
+                <button
+                  onClick={() => setToolsConfig(prev => ({ id: prev.id, tools: prev.tools.map((x,i)=> i===idx ? { ...x, isActive: !x.isActive } : x) }))}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${t.isActive ? 'bg-green-500' : 'bg-gray-700'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${t.isActive ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-gray-950 rounded-lg border border-gray-800">
+                <span className="text-sm text-gray-400">Cost</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-gray-500">₹</span>
+                  <input
+                    type="number"
+                    value={t.cost}
+                    onChange={(e) => setToolsConfig(prev => ({ id: prev.id, tools: prev.tools.map((x,i)=> i===idx ? { ...x, cost: parseFloat(e.target.value) } : x) }))}
+                    className="w-16 bg-transparent text-right text-white font-mono focus:outline-none border-b border-transparent focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                <div>
+                  <label className="text-xs text-gray-500 uppercase block mb-1">Provider</label>
+                  <select
+                    value={t.provider || 'System'}
+                    onChange={(e) => setToolsConfig(prev => ({ id: prev.id, tools: prev.tools.map((x,i)=> i===idx ? { ...x, provider: e.target.value } : x) }))}
+                    className="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2 text-white text-sm"
+                  >
+                    <option value="System">System</option>
+                    <option value="OpenAI">OpenAI</option>
+                    <option value="Google">Google</option>
+                    <option value="Stability">Stability</option>
+                    <option value="MiniMax">MiniMax</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 uppercase block mb-1">API Key</label>
+                  <input
+                    type="password"
+                    value={t.apiKey || ''}
+                    onChange={(e) => setToolsConfig(prev => ({ id: prev.id, tools: prev.tools.map((x,i)=> i===idx ? { ...x, apiKey: e.target.value } : x) }))}
+                    className="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2 text-white font-mono text-sm"
+                    placeholder="sk-..."
+                  />
+                </div>
+              </div>
+              <div className="mt-3 flex justify-end">
+                <button onClick={async () => { const updated = await api.updateToolsConfig(toolsConfig.tools); setToolsConfig(updated); addLog(`Updated tool: ${t.name}`, LogLevel.SUCCESS, 'AdminPanel'); }} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm">Save</button>
+              </div>
+            </div>
+          ))}
         </div>
         
         {/* API Key Modal */}
@@ -3020,7 +3128,7 @@ export default function App() {
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col items-center text-center">
               <div className="relative group w-32 h-32 mb-4">
                   <div className="w-10 h-10 rounded-full overflow-hidden border-4 border-gray-800 bg-gray-800 flex items-center justify-center">
-                     {profileForm.avatar ? <img src={profileForm.avatar} alt="Profile" className="w-full h-full object-cover"/> : <span className="text-4xl font-bold text-gray-600">{profileForm.name.charAt(0)}</span>}
+                    {profileForm.avatar ? <img src={profileForm.avatar} alt="Profile" className="w-full h-full object-cover"/> : <span className="text-4xl font-bold text-gray-600">{profileForm.name?.charAt(0) || '?'}</span>}
                   </div>
                   <label className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
                      <Camera className="text-white" size={24} />
@@ -3274,7 +3382,7 @@ export default function App() {
              className={`flex items-center gap-3 px-2 py-2 rounded-lg cursor-pointer transition-colors ${activeTab === 'profile' ? 'bg-gray-800' : 'hover:bg-gray-900'}`}
            >
               <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold overflow-hidden">
-                 {currentAdmin?.avatar ? <img src={currentAdmin.avatar} alt="Admin" className="w-full h-full object-cover"/> : currentAdmin?.name.charAt(0)}
+                {currentAdmin?.avatar ? <img src={currentAdmin.avatar} alt="Admin" className="w-full h-full object-cover"/> : (currentAdmin?.name?.charAt(0) || '?')}
               </div>
               <div className="overflow-hidden">
                  <p className="text-sm font-medium text-white truncate">{currentAdmin?.name}</p>

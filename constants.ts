@@ -2,7 +2,7 @@
 import { LogEntry, LogLevel, RepoConfig, User, CreatorApplication, AIModelConfig, Transaction, Template, PointsPackage, PaymentGatewayConfig, SubAdmin, AdminPermission, NotificationLog, FinanceConfig, Category } from './types';
 
 // Environment / Config Constants
-export const BACKEND_URL = "https://new-backend-production-c886.up.railway.app";
+export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://new-backend-production-c886.up.railway.app";
 export const API_BASE_URL = `${BACKEND_URL}/api`;
 
 export const USER_APP_URL = "https://rupantara-fronted.vercel.app";
