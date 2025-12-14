@@ -166,6 +166,21 @@ export default function App() {
   const [editUserAvatarFile, setEditUserAvatarFile] = useState<File | null>(null);
   const [editUserAvatarPreview, setEditUserAvatarPreview] = useState<string>('');
 
+  useEffect(() => {
+    return () => {
+      if (newUserAvatarPreview && newUserAvatarPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(newUserAvatarPreview);
+      }
+    };
+  }, [newUserAvatarPreview]);
+
+  useEffect(() => {
+    return () => {
+      if (editUserAvatarPreview && editUserAvatarPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(editUserAvatarPreview);
+      }
+    };
+  }, [editUserAvatarPreview]);
 
   // AI Analysis State
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
@@ -207,6 +222,14 @@ export default function App() {
   const [templateViewMode, setTemplateViewMode] = useState<'grid' | 'list'>('grid');
   const [templateFilterStatus, setTemplateFilterStatus] = useState<string>('all');
   const [templateFilterPremium, setTemplateFilterPremium] = useState<string>('all');
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const [airtableConfig, setAirtableConfig] = useState<AirtableConfig>({ apiKey: '', baseId: '', tableName: '' });
   const [bulkFile, setBulkFile] = useState<File | null>(null);
@@ -901,10 +924,18 @@ export default function App() {
 
   const handleSaveGateway = async () => {
       if(!activeGateway) return;
-      await api.updateGatewayConfig(activeGateway.id, activeGateway);
-      setPaymentGateways(prev => prev.map(g => g.id === activeGateway.id ? activeGateway : g));
+      if (String(activeGateway.id).startsWith('new')) {
+        const { id, ...gwData } = activeGateway;
+        const created = await api.createPaymentGateway(gwData);
+        setPaymentGateways(prev => [...prev, created]);
+        addLog(`Gateway '${created.name}' created.`, LogLevel.SUCCESS, "AdminPanel");
+      } else {
+        await api.updateGatewayConfig(activeGateway.id, activeGateway);
+        setPaymentGateways(prev => prev.map(g => g.id === activeGateway.id ? activeGateway : g));
+        addLog(`Gateway '${activeGateway.name}' configuration saved.`, LogLevel.SUCCESS, "AdminPanel");
+      }
       setShowGatewayModal(false);
-      addLog(`Gateway '${activeGateway.name}' configuration saved.`, LogLevel.SUCCESS, "AdminPanel");
+      setActiveGateway(null);
   };
 
   const handleTestGateway = async (gateway: PaymentGatewayConfig) => {
@@ -916,6 +947,31 @@ export default function App() {
       } else {
         addLog(`Connection to ${gateway.name} failed. Check keys.`, LogLevel.ERROR, "System");
       }
+  };
+
+  const handleToggleGatewayActive = async (gateway: PaymentGatewayConfig) => {
+      const next = !gateway.isActive;
+      const ok = await api.toggleGatewayActive(gateway.id, next);
+      if (ok) {
+        setPaymentGateways(prev => prev.map(g => g.id === gateway.id ? { ...g, isActive: next } : g));
+        addLog(`Gateway '${gateway.name}' ${next ? 'enabled' : 'disabled'}.`, LogLevel.INFO, "AdminPanel");
+      } else {
+        addLog(`Failed to toggle '${gateway.name}'.`, LogLevel.ERROR, "Backend");
+      }
+  };
+
+  const handleAddGateway = () => {
+      setActiveGateway({
+        id: `new_${Date.now()}`,
+        name: '',
+        provider: 'Razorpay',
+        isActive: false,
+        isTestMode: true,
+        publicKey: '',
+        secretKey: '',
+        webhookSecret: ''
+      });
+      setShowGatewayModal(true);
   };
 
   const handleDuplicateTemplate = async (template: Template) => {
@@ -1840,21 +1896,41 @@ export default function App() {
                 </div>
              </div>
 
-             {/* Gateways */}
-             <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-                <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Payment Gateways</h4>
-                <div className="space-y-2">
-                   {paymentGateways.map(gw => (
-                      <div key={gw.id} className="flex justify-between items-center p-3 bg-gray-950 border border-gray-800 rounded">
-                         <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${gw.isActive ? 'bg-green-500' : 'bg-gray-600'}`}></div>
-                            <span className="text-sm text-gray-200">{gw.name}</span>
-                         </div>
-                         <button onClick={() => { setActiveGateway(gw); setShowGatewayModal(true); }} className="text-gray-500 hover:text-white"><Settings size={14} /></button>
-                      </div>
-                   ))}
-                </div>
-             </div>
+            {/* Gateways */}
+            <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+               <div className="flex items-center justify-between mb-4">
+                 <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Payment Gateways</h4>
+                 <button onClick={handleAddGateway} className="flex items-center gap-1 px-2 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium">
+                   <Plus size={14}/> Add Gateway
+                 </button>
+               </div>
+               <div className="space-y-2">
+                  {paymentGateways.map(gw => (
+                     <div key={gw.id} className="flex justify-between items-center p-3 bg-gray-950 border border-gray-800 rounded">
+                        <div className="flex items-center gap-3">
+                           <div className={`w-2 h-2 rounded-full ${gw.isActive ? 'bg-green-500' : 'bg-gray-600'}`}></div>
+                           <span className="text-sm text-gray-200">{gw.name}</span>
+                           <span className="text-[10px] text-gray-500 px-1.5 py-0.5 rounded border border-gray-800 bg-gray-900">{gw.provider}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button 
+                            onClick={() => handleToggleGatewayActive(gw)} 
+                            className={`w-10 h-5 rounded-full p-1 transition-colors ${gw.isActive ? 'bg-green-600' : 'bg-gray-700'}`}
+                            aria-label="Toggle Active"
+                          >
+                            <div className={`w-3 h-3 bg-white rounded-full shadow-md transform transition-transform ${gw.isActive ? 'translate-x-5' : 'translate-x-0'}`} />
+                          </button>
+                          <button onClick={() => handleTestGateway(gw)} className="text-gray-500 hover:text-white" aria-label="Test Connection">
+                            <Activity size={14} />
+                          </button>
+                          <button onClick={() => { setActiveGateway(gw); setShowGatewayModal(true); }} className="text-gray-500 hover:text-white" aria-label="Configure">
+                            <Settings size={14} />
+                          </button>
+                        </div>
+                     </div>
+                  ))}
+               </div>
+            </div>
           </div>
        </div>
 
@@ -1890,13 +1966,28 @@ export default function App() {
        {showGatewayModal && activeGateway && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
              <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-md w-full">
-                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Settings size={18}/> Configure {activeGateway.name}</h3>
-                <div className="space-y-4">
-                   <div>
-                      <label className="text-xs text-gray-500 uppercase block mb-1">Public Key</label>
-                      <input type="text" value={activeGateway.publicKey} onChange={e => setActiveGateway({...activeGateway, publicKey: e.target.value})} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white font-mono text-xs" />
-                   </div>
-                   <div>
+               <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Settings size={18}/> Configure {activeGateway.name || 'Gateway'}</h3>
+               <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-500 uppercase block mb-1">Gateway Name</label>
+                      <input type="text" value={activeGateway.name} onChange={e => setActiveGateway({...activeGateway, name: e.target.value})} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-xs" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 uppercase block mb-1">Provider</label>
+                      <select value={activeGateway.provider} onChange={e => setActiveGateway({...activeGateway, provider: e.target.value as any})} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-xs">
+                        <option value="Razorpay">Razorpay</option>
+                        <option value="Stripe">Stripe</option>
+                        <option value="PayPal">PayPal</option>
+                        <option value="PhonePe">PhonePe</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                     <label className="text-xs text-gray-500 uppercase block mb-1">Public Key</label>
+                     <input type="text" value={activeGateway.publicKey} onChange={e => setActiveGateway({...activeGateway, publicKey: e.target.value})} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white font-mono text-xs" />
+                  </div>
+                  <div>
                       <label className="text-xs text-gray-500 uppercase block mb-1">Secret Key</label>
                       <input type="password" value={activeGateway.secretKey} onChange={e => setActiveGateway({...activeGateway, secretKey: e.target.value})} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white font-mono text-xs" />
                    </div>

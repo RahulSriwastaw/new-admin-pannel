@@ -361,6 +361,19 @@ export const api = {
 
   // Payment Gateways
   getPaymentGateways: () => fetchWithFallback<PaymentGatewayConfig[]>('/admin/finance/gateways', MOCK_PAYMENT_GATEWAYS),
+  createPaymentGateway: async (config: Omit<PaymentGatewayConfig, 'id'>) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/finance/gateways`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(config)
+      });
+      if (res.ok) return await res.json();
+      throw new Error("Failed");
+    } catch (e) {
+      return { id: `GW${Math.random().toString(36).substr(2,6)}`, ...config };
+    }
+  },
 
   updateGatewayConfig: async (id: string, config: Partial<PaymentGatewayConfig>) => {
     try {
@@ -375,11 +388,27 @@ export const api = {
     }
   },
 
+  toggleGatewayActive: async (id: string, isActive: boolean) => {
+    try {
+      await fetch(`${API_BASE_URL}/admin/finance/gateways/${id}/toggle`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ isActive })
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
   testGatewayConnection: async (id: string) => {
     try {
-      // Simulate connection test
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      return Math.random() > 0.2; // 80% success chance
+      const res = await fetch(`${API_BASE_URL}/admin/finance/gateways/${id}/test`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) return false;
+      const data = await res.json().catch(() => ({ success: true }));
+      return !!data.success;
     } catch (e) {
       return false;
     }
