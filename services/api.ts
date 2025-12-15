@@ -432,13 +432,23 @@ export const api = {
   },
 
   // AI Config
-  getAIModels: () => fetchWithFallback<AIModelConfig[]>('/admin/config/ai', INITIAL_AI_MODELS),
+  getAIModels: async (): Promise<AIModelConfig[]> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/config/ai`, { headers: getAuthHeaders() });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) return data as AIModelConfig[];
+        if ((data as any)?.models) return (data as any).models as AIModelConfig[];
+      }
+    } catch {}
+    return INITIAL_AI_MODELS;
+  },
   
   // Toggle AI Model
   toggleAIModel: async (modelId: string, isActive: boolean) => {
     try {
-      await fetch(`${API_BASE_URL}/admin/config/ai/${modelId}/toggle`, { 
-        method: 'POST',
+      await fetch(`${API_BASE_URL}/admin/config/ai/${modelId}/activate`, { 
+        method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ isActive })
       });
@@ -543,7 +553,7 @@ export const api = {
       // In a real scenario, this would post to /api/upload
       // For now, if the backend supports it, we try. If not, we return a mock URL.
       
-      const res = await fetch(`${API_BASE_URL}/upload`, {
+      const res = await fetch(`${API_BASE_URL}/admin/upload/template-demo`, {
          method: 'POST',
          headers: getUploadHeaders(),
          body: formData
@@ -663,11 +673,11 @@ export const api = {
   },
 
   // Category Management
-  getCategories: () => fetchWithFallback<Category[]>('/admin/templates/categories', MOCK_CATEGORIES),
+  getCategories: () => fetchWithFallback<Category[]>('/admin/categories', MOCK_CATEGORIES),
 
   addCategory: async (category: Omit<Category, 'id'>) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/templates/categories`, {
+      const res = await fetch(`${API_BASE_URL}/admin/categories`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(category)
@@ -681,7 +691,7 @@ export const api = {
 
   updateCategory: async (id: string, updates: Partial<Category>) => {
     try {
-      await fetch(`${API_BASE_URL}/admin/templates/categories/${id}`, {
+      await fetch(`${API_BASE_URL}/admin/categories/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(updates)
@@ -694,7 +704,7 @@ export const api = {
 
   deleteCategory: async (id: string) => {
     try {
-      await fetch(`${API_BASE_URL}/admin/templates/categories/${id}`, { 
+      await fetch(`${API_BASE_URL}/admin/categories/${id}`, { 
         method: 'DELETE',
         headers: getAuthHeaders() 
       });
