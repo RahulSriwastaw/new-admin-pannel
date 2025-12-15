@@ -2,11 +2,10 @@
 import { LogEntry, LogLevel, RepoConfig, User, CreatorApplication, AIModelConfig, Transaction, Template, PointsPackage, PaymentGatewayConfig, SubAdmin, AdminPermission, NotificationLog, FinanceConfig, Category } from './types';
 
 // Environment / Config Constants
-export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://new-backend-production-c886.up.railway.app";
-export const API_BASE_URL = `${BACKEND_URL}/api`;
+export const API_BASE_URL = (import.meta.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
 
-export const USER_APP_URL = "https://rupantara-fronted.vercel.app";
-export const ADMIN_URL = "https://new-admin-pannel-nine.vercel.app/dashboard";
+export const USER_APP_URL = (import.meta.env.NEXT_PUBLIC_FRONTEND_URL || '').replace(/\/$/, '');
+export const ADMIN_URL = (import.meta.env.NEXT_PUBLIC_ADMIN_URL || '').replace(/\/$/, '');
 
 export const FRONTEND_REPO = "https://github.com/RahulSriwastaw/new-admin-pannel.git";
 export const BACKEND_REPO = "https://github.com/RahulSriwastaw/new-backend.git";
@@ -25,19 +24,19 @@ export const FIREBASE_CONFIG = {
 
 export const INITIAL_REPOS: RepoConfig[] = [
   {
-    name: "Rupantar Backend (Railway)",
-    url: BACKEND_URL,
+    name: "Rupantar Backend",
+    url: API_BASE_URL ? API_BASE_URL.replace(/\/api(?:\/v1)?$/, '') : '',
     type: "backend",
     status: "error" // Initial state before check
   },
   {
-    name: "Rupantar User App (Vercel)",
+    name: "Rupantar User App",
     url: USER_APP_URL,
     type: "frontend",
     status: "online"
   },
   {
-    name: "Admin Panel (Vercel)",
+    name: "Admin Panel",
     url: ADMIN_URL,
     type: "frontend",
     status: "online"

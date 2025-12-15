@@ -12,7 +12,11 @@ export default defineConfig(({ mode }) => {
       plugins: [react()],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+        'import.meta.env.NEXT_PUBLIC_API_URL': JSON.stringify(env.NEXT_PUBLIC_API_URL),
+        'import.meta.env.NEXT_PUBLIC_ADMIN_ENV': JSON.stringify(env.NEXT_PUBLIC_ADMIN_ENV),
+        'import.meta.env.NEXT_PUBLIC_FRONTEND_URL': JSON.stringify(env.NEXT_PUBLIC_FRONTEND_URL),
+        'import.meta.env.NEXT_PUBLIC_ADMIN_URL': JSON.stringify(env.NEXT_PUBLIC_ADMIN_URL)
       },
       resolve: {
         alias: {
