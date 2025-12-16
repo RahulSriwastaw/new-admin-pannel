@@ -5,23 +5,10 @@ import { ConnectionVisualizer } from './components/ConnectionVisualizer';
 import { StatCard } from './components/StatCard';
 import { 
   INITIAL_REPOS, 
-  MOCK_LOGS, 
-  INITIAL_SYSTEM_METRICS, 
   BACKEND_URL, 
   USER_APP_URL,
   CLOUDINARY_CONFIG,
-  MOCK_USERS,
-  MOCK_APPLICATIONS,
-  MOCK_TRANSACTIONS,
-  INITIAL_AI_MODELS,
-  MOCK_TEMPLATES,
-  MOCK_POINTS_PACKAGES,
-  MOCK_PAYMENT_GATEWAYS,
-  MOCK_SUB_ADMINS,
-  PERMISSIONS_LIST,
-  MOCK_NOTIFICATIONS,
-  INITIAL_FINANCE_CONFIG,
-  MOCK_CATEGORIES
+  PERMISSIONS_LIST
 } from './constants';
 import { LogEntry, LogLevel, ConnectionStatus, User, CreatorApplication, Transaction, AIModelConfig, SystemMetrics, Template, AirtableConfig, PointsPackage, PaymentGatewayConfig, SubAdmin, AdminRole, AdminPermission, NotificationLog, NotificationTarget, NotificationType, FinanceConfig, Category, ToolConfig } from './types';
 import { analyzeErrorLogs, simulateFixApplication } from './services/geminiService';
@@ -36,16 +23,9 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
-// Revenue Chart Data (Rupantar Specific)
-const REVENUE_DATA = [
-  { name: 'Mon', userPayments: 4000, creatorPayouts: 2400 },
-  { name: 'Tue', userPayments: 3000, creatorPayouts: 1398 },
-  { name: 'Wed', userPayments: 2000, creatorPayouts: 9800 },
-  { name: 'Thu', userPayments: 2780, creatorPayouts: 3908 },
-  { name: 'Fri', userPayments: 1890, creatorPayouts: 4800 },
-  { name: 'Sat', userPayments: 2390, creatorPayouts: 3800 },
-  { name: 'Sun', userPayments: 3490, creatorPayouts: 4300 },
-];
+function formatDay(d: Date) {
+  return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+}
 
 // Reusable Pagination Component
 const Pagination = ({ 
@@ -107,10 +87,10 @@ export default function App() {
   const [currentAdmin, setCurrentAdmin] = useState<{name: string, role: string, permissions?: string[], email?: string, avatar?: string} | null>(null);
 
   // App State
-  const [logs, setLogs] = useState<LogEntry[]>(MOCK_LOGS);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.CONNECTING);
   const [isFixing, setIsFixing] = useState(false);
-  const [metrics, setMetrics] = useState(INITIAL_SYSTEM_METRICS);
+  const [metrics, setMetrics] = useState<SystemMetrics>({ cpu: 0, memory: 0, requests: 0, latency: 0, activeUsers: 0, revenue: 0 });
   const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'creators' | 'templates' | 'finance' | 'ai-config' | 'notifications' | 'settings' | 'profile'>('dashboard');
   
   // Data State
@@ -124,7 +104,7 @@ export default function App() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [pointsPackages, setPointsPackages] = useState<PointsPackage[]>([]);
   const [paymentGateways, setPaymentGateways] = useState<PaymentGatewayConfig[]>([]);
-  const [financeConfig, setFinanceConfig] = useState<FinanceConfig>(INITIAL_FINANCE_CONFIG);
+  const [financeConfig, setFinanceConfig] = useState<FinanceConfig>({ costPerCredit: 0, currency: 'INR', taxRate: 0 });
   const [subAdmins, setSubAdmins] = useState<SubAdmin[]>([]);
   const [notifications, setNotifications] = useState<NotificationLog[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -235,6 +215,28 @@ export default function App() {
   const [bulkFile, setBulkFile] = useState<File | null>(null);
   const [isSyncingAirtable, setIsSyncingAirtable] = useState(false);
   const [templateCategoryFilter, setTemplateCategoryFilter] = useState<string>('All');
+
+  const revenueChartData = useMemo(() => {
+    const now = new Date();
+    const days: { name: string; userPayments: number; creatorPayouts: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      const dayName = formatDay(d);
+      const dayStart = new Date(d);
+      dayStart.setHours(0,0,0,0);
+      const dayEnd = new Date(d);
+      dayEnd.setHours(23,59,59,999);
+      const dayTxns = transactions.filter(t => {
+        const dt = new Date((t as any).date || (t as any).createdAt || d);
+        return dt >= dayStart && dt <= dayEnd;
+      });
+      const credit = dayTxns.filter(t => (t as any).type === 'credit').reduce((sum, t) => sum + Number((t as any).amount || 0), 0);
+      const debit = dayTxns.filter(t => (t as any).type === 'debit').reduce((sum, t) => sum + Number((t as any).amount || 0), 0);
+      days.push({ name: dayName, userPayments: credit, creatorPayouts: debit });
+    }
+    return days;
+  }, [transactions]);
 
   // Package & Gateway State
   const [activePackage, setActivePackage] = useState<PointsPackage | null>(null);
@@ -2044,7 +2046,7 @@ export default function App() {
                 </h3>
                 <div className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={REVENUE_DATA}>
+                        <LineChart data={revenueChartData}>
                             <XAxis dataKey="name" stroke="#4b5563" tick={{fill: '#9ca3af', fontSize: 12}} axisLine={false} tickLine={false} />
                             <YAxis stroke="#4b5563" tick={{fill: '#9ca3af', fontSize: 12}} axisLine={false} tickLine={false} prefix="₹" />
                             <Tooltip 

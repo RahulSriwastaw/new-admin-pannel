@@ -1,18 +1,6 @@
 
 import { 
-  API_BASE_URL, 
-  MOCK_USERS, 
-  MOCK_APPLICATIONS, 
-  MOCK_TRANSACTIONS, 
-  INITIAL_AI_MODELS, 
-  INITIAL_SYSTEM_METRICS,
-  MOCK_TEMPLATES,
-  MOCK_POINTS_PACKAGES,
-  MOCK_PAYMENT_GATEWAYS,
-  MOCK_SUB_ADMINS,
-  MOCK_NOTIFICATIONS,
-  INITIAL_FINANCE_CONFIG,
-  MOCK_CATEGORIES
+  API_BASE_URL
 } from '../constants';
 import { User, CreatorApplication, Transaction, AIModelConfig, SystemMetrics, Template, AirtableConfig, PointsPackage, PaymentGatewayConfig, SubAdmin, NotificationLog, FinanceConfig, Category, ToolConfig } from '../types';
 
@@ -30,7 +18,7 @@ const getUploadHeaders = () => {
 };
 
 // Helper for safe fetching with timeout and fallback
-const fetchWithFallback = async <T>(endpoint: string, fallback: T): Promise<T> => {
+const fetchWithFallback = async <T>(endpoint: string, _fallback: T): Promise<T> => {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
@@ -44,122 +32,75 @@ const fetchWithFallback = async <T>(endpoint: string, fallback: T): Promise<T> =
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      warn(`API Error for ${endpoint}: ${response.status} ${response.statusText}`);
-      return fallback;
+      throw new Error(`API Error ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
-    warn(`Connection failed for ${endpoint}, using fallback data.`, error);
-    return fallback;
+    throw error;
   }
 };
 
 export const api = {
   // Auth
   login: async (id: string, pass: string) => {
-    // 1. Try Actual Backend First
-    try {
-       const controller = new AbortController();
-       const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-       const res = await fetch(`${API_BASE_URL}/auth/admin-login`, {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ email: id, password: pass }),
-         signal: controller.signal
-       });
-       
-       clearTimeout(timeoutId);
-
-       if(res.ok) {
-         const data = await res.json();
-         if (data.token) {
-           localStorage.setItem('token', data.token);
-           if (data.user) {
-             localStorage.setItem('adminUser', JSON.stringify(data.user));
-           }
-         }
-         return data;
-       }
-    } catch(e) {
-      warn("Backend login failed/unreachable, falling back to local check for Admin Panel access.", e);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(`${API_BASE_URL}/auth/admin-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: id, password: pass }),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    if (!res.ok) {
+      throw new Error("Invalid Credentials");
     }
-    
-    // 2. Fallback for Admin Access (if backend is sleeping/down)
-    if (id === "Rahul@Malik" && pass === "Rupantramalik@rahul") {
-      const mockToken = "mock_jwt_token_rupantar_secure";
-      localStorage.setItem('token', mockToken);
-      return { 
-        success: true, 
-        user: { 
-          name: "Rahul Malik", 
-          role: "super_admin", 
-          email: "admin@rupantar.ai",
-          avatar: "",
-          permissions: ['manage_users', 'manage_creators', 'manage_templates', 'manage_finance', 'manage_ai', 'manage_settings', 'view_reports'] 
-        },
-        token: mockToken
-      };
+    const data = await res.json();
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+      if (data.user) {
+        localStorage.setItem('adminUser', JSON.stringify(data.user));
+      }
     }
-    
-    throw new Error("Invalid Credentials");
+    return data;
   },
 
   updateAdminProfile: async (data: any) => {
-      try {
-        await fetch(`${API_BASE_URL}/admin/profile`, {
-            method: 'PUT',
-            headers: getAuthHeaders(),
-            body: JSON.stringify(data)
-        });
-        return true;
-      } catch (e) {
-        warn("Backend unavailable, simulating profile update");
-        return true;
+      const res = await fetch(`${API_BASE_URL}/admin/profile`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        throw new Error('Failed to update admin profile');
       }
+      return true;
   },
 
   // Dashboard
-  getMetrics: () => fetchWithFallback<SystemMetrics>('/admin/metrics', INITIAL_SYSTEM_METRICS),
+  getMetrics: () => fetchWithFallback<SystemMetrics>('/admin/metrics', {} as any),
 
   // Users
   getUsers: async (): Promise<User[]> => {
-    const users = await fetchWithFallback<User[]>('/admin/users', MOCK_USERS);
-    try {
-      const res = await fetch(`${API_BASE_URL}/admin/creators/stats`, { headers: getAuthHeaders() });
-      if (res.ok) {
-        const stats: { userId: string; followers: number; likes: number; uses: number }[] = await res.json();
-        const map = new Map(stats.map(s => [String(s.userId), s]));
-        return users.map(u => {
-          if (u.role === 'creator') {
-            const s = map.get(u.id);
-            return { ...u, followers: s?.followers || 0, likes: s?.likes || 0, uses: s?.uses || 0 };
-          }
-          return u;
-        });
-      }
-    } catch {}
-    return users;
+    return fetchWithFallback<User[]>('/admin/users', [] as any);
   },
 
   setUserTempPassword: async (userId: string, tempPassword: string) => {
-    try {
-      await fetch(`${API_BASE_URL}/admin/users/${userId}/temp-password`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ tempPassword })
-      });
-      return true;
-    } catch (e) {
-      warn('Backend unavailable, simulating temp password set');
-      return true;
+    const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/temp-password`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ tempPassword })
+    });
+    if (!res.ok) {
+      throw new Error('Failed to set temporary password');
     }
+    return true;
   },
 
   // Quick Tools Config
-  getToolsConfig: () => fetchWithFallback<ToolConfig>('/admin/tools/config', { id: 'local', tools: [] }),
+  getToolsConfig: () => fetchWithFallback<ToolConfig>('/admin/tools/config', {} as any),
   updateToolsConfig: async (tools: ToolConfig['tools']) => {
     try {
       const res = await fetch(`${API_BASE_URL}/admin/tools/config`, {
@@ -170,8 +111,7 @@ export const api = {
       if (res.ok) return await res.json();
       throw new Error('Failed');
     } catch (e) {
-      warn('Backend unavailable, simulating tools config update');
-      return { id: 'local', tools } as ToolConfig;
+      throw e;
     }
   },
 
@@ -187,15 +127,8 @@ export const api = {
       if (res.ok) return await res.json();
       throw new Error("Failed");
       } catch (e) {
-        warn("Backend unavailable, simulating user creation");
-        return {
-          id: `U${Date.now()}`,
-          ...userData,
-          joinedDate: new Date().toISOString(),
-          status: 'active',
-          avatar: '' 
-      };
-    }
+        throw e;
+      }
   },
 
   updateUserStatus: async (userId: string, status: User['status']) => {
@@ -207,8 +140,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      warn("Backend unavailable, simulating user status update");
-      return true;
+      throw e;
     }
   },
 
@@ -221,8 +153,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      warn("Backend unavailable, simulating user update");
-      return true;
+      throw e;
     }
   },
 
@@ -235,33 +166,15 @@ export const api = {
       });
       return true;
     } catch (e) {
-      warn("Backend unavailable, simulating bulk update");
-      return true;
+      throw e;
     }
   },
 
   // Creators
-  getCreatorApplications: () => fetchWithFallback<CreatorApplication[]>('/admin/creators', MOCK_APPLICATIONS),
+  getCreatorApplications: () => fetchWithFallback<CreatorApplication[]>('/admin/creators', [] as any),
 
   addCreator: async (data: Partial<CreatorApplication>) => {
-    try {
-      // Backend supports status updates on existing creator applications;
-      // for creating new applications, use the user-facing flow instead.
-      const fallback = { 
-        ...data, 
-        id: `APP_NEW_${Date.now()}`, 
-        status: 'approved', 
-        appliedDate: new Date().toISOString() 
-      };
-      return fallback;
-    } catch (e) {
-      return { 
-        ...data, 
-        id: `APP_NEW_${Date.now()}`, 
-        status: 'approved', 
-        appliedDate: new Date().toISOString() 
-      };
-    }
+    throw new Error('Not supported');
   },
 
   updateCreator: async (id: string, data: Partial<CreatorApplication>) => {
@@ -276,17 +189,12 @@ export const api = {
       }
       return true;
     } catch (e) {
-      return true;
+      throw e;
     }
   },
 
   deleteCreator: async (id: string) => {
-    try {
-      // Not supported on backend; noop for now
-      return true;
-    } catch (e) {
-      return true;
-    }
+    throw new Error('Not supported');
   },
 
   approveCreatorApplication: async (id: string) => {
@@ -298,8 +206,7 @@ export const api = {
       });
       return res.ok;
     } catch (e) {
-      warn("Backend unavailable, simulating approval success");
-      return true;
+      throw e;
     }
   },
 
@@ -312,16 +219,15 @@ export const api = {
       });
       return res.ok;
     } catch (e) {
-      warn("Backend unavailable, simulating rejection success");
-      return true;
+      throw e;
     }
   },
 
   // Finance
-  getTransactions: () => fetchWithFallback<Transaction[]>('/admin/finance/transactions', MOCK_TRANSACTIONS),
+  getTransactions: () => fetchWithFallback<Transaction[]>('/admin/finance/transactions', [] as any),
 
   // Points Packages
-  getPointsPackages: () => fetchWithFallback<PointsPackage[]>('/admin/finance/packages', MOCK_POINTS_PACKAGES),
+  getPointsPackages: () => fetchWithFallback<PointsPackage[]>('/packages', [] as any),
 
   addPointsPackage: async (pkg: Omit<PointsPackage, 'id'>) => {
     try {
@@ -332,9 +238,9 @@ export const api = {
       });
       if (res.ok) return await res.json();
       throw new Error("Failed");
-    } catch (e) {
-      return { ...pkg, id: `PKG${Math.random().toString(36).substr(2, 5).toUpperCase()}` };
-    }
+      } catch (e) {
+        throw e;
+      }
   },
 
   updatePointsPackage: async (id: string, updates: Partial<PointsPackage>) => {
@@ -346,7 +252,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      return true;
+      throw e;
     }
   },
 
@@ -358,12 +264,12 @@ export const api = {
       });
       return true;
     } catch (e) {
-      return true;
+      throw e;
     }
   },
 
   // Payment Gateways
-  getPaymentGateways: () => fetchWithFallback<PaymentGatewayConfig[]>('/admin/finance/gateways', MOCK_PAYMENT_GATEWAYS),
+  getPaymentGateways: () => fetchWithFallback<PaymentGatewayConfig[]>('/admin/finance/gateways', [] as any),
   createPaymentGateway: async (config: Omit<PaymentGatewayConfig, 'id'>) => {
     try {
       const res = await fetch(`${API_BASE_URL}/admin/finance/gateways`, {
@@ -373,9 +279,9 @@ export const api = {
       });
       if (res.ok) return await res.json();
       throw new Error("Failed");
-    } catch (e) {
-      return { id: `GW${Math.random().toString(36).substr(2,6)}`, ...config };
-    }
+      } catch (e) {
+        throw e;
+      }
   },
 
   updateGatewayConfig: async (id: string, config: Partial<PaymentGatewayConfig>) => {
@@ -387,7 +293,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      return true;
+      throw e;
     }
   },
 
@@ -400,7 +306,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      return false;
+      throw e;
     }
   },
   testGatewayConnection: async (id: string) => {
@@ -418,7 +324,7 @@ export const api = {
   },
 
   // Finance Config
-  getFinanceConfig: () => fetchWithFallback<FinanceConfig>('/admin/finance/config', INITIAL_FINANCE_CONFIG),
+  getFinanceConfig: () => fetchWithFallback<FinanceConfig>('/admin/finance/config', {} as any),
 
   updateFinanceConfig: async (config: FinanceConfig) => {
     try {
@@ -429,8 +335,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      warn("Backend unavailable, simulating finance config update");
-      return true;
+      throw e;
     }
   },
 
@@ -443,8 +348,8 @@ export const api = {
         if (Array.isArray(data)) return data as AIModelConfig[];
         if ((data as any)?.models) return (data as any).models as AIModelConfig[];
       }
-    } catch {}
-    return INITIAL_AI_MODELS;
+    } catch (e) {}
+    throw new Error('Failed to load AI models');
   },
   
   // Toggle AI Model
@@ -457,8 +362,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      warn("Failed to toggle model on backend, updating local state only.");
-      return false; 
+      throw e;
     }
   },
 
@@ -471,8 +375,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      warn("Failed to update cost on backend.");
-      return true; // Return true to allow UI update in mock mode
+      throw e;
     }
   },
 
@@ -485,8 +388,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      warn("Failed to update API key on backend.");
-      return true;
+      throw e;
     }
   },
 
@@ -498,9 +400,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      warn("Backend unavailable, simulating AI connection test");
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      return Math.random() > 0.1; // 90% success chance
+      throw e;
     }
   },
 
@@ -513,8 +413,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-       warn("Failed to update model details on backend.");
-       return true;
+       throw e;
     }
   },
 
@@ -526,8 +425,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      warn("Failed to clear cache on backend.");
-      return true;
+      throw e;
     }
   },
 
@@ -540,37 +438,27 @@ export const api = {
       });
       if (res.ok) return await res.json();
       throw new Error("Failed");
-    } catch (e) {
-      warn("Backend unavailable, simulating adding model");
-      return { ...model, id: `AI_${Math.random().toString(36).substr(2, 5)}` };
+      } catch (e) {
+      throw e;
     }
   },
 
   // Templates Management
-  getTemplates: () => fetchWithFallback<Template[]>('/admin/templates', MOCK_TEMPLATES),
+  getTemplates: () => fetchWithFallback<Template[]>('/admin/templates', [] as any),
 
   uploadImage: async (file: File) => {
-    try {
-      const formData = new FormData();
-      formData.append('image', file);
-      // In a real scenario, this would post to /api/upload
-      // For now, if the backend supports it, we try. If not, we return a mock URL.
-      
-      const res = await fetch(`${API_BASE_URL}/admin/upload/template-demo`, {
-         method: 'POST',
-         headers: getUploadHeaders(),
-         body: formData
-      });
-      if(res.ok) {
-         const data = await res.json();
-         return data.url;
-      }
-      
-      throw new Error("Backend upload failed");
-    } catch (e) {
-      warn("Upload failed, using local blob");
-      return URL.createObjectURL(file);
+    const formData = new FormData();
+    formData.append('image', file);
+    const res = await fetch(`${API_BASE_URL}/admin/upload/template-demo`, {
+      method: 'POST',
+      headers: getUploadHeaders(),
+      body: formData
+    });
+    if (!res.ok) {
+      throw new Error('Backend upload failed');
     }
+    const data = await res.json();
+    return data.url;
   },
 
   addTemplate: async (template: Omit<Template, 'id' | 'useCount'>) => {
@@ -583,8 +471,7 @@ export const api = {
       if (res.ok) return await res.json();
       throw new Error("Failed to add template");
     } catch (e) {
-       warn("Backend unavailable, simulating template add");
-       return { ...template, id: `T${Math.random().toString(36).substr(2, 6)}`, useCount: 0 };
+       throw e;
     }
   },
 
@@ -597,8 +484,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      warn("Backend unavailable, simulating template update");
-      return true;
+      throw e;
     }
   },
 
@@ -610,7 +496,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      return true;
+      throw e;
     }
   },
 
@@ -623,8 +509,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      console.warn("Backend unavailable, simulating bulk template update");
-      return true;
+      throw e;
     }
   },
 
@@ -639,8 +524,7 @@ export const api = {
        });
        return true;
     } catch (e) {
-      warn("Backend unavailable, simulating bulk upload");
-      return true;
+      throw e;
     }
   },
 
@@ -657,26 +541,12 @@ export const api = {
       }
       throw new Error("Sync Failed");
     } catch (e) {
-      warn("Backend unavailable, simulating airtable sync");
-      return [
-        { 
-          id: `AT_${Math.random().toString(36).substr(2,4)}`, 
-          title: 'Airtable Synced Template', 
-          imageUrl: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=500', 
-          category: 'Synced',
-          subCategory: 'General', 
-          prompt: 'A prompt from airtable', 
-          status: 'active', 
-          useCount: 0, 
-          isPremium: false,
-          source: 'airtable'
-        }
-      ] as Template[];
+      throw e;
     }
   },
 
   // Category Management
-  getCategories: () => fetchWithFallback<Category[]>('/admin/categories', MOCK_CATEGORIES),
+  getCategories: () => fetchWithFallback<Category[]>('/admin/categories', [] as any),
 
   addCategory: async (category: Omit<Category, 'id'>) => {
     try {
@@ -688,7 +558,7 @@ export const api = {
       if (res.ok) return await res.json();
       throw new Error("Failed");
     } catch (e) {
-       return { ...category, id: `CAT${Math.random().toString(36).substr(2, 4)}` };
+       throw e;
     }
   },
 
@@ -701,7 +571,7 @@ export const api = {
       });
       return true;
     } catch (e) {
-      return true;
+      throw e;
     }
   },
 
@@ -713,12 +583,12 @@ export const api = {
       });
       return true;
     } catch (e) {
-      return true;
+      throw e;
     }
   },
 
   // Sub Admin Management
-  getSubAdmins: () => fetchWithFallback<SubAdmin[]>('/admin/system/admins', MOCK_SUB_ADMINS),
+  getSubAdmins: () => fetchWithFallback<SubAdmin[]>('/admin/system/admins', [] as any),
 
   createSubAdmin: async (admin: Omit<SubAdmin, 'id' | 'lastActive'>) => {
     try {
@@ -730,11 +600,7 @@ export const api = {
       if(res.ok) return await res.json();
       throw new Error("Failed");
     } catch (e) {
-      return { 
-        ...admin, 
-        id: `SA${Math.random().toString(36).substr(2, 5)}`,
-        lastActive: 'Never'
-      };
+      throw e;
     }
   },
 
@@ -746,12 +612,12 @@ export const api = {
       });
       return true;
     } catch (e) {
-      return true;
+      throw e;
     }
   },
 
   // Notifications
-  getNotifications: () => fetchWithFallback<NotificationLog[]>('/admin/notifications', MOCK_NOTIFICATIONS),
+  getNotifications: () => fetchWithFallback<NotificationLog[]>('/admin/notifications', [] as any),
 
   sendNotification: async (notification: Omit<NotificationLog, 'id' | 'sentAt' | 'reachCount' | 'status'>) => {
     try {
@@ -763,17 +629,10 @@ export const api = {
       if (res.ok) return await res.json();
       throw new Error("Failed");
     } catch (e) {
-       // Mock response
-       return {
-         ...notification,
-         id: `NOTIF_${Date.now()}`,
-         sentAt: notification.scheduledFor ? undefined : new Date().toISOString(),
-         status: notification.scheduledFor ? 'scheduled' : 'sent',
-         reachCount: notification.target === 'all_users' ? 850 : 45,
-       };
+       throw e;
     }
   }
 };
 const __env = (typeof import.meta !== 'undefined' ? (import.meta as any).env : undefined);
-const DEBUG = (__env?.VITE_DEBUG === 'true') || (typeof process !== 'undefined' && (process as any).env?.VITE_DEBUG === 'true');
-const warn = (...args: any[]) => { if (DEBUG) console.warn(...args); };
+const DEBUG = false;
+const warn = (..._args: any[]) => {};
