@@ -174,7 +174,17 @@ export const api = {
   getCreatorApplications: () => fetchWithFallback<CreatorApplication[]>('/admin/creators', [] as any),
 
   addCreator: async (data: Partial<CreatorApplication>) => {
-    throw new Error('Not supported');
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/creators`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data)
+      });
+      if (res.ok) return await res.json();
+      throw new Error("Failed to add creator");
+    } catch (e) {
+      throw e;
+    }
   },
 
   updateCreator: async (id: string, data: Partial<CreatorApplication>) => {
