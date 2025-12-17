@@ -1,5 +1,5 @@
 
-import { 
+import {
   API_BASE_URL
 } from '../constants';
 import { User, CreatorApplication, Transaction, AIModelConfig, SystemMetrics, Template, AirtableConfig, PointsPackage, PaymentGatewayConfig, SubAdmin, NotificationLog, FinanceConfig, Category, ToolConfig } from '../types';
@@ -68,15 +68,15 @@ export const api = {
   },
 
   updateAdminProfile: async (data: any) => {
-      const res = await fetch(`${API_BASE_URL}/admin/profile`, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(data)
-      });
-      if (!res.ok) {
-        throw new Error('Failed to update admin profile');
-      }
-      return true;
+    const res = await fetch(`${API_BASE_URL}/admin/profile`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) {
+      throw new Error('Failed to update admin profile');
+    }
+    return true;
   },
 
   // Dashboard
@@ -126,9 +126,9 @@ export const api = {
       });
       if (res.ok) return await res.json();
       throw new Error("Failed");
-      } catch (e) {
-        throw e;
-      }
+    } catch (e) {
+      throw e;
+    }
   },
 
   updateUserStatus: async (userId: string, status: User['status']) => {
@@ -199,7 +199,7 @@ export const api = {
 
   approveCreatorApplication: async (id: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/creators/${id}/status`, { 
+      const res = await fetch(`${API_BASE_URL}/admin/creators/${id}/status`, {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify({ status: 'approved' })
@@ -212,7 +212,7 @@ export const api = {
 
   rejectCreatorApplication: async (id: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/creators/${id}/status`, { 
+      const res = await fetch(`${API_BASE_URL}/admin/creators/${id}/status`, {
         method: 'PATCH',
         headers: getAuthHeaders(),
         body: JSON.stringify({ status: 'rejected' })
@@ -238,9 +238,9 @@ export const api = {
       });
       if (res.ok) return await res.json();
       throw new Error("Failed");
-      } catch (e) {
-        throw e;
-      }
+    } catch (e) {
+      throw e;
+    }
   },
 
   updatePointsPackage: async (id: string, updates: Partial<PointsPackage>) => {
@@ -258,9 +258,9 @@ export const api = {
 
   deletePointsPackage: async (id: string) => {
     try {
-      await fetch(`${API_BASE_URL}/admin/finance/packages/${id}`, { 
+      await fetch(`${API_BASE_URL}/admin/finance/packages/${id}`, {
         method: 'DELETE',
-        headers: getAuthHeaders() 
+        headers: getAuthHeaders()
       });
       return true;
     } catch (e) {
@@ -279,9 +279,9 @@ export const api = {
       });
       if (res.ok) return await res.json();
       throw new Error("Failed");
-      } catch (e) {
-        throw e;
-      }
+    } catch (e) {
+      throw e;
+    }
   },
 
   updateGatewayConfig: async (id: string, config: Partial<PaymentGatewayConfig>) => {
@@ -348,14 +348,14 @@ export const api = {
         if (Array.isArray(data)) return data as AIModelConfig[];
         if ((data as any)?.models) return (data as any).models as AIModelConfig[];
       }
-    } catch (e) {}
+    } catch (e) { }
     throw new Error('Failed to load AI models');
   },
-  
+
   // Toggle AI Model
   toggleAIModel: async (modelId: string, isActive: boolean) => {
     try {
-      await fetch(`${API_BASE_URL}/admin/config/ai/${modelId}/activate`, { 
+      await fetch(`${API_BASE_URL}/admin/config/ai/${modelId}/activate`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ isActive })
@@ -368,7 +368,7 @@ export const api = {
 
   updateAIModelCost: async (modelId: string, cost: number) => {
     try {
-      await fetch(`${API_BASE_URL}/admin/config/ai/${modelId}/cost`, { 
+      await fetch(`${API_BASE_URL}/admin/config/ai/${modelId}/cost`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ cost })
@@ -381,11 +381,12 @@ export const api = {
 
   updateAIModelApiKey: async (modelId: string, apiKey: string) => {
     try {
-      await fetch(`${API_BASE_URL}/admin/config/ai/${modelId}/apikey`, {
+      const res = await fetch(`${API_BASE_URL}/admin/config/ai/${modelId}/apikey`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ apiKey })
       });
+      if (!res.ok) throw new Error('Failed to update API Key');
       return true;
     } catch (e) {
       throw e;
@@ -394,7 +395,7 @@ export const api = {
 
   testAIModelConnection: async (modelId: string) => {
     try {
-      await fetch(`${API_BASE_URL}/admin/config/ai/${modelId}/test`, { 
+      await fetch(`${API_BASE_URL}/admin/config/ai/${modelId}/test`, {
         method: 'POST',
         headers: getAuthHeaders()
       });
@@ -413,15 +414,15 @@ export const api = {
       });
       return true;
     } catch (e) {
-       throw e;
+      throw e;
     }
   },
 
   clearAICache: async () => {
     try {
-      await fetch(`${API_BASE_URL}/admin/config/ai/cache`, { 
+      await fetch(`${API_BASE_URL}/admin/config/ai/cache`, {
         method: 'DELETE',
-        headers: getAuthHeaders() 
+        headers: getAuthHeaders()
       });
       return true;
     } catch (e) {
@@ -438,7 +439,7 @@ export const api = {
       });
       if (res.ok) return await res.json();
       throw new Error("Failed");
-      } catch (e) {
+    } catch (e) {
       throw e;
     }
   },
@@ -471,7 +472,7 @@ export const api = {
       if (res.ok) return await res.json();
       throw new Error("Failed to add template");
     } catch (e) {
-       throw e;
+      throw e;
     }
   },
 
@@ -490,9 +491,9 @@ export const api = {
 
   deleteTemplate: async (id: string) => {
     try {
-      await fetch(`${API_BASE_URL}/admin/templates/${id}`, { 
+      await fetch(`${API_BASE_URL}/admin/templates/${id}`, {
         method: 'DELETE',
-        headers: getAuthHeaders() 
+        headers: getAuthHeaders()
       });
       return true;
     } catch (e) {
@@ -515,14 +516,14 @@ export const api = {
 
   bulkUploadTemplates: async (file: File) => {
     try {
-       const formData = new FormData();
-       formData.append('file', file);
-       await fetch(`${API_BASE_URL}/admin/templates/bulk`, {
-         method: 'POST',
-         headers: getUploadHeaders(), // Do NOT set Content-Type for FormData
-         body: formData
-       });
-       return true;
+      const formData = new FormData();
+      formData.append('file', file);
+      await fetch(`${API_BASE_URL}/admin/templates/bulk`, {
+        method: 'POST',
+        headers: getUploadHeaders(), // Do NOT set Content-Type for FormData
+        body: formData
+      });
+      return true;
     } catch (e) {
       throw e;
     }
@@ -535,7 +536,7 @@ export const api = {
         headers: getAuthHeaders(),
         body: JSON.stringify(config)
       });
-      if(res.ok) {
+      if (res.ok) {
         const data = await res.json();
         return data.templates; // Assuming API returns new templates
       }
@@ -558,7 +559,7 @@ export const api = {
       if (res.ok) return await res.json();
       throw new Error("Failed");
     } catch (e) {
-       throw e;
+      throw e;
     }
   },
 
@@ -577,9 +578,9 @@ export const api = {
 
   deleteCategory: async (id: string) => {
     try {
-      await fetch(`${API_BASE_URL}/admin/categories/${id}`, { 
+      await fetch(`${API_BASE_URL}/admin/categories/${id}`, {
         method: 'DELETE',
-        headers: getAuthHeaders() 
+        headers: getAuthHeaders()
       });
       return true;
     } catch (e) {
@@ -597,7 +598,7 @@ export const api = {
         headers: getAuthHeaders(),
         body: JSON.stringify(admin)
       });
-      if(res.ok) return await res.json();
+      if (res.ok) return await res.json();
       throw new Error("Failed");
     } catch (e) {
       throw e;
@@ -606,9 +607,9 @@ export const api = {
 
   deleteSubAdmin: async (id: string) => {
     try {
-      await fetch(`${API_BASE_URL}/admin/system/admins/${id}`, { 
+      await fetch(`${API_BASE_URL}/admin/system/admins/${id}`, {
         method: 'DELETE',
-        headers: getAuthHeaders() 
+        headers: getAuthHeaders()
       });
       return true;
     } catch (e) {
@@ -629,10 +630,10 @@ export const api = {
       if (res.ok) return await res.json();
       throw new Error("Failed");
     } catch (e) {
-       throw e;
+      throw e;
     }
   }
 };
 const __env = (typeof import.meta !== 'undefined' ? (import.meta as any).env : undefined);
 const DEBUG = false;
-const warn = (..._args: any[]) => {};
+const warn = (..._args: any[]) => { };
