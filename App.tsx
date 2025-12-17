@@ -192,7 +192,8 @@ export default function App() {
   const [showAirtableModal, setShowAirtableModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [newTemplate, setNewTemplate] = useState<Partial<Template>>({
-    title: '', imageUrl: '', category: 'General', subCategory: 'Misc', prompt: '', negativePrompt: '', isPremium: false, status: 'active', source: 'manual'
+    title: '', imageUrl: '', category: 'General', subCategory: 'Misc', prompt: '', negativePrompt: '', isPremium: false, status: 'active', source: 'manual',
+    gender: '', ageGroup: '', state: '', description: '', tags: []
   });
   const [newCategory, setNewCategory] = useState({ name: '', subCategories: [] as string[] });
   const [newSubCategoryInput, setNewSubCategoryInput] = useState('');
@@ -1601,6 +1602,52 @@ export default function App() {
                       {availableSubCategories.map(sub => <option key={sub} value={sub}>{sub}</option>)}
                     </select>
                   </div>
+                </div>
+
+                {/* Filters Row */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500 uppercase block mb-1">Gender</label>
+                    <select value={newTemplate.gender || ''} onChange={e => setNewTemplate({ ...newTemplate, gender: e.target.value as any })} className="w-full bg-gray-950 border border-gray-700 rounded px-2 py-2 text-white text-sm">
+                      <option value="">Any</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Unisex">Unisex</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 uppercase block mb-1">Age Group</label>
+                    <select value={newTemplate.ageGroup || ''} onChange={e => setNewTemplate({ ...newTemplate, ageGroup: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-2 py-2 text-white text-sm">
+                      <option value="">Any</option>
+                      <option value="18-25">18-25</option>
+                      <option value="25-35">25-35</option>
+                      <option value="35-45">35-45</option>
+                      <option value="45+">45+</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 uppercase block mb-1">State (IN)</label>
+                    <select value={newTemplate.state || ''} onChange={e => setNewTemplate({ ...newTemplate, state: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-2 py-2 text-white text-sm">
+                      <option value="">All India</option>
+                      <option value="Maharashtra">Maharashtra</option>
+                      <option value="Delhi">Delhi</option>
+                      <option value="Karnataka">Karnataka</option>
+                      <option value="Punjab">Punjab</option>
+                      <option value="Gujarat">Gujarat</option>
+                      <option value="Rajasthan">Rajasthan</option>
+                      {/* Add more states as needed */}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs text-gray-500 uppercase block mb-1">Description</label>
+                  <textarea rows={2} value={newTemplate.description || ''} onChange={e => setNewTemplate({ ...newTemplate, description: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" placeholder="Template description..." />
+                </div>
+
+                <div>
+                  <label className="text-xs text-gray-500 uppercase block mb-1">Tags (Comma separated)</label>
+                  <input type="text" value={newTemplate.tags ? newTemplate.tags.join(', ') : ''} onChange={e => setNewTemplate({ ...newTemplate, tags: e.target.value.split(',').map(s => s.trim()) })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" placeholder="e.g. cinematic, dark, wedding" />
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 uppercase block mb-1">Status</label>

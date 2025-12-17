@@ -96,6 +96,13 @@ export interface Template {
   subCategory?: string;
   prompt: string;
   negativePrompt?: string;
+
+  description?: string;
+  tags: string[]; // should be string[]
+  gender: 'Male' | 'Female' | 'Unisex' | '';
+  state: string;
+  ageGroup: string;
+
   status: 'active' | 'draft';
   useCount: number;
   isPremium: boolean;
@@ -145,12 +152,12 @@ export interface ToolConfig {
 // Admin Management Types
 export type AdminRole = 'super_admin' | 'admin' | 'moderator' | 'support';
 
-export type AdminPermission = 
-  | 'manage_users' 
-  | 'manage_creators' 
-  | 'manage_templates' 
-  | 'manage_finance' 
-  | 'manage_ai' 
+export type AdminPermission =
+  | 'manage_users'
+  | 'manage_creators'
+  | 'manage_templates'
+  | 'manage_finance'
+  | 'manage_ai'
   | 'manage_settings'
   | 'view_reports';
 
@@ -165,10 +172,10 @@ export interface SubAdmin {
 }
 
 // Notification Types
-export type NotificationTarget = 
-  | 'all_users' 
-  | 'all_creators' 
-  | 'active_users' 
+export type NotificationTarget =
+  | 'all_users'
+  | 'all_creators'
+  | 'active_users'
   | 'paid_users'   // Bought at least 1 pack
   | 'free_users'   // Never bought a pack
   | 'churned_users' // Inactive > 30 days
