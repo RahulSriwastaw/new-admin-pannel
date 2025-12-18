@@ -2167,6 +2167,7 @@ export default function App() {
                     <option value="Stripe">Stripe</option>
                     <option value="PayPal">PayPal</option>
                     <option value="PhonePe">PhonePe</option>
+                    <option value="Paytm">Paytm</option>
                   </select>
                 </div>
               </div>
