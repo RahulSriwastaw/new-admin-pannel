@@ -1092,7 +1092,11 @@ export default function App() {
     const next = !gateway.isActive;
     const ok = await api.toggleGatewayActive(gateway.id, next);
     if (ok) {
-      setPaymentGateways(prev => prev.map(g => g.id === gateway.id ? { ...g, isActive: next } : g));
+      setPaymentGateways(prev => prev.map(g => {
+        if (g.id === gateway.id) return { ...g, isActive: next };
+        if (next) return { ...g, isActive: false };
+        return g;
+      }));
       addLog(`Gateway '${gateway.name}' ${next ? 'enabled' : 'disabled'}.`, LogLevel.INFO, "AdminPanel");
     } else {
       addLog(`Failed to toggle '${gateway.name}'.`, LogLevel.ERROR, "Backend");
