@@ -4461,7 +4461,11 @@ export default function App() {
         <div className="w-full max-w-md bg-gray-900/80 backdrop-blur-xl border border-gray-800 rounded-2xl shadow-2xl p-8 relative z-10 animate-in fade-in zoom-in duration-500">
           <div className="flex flex-col items-center mb-8">
             <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-indigo-500/20">
-              <Activity className="text-white" size={32} />
+              <img
+                src="/logo.svg"
+                alt="Rupantar AI"
+                className="w-8 h-8 brightness-0 invert"
+              />
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight">Rupantar Admin</h1>
             <p className="text-gray-400 text-sm mt-2">Secure Access Gateway</p>
@@ -4533,7 +4537,11 @@ export default function App() {
       <aside className="w-64 bg-gray-950 border-r border-gray-800 flex flex-col z-20 shadow-2xl">
         <div className="p-6 flex flex-col items-center border-b border-gray-800">
           <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl mb-3 flex items-center justify-center shadow-lg">
-            <Activity className="text-white" size={24} />
+            <img
+              src="/logo.svg"
+              alt="Rupantar AI"
+              className="w-6 h-6 brightness-0 invert"
+            />
           </div>
           <h1 className="text-xl font-bold text-white tracking-tight">Rupantar AI</h1>
           <span className="text-[10px] uppercase tracking-widest text-gray-500 font-semibold mt-1">Administrator</span>
