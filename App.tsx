@@ -3958,7 +3958,7 @@ export default function App() {
                       {w.method === 'bank' ? (
                         <div className="flex flex-col gap-1">
                           <span className="flex items-center gap-1"><CreditCard size={12} /> Bank Transfer</span>
-                          <span className="text-[10px] text-gray-500">{w.bankDetails?.bankName} • {w.bankDetails?.accountNumber.slice(-4)}</span>
+                          <span className="text-[10px] text-gray-500">{w.bankDetails?.bankName || 'N/A'} • {w.bankDetails?.accountNumber?.slice(-4) || 'xxxx'}</span>
                         </div>
                       ) : (
                         <div className="flex flex-col gap-1">
