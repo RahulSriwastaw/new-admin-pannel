@@ -10,7 +10,7 @@ import {
   CLOUDINARY_CONFIG,
   PERMISSIONS_LIST
 } from './constants';
-import { LogEntry, LogLevel, ConnectionStatus, User, CreatorApplication, Transaction, AIModelConfig, SystemMetrics, Template, AirtableConfig, PointsPackage, PaymentGatewayConfig, SubAdmin, AdminRole, AdminPermission, NotificationLog, NotificationTarget, NotificationType, FinanceConfig, Category, ToolConfig, AdsConfig } from './types';
+import { LogEntry, LogLevel, ConnectionStatus, User, CreatorApplication, Transaction, AIModelConfig, SystemMetrics, Template, AirtableConfig, PointsPackage, PaymentGatewayConfig, SubAdmin, AdminRole, AdminPermission, NotificationLog, NotificationTarget, NotificationType, FinanceConfig, Category, ToolConfig, AdsConfig, Withdrawal, WithdrawalStats } from './types';
 import { analyzeErrorLogs, simulateFixApplication } from './services/geminiService';
 import { api } from './services/api';
 import {
@@ -91,7 +91,7 @@ export default function App() {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.CONNECTING);
   const [isFixing, setIsFixing] = useState(false);
   const [metrics, setMetrics] = useState<SystemMetrics>({ cpu: 0, memory: 0, requests: 0, latency: 0, activeUsers: 0, revenue: 0 });
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'creators' | 'templates' | 'finance' | 'ai-config' | 'ads' | 'notifications' | 'settings' | 'profile'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'creators' | 'templates' | 'finance' | 'ai-config' | 'ads' | 'withdrawals' | 'notifications' | 'settings' | 'profile'>('dashboard');
 
   // Data State
   const [users, setUsers] = useState<User[]>([]);
@@ -107,6 +107,10 @@ export default function App() {
   const [financeConfig, setFinanceConfig] = useState<FinanceConfig>({ costPerCredit: 0, currency: 'INR', taxRate: 0 });
   const [subAdmins, setSubAdmins] = useState<SubAdmin[]>([]);
   const [notifications, setNotifications] = useState<NotificationLog[]>([]);
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
+  const [withdrawalStats, setWithdrawalStats] = useState<WithdrawalStats>({ pending: 0, processing: 0, completed: 0, rejected: 0, pendingAmount: 0, completedAmount: 0 });
+  const [withdrawalFilter, setWithdrawalFilter] = useState<'all' | 'pending' | 'processing' | 'completed' | 'rejected'>('all');
+  const [isLoadingWithdrawals, setIsLoadingWithdrawals] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
   // Ads Management State
@@ -381,7 +385,7 @@ export default function App() {
   const refreshData = async () => {
     setIsLoadingData(true);
     try {
-      const [fetchedMetrics, fetchedUsers, fetchedCreators, fetchedTxns, fetchedModels, fetchedTemplates, fetchedCategories, fetchedPackages, fetchedGateways, fetchedFinanceConfig, fetchedSubAdmins, fetchedNotifications] = await Promise.all([
+      const [fetchedMetrics, fetchedUsers, fetchedCreators, fetchedTxns, fetchedModels, fetchedTemplates, fetchedCategories, fetchedPackages, fetchedGateways, fetchedFinanceConfig, fetchedSubAdmins, fetchedNotifications, fetchedWithdrawals, fetchedWithdrawalStats] = await Promise.all([
         api.getMetrics(),
         api.getUsers(),
         api.getCreatorApplications(),
@@ -393,7 +397,9 @@ export default function App() {
         api.getPaymentGateways(),
         api.getFinanceConfig(),
         api.getSubAdmins(),
-        api.getNotifications()
+        api.getNotifications(),
+        api.getWithdrawals(),
+        api.getWithdrawalStats()
       ]);
 
       setMetrics(fetchedMetrics);
@@ -408,6 +414,8 @@ export default function App() {
       setFinanceConfig(fetchedFinanceConfig);
       setSubAdmins(fetchedSubAdmins);
       setNotifications(fetchedNotifications);
+      setWithdrawals(fetchedWithdrawals);
+      setWithdrawalStats(fetchedWithdrawalStats);
       try {
         const cfg = await api.getToolsConfig();
         setToolsConfig(cfg);
@@ -1293,6 +1301,91 @@ export default function App() {
               >
                 <Database size={14} /> Import Airtable
               </button>
+  // Withdrawal Management Handlers
+  const fetchWithdrawals = async (status?: string) => {
+                setIsLoadingWithdrawals(true);
+              try {
+      const data = await api.getWithdrawals(status === 'all' ? undefined : status);
+              setWithdrawals(data);
+    } catch (error) {
+                addLog("Failed to fetch withdrawals", LogLevel.ERROR, "Backend");
+    } finally {
+                setIsLoadingWithdrawals(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'withdrawals') {
+                fetchWithdrawals(withdrawalFilter);
+    }
+  }, [activeTab, withdrawalFilter]);
+
+  const handleProcessWithdrawal = async (id: string) => {
+                setConfirmModal({
+                  isOpen: true,
+                  title: 'Process Withdrawal',
+                  message: 'Mark this withdrawal as processing? The creator will be notified.',
+                  type: 'info',
+                  confirmText: 'Process',
+                  onConfirm: async () => {
+                    const success = await api.processWithdrawal(id);
+                    if (success) {
+                      setWithdrawals(prev => prev.map(w => w.id === id ? { ...w, status: 'processing' } as Withdrawal : w));
+                      addLog("Withdrawal marked as processing", LogLevel.SUCCESS, "AdminPanel");
+                      const stats = await api.getWithdrawalStats();
+                      setWithdrawalStats(stats);
+                    }
+                    closeConfirmModal();
+                  }
+                });
+  };
+
+  const handleApproveWithdrawal = async (id: string) => {
+    const txnId = prompt("Enter Transaction ID (optional):");
+              if (txnId === null) return;
+
+              setConfirmModal({
+                isOpen: true,
+              title: 'Approve Withdrawal',
+              message: 'This will mark the withdrawal as completed and notify the creator.',
+              type: 'info',
+              confirmText: 'Approve',
+      onConfirm: async () => {
+        const success = await api.approveWithdrawal(id, txnId || undefined);
+              if (success) {
+                setWithdrawals(prev => prev.map(w => w.id === id ? { ...w, status: 'completed', transactionId: txnId || w.transactionId } as Withdrawal : w));
+              addLog("Withdrawal approved successfully", LogLevel.SUCCESS, "AdminPanel");
+              const stats = await api.getWithdrawalStats();
+              setWithdrawalStats(stats);
+        }
+              closeConfirmModal();
+      }
+    });
+  };
+
+  const handleRejectWithdrawal = async (id: string) => {
+    const reason = prompt("Enter Rejection Reason:");
+              if (!reason) return;
+
+              setConfirmModal({
+                isOpen: true,
+              title: 'Reject Withdrawal',
+              message: 'Are you sure? This will refund the amount to the creator.',
+              type: 'danger',
+              confirmText: 'Reject',
+      onConfirm: async () => {
+        const success = await api.rejectWithdrawal(id, reason);
+              if (success) {
+                setWithdrawals(prev => prev.map(w => w.id === id ? { ...w, status: 'rejected', remarks: reason } as Withdrawal : w));
+              addLog("Withdrawal rejected", LogLevel.WARN, "AdminPanel");
+              const stats = await api.getWithdrawalStats();
+              setWithdrawalStats(stats);
+        }
+              closeConfirmModal();
+      }
+    });
+  };
+
               <button
                 onClick={() => setShowBulkUploadModal(true)}
                 className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg flex items-center gap-2 text-xs border border-gray-700"
@@ -3783,64 +3876,207 @@ export default function App() {
     </div>
   );
 
-  const renderProfile = () => (
+  const renderWithdrawals = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-center bg-gray-900 p-4 rounded-xl border border-gray-800">
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <UserIcon size={24} className="text-indigo-400" /> My Profile
+          <Wallet size={24} className="text-indigo-400" /> Withdrawal Requests
         </h2>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col items-center text-center">
-          <div className="relative group w-32 h-32 mb-4">
-            <div className="w-10 h-10 rounded-full overflow-hidden border-4 border-gray-800 bg-gray-800 flex items-center justify-center">
-              {profileForm.avatar ? <img src={profileForm.avatar} alt="Profile" className="w-full h-full object-cover" /> : <span className="text-4xl font-bold text-gray-600">{profileForm.name?.charAt(0) || '?'}</span>}
-            </div>
-            <label className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
-              <Camera className="text-white" size={24} />
-              <input type="file" className="hidden" accept="image/*" onChange={handleProfileAvatarUpload} />
-            </label>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <p className="text-xs text-gray-500 uppercase">Pending Amount</p>
+            <p className="text-xl font-bold text-white">${withdrawalStats.pendingAmount.toFixed(2)}</p>
           </div>
-          <h3 className="text-xl font-bold text-white">{currentAdmin?.name}</h3>
-          <p className="text-indigo-400 text-sm capitalize">{currentAdmin?.role.replace('_', ' ')}</p>
-          <div className="mt-6 w-full space-y-2">
-            <div className="flex justify-between text-sm p-3 bg-gray-950 rounded border border-gray-800">
-              <span className="text-gray-500">Last Login</span>
-              <span className="text-gray-300">Just Now</span>
-            </div>
-            <div className="flex justify-between text-sm p-3 bg-gray-950 rounded border border-gray-800">
-              <span className="text-gray-500">Status</span>
-              <span className="text-green-400 font-bold">Active</span>
-            </div>
+          <button
+            onClick={() => { fetchWithdrawals(withdrawalFilter); api.getWithdrawalStats().then(setWithdrawalStats); }}
+            className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            <RefreshCw size={18} className={isLoadingWithdrawals ? "animate-spin" : ""} />
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-4 gap-4">
+        <StatCard title="Pending Requests" value={withdrawalStats.pending.toString()} icon={<Clock className="text-yellow-500" />} change="" trend="neutral" />
+        <StatCard title="Processing" value={withdrawalStats.processing.toString()} icon={<Activity className="text-blue-500" />} change="" trend="neutral" />
+        <StatCard title="Completed" value={withdrawalStats.completed.toString()} icon={<CheckCircle className="text-green-500" />} change={`$${withdrawalStats.completedAmount.toFixed(0)} paid`} trend="up" />
+        <StatCard title="Rejected" value={withdrawalStats.rejected.toString()} icon={<XSquare className="text-red-500" />} change="" trend="neutral" />
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex gap-2 border-b border-gray-800 pb-1">
+        {(['all', 'pending', 'processing', 'completed', 'rejected'] as const).map(status => (
+          <button
+            key={status}
+            onClick={() => setWithdrawalFilter(status)}
+            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${withdrawalFilter === status ? 'bg-indigo-600/10 text-indigo-400 border-b-2 border-indigo-500' : 'text-gray-400 hover:text-white'}`}
+          >
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Withdrawals List */}
+      <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+        {isLoadingWithdrawals ? (
+          <div className="p-8 flex justify-center">
+            <RefreshCw size={32} className="animate-spin text-indigo-500" />
+          </div>
+        ) : withdrawals.length === 0 ? (
+          <div className="p-12 text-center text-gray-500">
+            <Wallet size={48} className="mx-auto mb-4 opacity-20" />
+            <p className="text-lg">No withdrawal requests found</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-950/50 text-gray-400 text-xs uppercase border-b border-gray-800">
+                  <th className="p-4 font-semibold">Creator</th>
+                  <th className="p-4 font-semibold">Amount</th>
+                  <th className="p-4 font-semibold">Method</th>
+                  <th className="p-4 font-semibold">Status</th>
+                  <th className="p-4 font-semibold">Date</th>
+                  <th className="p-4 font-semibold text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800">
+                {withdrawals.map(w => (
+                  <tr key={w.id} className="hover:bg-gray-800/50 transition-colors">
+                    <td className="p-4">
+                      <div>
+                        <div className="font-medium text-white">{w.creatorName}</div>
+                        <div className="text-xs text-gray-500">{w.creatorEmail}</div>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="font-bold text-white">${w.amount.toFixed(2)}</div>
+                    </td>
+                    <td className="p-4 text-sm text-gray-300">
+                      {w.method === 'bank' ? (
+                        <div className="flex flex-col gap-1">
+                          <span className="flex items-center gap-1"><CreditCard size={12} /> Bank Transfer</span>
+                          <span className="text-[10px] text-gray-500">{w.bankDetails?.bankName} • {w.bankDetails?.accountNumber.slice(-4)}</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-1">
+                          <span className="flex items-center gap-1"><Smartphone size={12} /> UPI</span>
+                          <span className="text-[10px] text-gray-500">{w.upiId}</span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${w.status === 'completed' ? 'bg-green-500/10 text-green-400 border-green-500/20' :
+                        w.status === 'pending' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
+                          w.status === 'processing' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                            'bg-red-500/10 text-red-400 border-red-500/20'
+                        }`}>
+                        {w.status.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="p-4 text-sm text-gray-400">
+                      {new Date(w.requestedAt).toLocaleDateString()}
+                      <div className="text-[10px]">{new Date(w.requestedAt).toLocaleTimeString()}</div>
+                    </td>
+                    <td className="p-4 text-right">
+                      {w.status === 'pending' && (
+                        <div className="flex justify-end gap-2">
+                          <button onClick={() => handleProcessWithdrawal(w.id)} className="p-1.5 rounded hover:bg-blue-500/20 text-blue-400" title="Process">
+                            <Activity size={16} />
+                          </button>
+                          <button onClick={() => handleRejectWithdrawal(w.id)} className="p-1.5 rounded hover:bg-red-500/20 text-red-400" title="Reject">
+                            <X size={16} />
+                          </button>
+                        </div>
+                      )}
+                      {w.status === 'processing' && (
+                        <div className="flex justify-end gap-2">
+                          <button onClick={() => handleApproveWithdrawal(w.id)} className="p-1.5 rounded hover:bg-green-500/20 text-green-400" title="Mark Paid">
+                            <Check size={16} />
+                          </button>
+                          <button onClick={() => handleRejectWithdrawal(w.id)} className="p-1.5 rounded hover:bg-red-500/20 text-red-400" title="Reject">
+                            <X size={16} />
+                          </button>
+                        </div>
+                      )}
+                      {w.status === 'completed' && (
+                        <span className="text-xs text-green-500 flex items-center justify-end gap-1">
+                          Paid <CheckCircle size={12} />
+                        </span>
+                      )}
+                      {w.status === 'rejected' && (
+                        <span className="text-xs text-red-500 flex items-center justify-end gap-1">
+                          Rejected <XSquare size={12} />
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+  <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="flex justify-between items-center bg-gray-900 p-4 rounded-xl border border-gray-800">
+      <h2 className="text-xl font-bold text-white flex items-center gap-2">
+        <UserIcon size={24} className="text-indigo-400" /> My Profile
+      </h2>
+    </div>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col items-center text-center">
+        <div className="relative group w-32 h-32 mb-4">
+          <div className="w-10 h-10 rounded-full overflow-hidden border-4 border-gray-800 bg-gray-800 flex items-center justify-center">
+            {profileForm.avatar ? <img src={profileForm.avatar} alt="Profile" className="w-full h-full object-cover" /> : <span className="text-4xl font-bold text-gray-600">{profileForm.name?.charAt(0) || '?'}</span>}
+          </div>
+          <label className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+            <Camera className="text-white" size={24} />
+            <input type="file" className="hidden" accept="image/*" onChange={handleProfileAvatarUpload} />
+          </label>
+        </div>
+        <h3 className="text-xl font-bold text-white">{currentAdmin?.name}</h3>
+        <p className="text-indigo-400 text-sm capitalize">{currentAdmin?.role.replace('_', ' ')}</p>
+        <div className="mt-6 w-full space-y-2">
+          <div className="flex justify-between text-sm p-3 bg-gray-950 rounded border border-gray-800">
+            <span className="text-gray-500">Last Login</span>
+            <span className="text-gray-300">Just Now</span>
+          </div>
+          <div className="flex justify-between text-sm p-3 bg-gray-950 rounded border border-gray-800">
+            <span className="text-gray-500">Status</span>
+            <span className="text-green-400 font-bold">Active</span>
           </div>
         </div>
+      </div>
 
-        <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <h3 className="text-lg font-bold text-white mb-6">Edit Information</h3>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs text-gray-500 uppercase block mb-1">Full Name</label>
-                <input type="text" value={profileForm.name} onChange={e => setProfileForm({ ...profileForm, name: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500 uppercase block mb-1">Role</label>
-                <input type="text" value={currentAdmin?.role} disabled className="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed capitalize" />
-              </div>
+      <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <h3 className="text-lg font-bold text-white mb-6">Edit Information</h3>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-gray-500 uppercase block mb-1">Full Name</label>
+              <input type="text" value={profileForm.name} onChange={e => setProfileForm({ ...profileForm, name: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
             </div>
             <div>
-              <label className="text-xs text-gray-500 uppercase block mb-1">Email Address</label>
-              <input type="email" value={profileForm.email} onChange={e => setProfileForm({ ...profileForm, email: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
+              <label className="text-xs text-gray-500 uppercase block mb-1">Role</label>
+              <input type="text" value={currentAdmin?.role} disabled className="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed capitalize" />
             </div>
-            <div className="pt-4 border-t border-gray-800 mt-4 flex justify-end">
-              <button onClick={handleSaveProfile} className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
-                <Save size={16} /> Save Changes
-              </button>
-            </div>
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 uppercase block mb-1">Email Address</label>
+            <input type="email" value={profileForm.email} onChange={e => setProfileForm({ ...profileForm, email: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
+          </div>
+          <div className="pt-4 border-t border-gray-800 mt-4 flex justify-end">
+            <button onClick={handleSaveProfile} className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+              <Save size={16} /> Save Changes
+            </button>
           </div>
         </div>
       </div>
     </div>
+  </div>
   );
 
   const renderSettings = () => (
@@ -4022,6 +4258,12 @@ export default function App() {
             </button>
           )}
 
+          {canPerformAction('manage_finance') && (
+            <button onClick={() => setActiveTab('withdrawals')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'withdrawals' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'}`}>
+              <ArrowDown size={18} /> Withdrawals
+            </button>
+          )}
+
           {canPerformAction('manage_ai') && (
             <button onClick={() => setActiveTab('ai-config')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'ai-config' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'}`}>
               <Bot size={18} /> AI Config
@@ -4086,6 +4328,7 @@ export default function App() {
         {activeTab === 'finance' && renderFinance()}
         {activeTab === 'ai-config' && renderAIConfig()}
         {activeTab === 'ads' && renderAdsManagement()}
+        {activeTab === 'withdrawals' && renderWithdrawals()}
         {activeTab === 'notifications' && renderNotifications()}
         {activeTab === 'settings' && renderSettings()}
         {activeTab === 'profile' && renderProfile()}

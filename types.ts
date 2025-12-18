@@ -242,3 +242,34 @@ export interface AdsConfig {
   updatedAt?: string;
 }
 
+// Withdrawal Management Types
+export interface Withdrawal {
+  id: string;
+  creatorId: string;
+  creatorName: string;
+  creatorEmail: string;
+  amount: number;
+  method: 'bank' | 'upi';
+  status: 'pending' | 'processing' | 'completed' | 'rejected';
+  bankDetails?: {
+    bankName: string;
+    accountNumber: string;
+    ifscCode: string;
+    accountHolderName: string;
+  };
+  upiId?: string;
+  requestedAt: string;
+  processedAt?: string;
+  transactionId?: string;
+  remarks?: string;
+}
+
+export interface WithdrawalStats {
+  pending: number;
+  processing: number;
+  completed: number;
+  rejected: number;
+  pendingAmount: number;
+  completedAmount: number;
+}
+
