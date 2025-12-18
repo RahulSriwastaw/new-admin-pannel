@@ -19,7 +19,7 @@ import {
   X, Check, Ban, FileText, Globe, Plus, Save, Calendar, ArrowRightLeft, ArrowUp, ArrowDown, ArrowUpDown,
   BrainCircuit, UserCheck, UserX, AlertTriangle, HelpCircle, Key, Trash2, Edit2, LayoutTemplate,
   UploadCloud, Link as LinkIcon, Download, Copy, Image as ImageIcon, Wallet, Zap, ToggleRight, ToggleLeft, Shield, Send, BellRing, Smartphone, Mail, Filter, DollarSign, Clock, Sparkles, LayoutDashboard, UserPlus, Camera,
-  MoreHorizontal, User as UserIcon, LayoutList, Grid, Instagram, Twitter, Youtube, Briefcase, TrendingUp, CheckSquare, XSquare, Eye, Award, ChevronLeft, ChevronRight, FileDown, Layers, Star, Grid3X3, FolderTree, FolderPlus, LogOut, BellOff
+  MoreHorizontal, User as UserIcon, LayoutList, Grid, Instagram, Twitter, Youtube, Briefcase, TrendingUp, CheckSquare, XSquare, Eye, Award, ChevronLeft, ChevronRight, FileDown, Layers, Star, Grid3X3, FolderTree, FolderPlus, LogOut, BellOff, Heart
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
