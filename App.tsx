@@ -10,7 +10,7 @@ import {
   CLOUDINARY_CONFIG,
   PERMISSIONS_LIST
 } from './constants';
-import { LogEntry, LogLevel, ConnectionStatus, User, CreatorApplication, Transaction, AIModelConfig, SystemMetrics, Template, AirtableConfig, PointsPackage, PaymentGatewayConfig, SubAdmin, AdminRole, AdminPermission, NotificationLog, NotificationTarget, NotificationType, FinanceConfig, Category, ToolConfig } from './types';
+import { LogEntry, LogLevel, ConnectionStatus, User, CreatorApplication, Transaction, AIModelConfig, SystemMetrics, Template, AirtableConfig, PointsPackage, PaymentGatewayConfig, SubAdmin, AdminRole, AdminPermission, NotificationLog, NotificationTarget, NotificationType, FinanceConfig, Category, ToolConfig, AdsConfig } from './types';
 import { analyzeErrorLogs, simulateFixApplication } from './services/geminiService';
 import { api } from './services/api';
 import {
@@ -91,7 +91,7 @@ export default function App() {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.CONNECTING);
   const [isFixing, setIsFixing] = useState(false);
   const [metrics, setMetrics] = useState<SystemMetrics>({ cpu: 0, memory: 0, requests: 0, latency: 0, activeUsers: 0, revenue: 0 });
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'creators' | 'templates' | 'finance' | 'ai-config' | 'notifications' | 'settings' | 'profile'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'creators' | 'templates' | 'finance' | 'ai-config' | 'ads' | 'notifications' | 'settings' | 'profile'>('dashboard');
 
   // Data State
   const [users, setUsers] = useState<User[]>([]);
@@ -108,6 +108,38 @@ export default function App() {
   const [subAdmins, setSubAdmins] = useState<SubAdmin[]>([]);
   const [notifications, setNotifications] = useState<NotificationLog[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
+
+  // Ads Management State
+  const [adsConfig, setAdsConfig] = useState<AdsConfig>({
+    isEnabled: true,
+    provider: 'google_admob',
+    rewardType: 'fixed',
+    fixedPoints: 5,
+    randomMin: 3,
+    randomMax: 10,
+    pages: {
+      home: true,
+      templates: true,
+      generate: true,
+      history: false,
+      profile: false,
+      wallet: true,
+      rewards: true
+    },
+    templateAdsSettings: {
+      showBetweenTemplates: true,
+      frequency: 6
+    },
+    adIds: {
+      bannerId: '',
+      interstitialId: '',
+      rewardedId: '',
+      nativeId: ''
+    },
+    maxAdsPerUser: 20,
+    cooldownMinutes: 3
+  });
+  const [isSavingAds, setIsSavingAds] = useState(false);
 
   // New Features State
   const [userSearchQuery, setUserSearchQuery] = useState('');
@@ -379,6 +411,12 @@ export default function App() {
       try {
         const cfg = await api.getToolsConfig();
         setToolsConfig(cfg);
+      } catch { }
+      try {
+        const adsCfg = await api.getAdsConfig();
+        if (adsCfg) {
+          setAdsConfig(adsCfg);
+        }
       } catch { }
       addLog("Dashboard data synchronized with Backend.", LogLevel.INFO, "Database");
     } catch (e) {
