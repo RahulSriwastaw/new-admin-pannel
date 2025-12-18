@@ -3333,7 +3333,7 @@ export default function App() {
           )}
 
           {creatorTab === 'active' && (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+            <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden overflow-x-auto">
               <table className="w-full text-left text-sm text-gray-400">
                 <thead className="bg-gray-950 text-gray-200 uppercase text-xs">
                   <tr>
