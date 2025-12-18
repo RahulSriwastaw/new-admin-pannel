@@ -2855,16 +2855,40 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Mock Portfolio Preview */}
+                  {/* Portfolio Preview */}
                   <div className="p-4 bg-gray-950/50">
                     <p className="text-[10px] uppercase font-bold text-gray-500 mb-2">Portfolio Preview</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[1, 2, 3].map(i => (
-                        <div key={i} className="aspect-square bg-gray-800 rounded overflow-hidden">
-                          <img src={`https://source.unsplash.com/random/200x200?art&sig=${app.id}${i}`} alt="Art" className="w-full h-full object-cover opacity-60 hover:opacity-100 transition-opacity" />
-                        </div>
-                      ))}
-                    </div>
+
+                    {app.demoTemplates && app.demoTemplates.length > 0 ? (
+                      <div className={`grid gap-2 ${app.demoTemplates.length === 1 ? 'grid-cols-1' : app.demoTemplates.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                        {app.demoTemplates.map((demo, idx) => (
+                          <div key={idx} className="aspect-square bg-gray-800 rounded overflow-hidden group relative">
+                            <img
+                              src={demo.image}
+                              alt={demo.prompt || `Demo ${idx + 1}`}
+                              className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                              onError={(e) => {
+                                // Fallback if image fails to load
+                                e.currentTarget.src = `https://via.placeholder.com/200x200/1f2937/9ca3af?text=Demo+${idx + 1}`;
+                              }}
+                            />
+                            {demo.prompt && (
+                              <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
+                                <p className="text-xs text-white text-center line-clamp-3">{demo.prompt}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-3 gap-2">
+                        {[1, 2, 3].map(i => (
+                          <div key={i} className="aspect-square bg-gray-800 rounded overflow-hidden flex items-center justify-center">
+                            <span className="text-gray-600 text-xs">No Image</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="p-4 flex gap-2">

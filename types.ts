@@ -60,6 +60,7 @@ export interface CreatorApplication {
   socialLinks: string[];
   status: 'pending' | 'approved' | 'rejected';
   appliedDate: string;
+  demoTemplates?: Array<{ image: string; prompt: string }>;
 }
 
 export interface Transaction {
