@@ -3899,10 +3899,10 @@ export default function App() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-4 gap-4">
-        <StatCard title="Pending Requests" value={withdrawalStats.pending.toString()} icon={<Clock className="text-yellow-500" />} change="" trend="neutral" />
-        <StatCard title="Processing" value={withdrawalStats.processing.toString()} icon={<Activity className="text-blue-500" />} change="" trend="neutral" />
-        <StatCard title="Completed" value={withdrawalStats.completed.toString()} icon={<CheckCircle className="text-green-500" />} change={`$${withdrawalStats.completedAmount.toFixed(0)} paid`} trend="up" />
-        <StatCard title="Rejected" value={withdrawalStats.rejected.toString()} icon={<XSquare className="text-red-500" />} change="" trend="neutral" />
+        <StatCard title="Pending Requests" value={withdrawalStats.pending.toString()} icon={Clock} color="yellow" change="" />
+        <StatCard title="Processing" value={withdrawalStats.processing.toString()} icon={Activity} color="blue" change="" />
+        <StatCard title="Completed" value={withdrawalStats.completed.toString()} icon={CheckCircle} color="green" change={`$${withdrawalStats.completedAmount.toFixed(0)} paid`} trend="Paid" trendUp={true} />
+        <StatCard title="Rejected" value={withdrawalStats.rejected.toString()} icon={XSquare} color="red" change="" />
       </div>
 
       {/* Filter Tabs */}
