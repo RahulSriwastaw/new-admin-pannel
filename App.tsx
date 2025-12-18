@@ -2125,10 +2125,10 @@ export default function App() {
         isFixing={isFixing}
       />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Active Users" value={metrics.activeUsers} icon={Users} trend="+12%" trendUp={true} color="blue" />
-        <StatCard title="Total Revenue" value={`₹${metrics.revenue.toLocaleString()}`} icon={DollarSign} trend="+8%" trendUp={true} color="green" />
-        <StatCard title="API Requests" value={metrics.requests} icon={Activity} trend="-2%" trendUp={false} color="purple" />
-        <StatCard title="System Latency" value={`${metrics.latency}ms`} icon={Clock} trend="Stable" trendUp={true} color="orange" />
+        <StatCard title="Active Users" value={metrics.activeUsers} icon={Users} color="blue" />
+        <StatCard title="Total Revenue" value={`₹${metrics.revenue.toLocaleString()}`} icon={DollarSign} color="green" />
+        <StatCard title="API Requests" value={metrics.requests} icon={Activity} color="purple" />
+        <StatCard title="System Latency" value={`${metrics.latency}ms`} icon={Clock} color="orange" />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-gray-900 rounded-xl p-6 border border-gray-800">
@@ -3385,8 +3385,8 @@ export default function App() {
                     key={type}
                     onClick={() => setAdsConfig({ ...adsConfig, rewardType: type })}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${adsConfig.rewardType === type
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                       }`}
                   >
                     {type.charAt(0).toUpperCase() + type.slice(1)}
