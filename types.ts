@@ -196,3 +196,48 @@ export interface NotificationLog {
   imageUrl?: string;
   ctaLink?: string; // Deep link or URL
 }
+
+// Ads Configuration Type
+export interface AdsConfig {
+  id?: string;
+  isEnabled: boolean;
+  provider: 'google_admob' | 'custom' | 'facebook_audience';
+
+  // Reward Configuration
+  rewardType: 'fixed' | 'random' | 'range';
+  fixedPoints: number;
+  randomMin: number;
+  randomMax: number;
+
+  // Page-wise Ad Placement
+  pages: {
+    home: boolean;
+    templates: boolean;
+    generate: boolean;
+    history: boolean;
+    profile: boolean;
+    wallet: boolean;
+    rewards: boolean;
+  };
+
+  // Template Page Settings
+  templateAdsSettings: {
+    showBetweenTemplates: boolean;
+    frequency: number; // Show ad after every N templates
+  };
+
+  // Ad Provider IDs
+  adIds: {
+    bannerId: string;
+    interstitialId: string;
+    rewardedId: string;
+    nativeId: string;
+  };
+
+  // Daily Limits
+  maxAdsPerUser: number;
+  cooldownMinutes: number;
+
+  updatedAt?: string;
+}
+

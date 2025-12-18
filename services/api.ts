@@ -2,7 +2,7 @@
 import {
   API_BASE_URL
 } from '../constants';
-import { User, CreatorApplication, Transaction, AIModelConfig, SystemMetrics, Template, AirtableConfig, PointsPackage, PaymentGatewayConfig, SubAdmin, NotificationLog, FinanceConfig, Category, ToolConfig } from '../types';
+import { User, CreatorApplication, Transaction, AIModelConfig, SystemMetrics, Template, AirtableConfig, PointsPackage, PaymentGatewayConfig, SubAdmin, NotificationLog, FinanceConfig, Category, ToolConfig, AdsConfig } from '../types';
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
@@ -639,6 +639,22 @@ export const api = {
       });
       if (res.ok) return await res.json();
       throw new Error("Failed");
+    } catch (e) {
+      throw e;
+    }
+  },
+
+  // Ads Management
+  getAdsConfig: () => fetchWithFallback<any>('/admin/ads/config', {} as any),
+
+  updateAdsConfig: async (config: any) => {
+    try {
+      await fetch(`${API_BASE_URL}/admin/ads/config`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(config)
+      });
+      return true;
     } catch (e) {
       throw e;
     }
