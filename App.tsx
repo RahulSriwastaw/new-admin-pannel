@@ -166,9 +166,7 @@ export default function App() {
   const [creatorTab, setCreatorTab] = useState<'applications' | 'active'>('applications');
   const [selectedAppIds, setSelectedAppIds] = useState<string[]>([]);
   const [selectedCreatorIds, setSelectedCreatorIds] = useState<string[]>([]);
-  const [selectedCreatorProfile, setSelectedCreatorProfile] = useState<CreatorProfile | null>(null);
-  const [profileTab, setProfileTab] = useState<'overview' | 'templates' | 'earnings' | 'withdrawals'>('overview');
-  const [isProfileLoading, setIsProfileLoading] = useState(false);
+
 
   const [showAddCreatorModal, setShowAddCreatorModal] = useState(false);
   const [activeTransaction, setActiveTransaction] = useState<Transaction | null>(null);
@@ -703,19 +701,7 @@ export default function App() {
     });
   };
 
-  const handleViewProfile = async (creator: any) => {
-    setIsProfileLoading(true);
-    try {
-      const profile = await api.getCreatorProfile(creator.id || creator.id);
-      setSelectedCreatorProfile(profile);
-      setProfileTab('overview');
-      addLog(`Viewing detailed profile for ${profile.user.name}`, LogLevel.INFO, 'AdminPanel');
-    } catch (error) {
-      addLog("Failed to load creator profile", LogLevel.ERROR, 'Backend');
-    } finally {
-      setIsProfileLoading(false);
-    }
-  };
+
 
   const openAddCreatorModal = () => {
     setActiveCreatorApp({
