@@ -166,6 +166,9 @@ export default function App() {
   const [creatorTab, setCreatorTab] = useState<'applications' | 'active'>('applications');
   const [selectedAppIds, setSelectedAppIds] = useState<string[]>([]);
   const [selectedCreatorIds, setSelectedCreatorIds] = useState<string[]>([]);
+  const [selectedCreatorProfile, setSelectedCreatorProfile] = useState<CreatorProfile | null>(null);
+  const [profileTab, setProfileTab] = useState<'overview' | 'templates' | 'earnings' | 'withdrawals'>('overview');
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
 
   const [showAddCreatorModal, setShowAddCreatorModal] = useState(false);
   const [activeTransaction, setActiveTransaction] = useState<Transaction | null>(null);
@@ -2734,10 +2737,25 @@ export default function App() {
     </div>
   );
 
+  const handleViewProfile = async (creator: User) => {
+    try {
+      setIsProfileLoading(true);
+      addLog(`Fetching profile for ${creator.name}...`, LogLevel.INFO, 'AdminPanel');
+      const profile = await api.getCreatorProfile(creator.id);
+      setSelectedCreatorProfile(profile);
+      setProfileTab('overview');
+    } catch (e) {
+      console.error(e);
+      addLog('Failed to fetch creator profile. Ensure backend is running.', LogLevel.ERROR, 'Backend');
+    } finally {
+      setIsProfileLoading(false);
+    }
+  };
+
   const renderCreatorProfileModal = () => {
     if (!selectedCreatorProfile) return null;
 
-    const { user, application, templates, earnings, withdrawals, summary, growthStats } = selectedCreatorProfile;
+    const { user, application, templates, earnings, withdrawals, stats, growthStats } = selectedCreatorProfile;
 
     return (
       <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[60] flex items-center justify-center p-4 overflow-y-auto">
@@ -2745,8 +2763,8 @@ export default function App() {
           {/* Header */}
           <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-900/50 rounded-t-2xl">
             <div className="flex items-center gap-5">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg border border-white/10">
-                {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover rounded-2xl" /> : user.name.charAt(0)}
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg border border-white/10 overflow-hidden">
+                {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover" alt={user.name} /> : user.name.charAt(0)}
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-white flex items-center gap-2">
@@ -2779,24 +2797,35 @@ export default function App() {
           <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-gray-950/30">
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-2xl">
+              <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-2xl relative overflow-hidden group hover:border-indigo-500/30 transition-all">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <DollarSign size={48} className="text-white" />
+                </div>
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Total Earnings</p>
                 <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                  ₹{summary.totalEarnings.toLocaleString()}
-                  <span className="text-xs text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded">+12%</span>
+                  ₹{stats.totalEarnings.toLocaleString()}
                 </h3>
               </div>
-              <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-2xl">
+              <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-2xl relative overflow-hidden group hover:border-green-500/30 transition-all">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <Wallet size={48} className="text-green-400" />
+                </div>
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Wallet Balance</p>
-                <h3 className="text-2xl font-bold text-indigo-400">₹{(user.points * 0.10).toFixed(2)}</h3>
+                <h3 className="text-2xl font-bold text-green-400">₹{user.points.toFixed(2)} pts</h3>
               </div>
-              <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-2xl">
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Current Month</p>
-                <h3 className="text-2xl font-bold text-green-400">₹{summary.monthlyEarnings.toLocaleString()}</h3>
+              <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-2xl relative overflow-hidden group hover:border-pink-500/30 transition-all">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <Heart size={48} className="text-pink-400" />
+                </div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Total Likes</p>
+                <h3 className="text-2xl font-bold text-pink-400">{stats.totalLikes.toLocaleString()}</h3>
               </div>
-              <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-2xl">
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Performance Score</p>
-                <h3 className="text-2xl font-bold text-purple-400">9.2/10</h3>
+              <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-2xl relative overflow-hidden group hover:border-yellow-500/30 transition-all">
+                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                  <Zap size={48} className="text-yellow-400" />
+                </div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Total Uses</p>
+                <h3 className="text-2xl font-bold text-yellow-400">{stats.totalUses.toLocaleString()}</h3>
               </div>
             </div>
 
@@ -2826,13 +2855,14 @@ export default function App() {
                     <div className="h-64 w-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={growthStats}>
-                          <XAxis dataKey="_id" hide />
+                          <XAxis dataKey="date" hide />
                           <YAxis hide />
                           <Tooltip
                             contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
                             itemStyle={{ color: '#818cf8' }}
+                            labelStyle={{ color: '#9ca3af' }}
                           />
-                          <Line type="monotone" dataKey="amount" stroke="#6366f1" strokeWidth={3} dot={false} />
+                          <Line type="monotone" dataKey="earnings" stroke="#6366f1" strokeWidth={3} dot={false} />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
@@ -2840,33 +2870,34 @@ export default function App() {
 
                   {/* Summary Metrics */}
                   <div className="grid grid-cols-2 gap-4">
+                    {/* Reuse stats but display differently or others */}
                     <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
-                      <div className="flex items-center gap-3 text-pink-400 mb-2">
-                        <Star size={20} />
-                        <span className="text-lg font-bold">{user.likes || 0}</span>
-                      </div>
-                      <p className="text-sm text-gray-500">Total Profile Likes</p>
-                    </div>
-                    <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
-                      <div className="flex items-center gap-3 text-indigo-400 mb-2">
+                      <div className="flex items-center gap-3 text-purple-400 mb-2">
                         <Users size={20} />
                         <span className="text-lg font-bold">{user.followers || 0}</span>
                       </div>
-                      <p className="text-sm text-gray-500">Active Followers</p>
+                      <p className="text-sm text-gray-500">Total Followers</p>
                     </div>
                     <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
-                      <div className="flex items-center gap-3 text-yellow-500 mb-2">
-                        <Zap size={20} />
-                        <span className="text-lg font-bold">{user.uses || 0}</span>
+                      <div className="flex items-center gap-3 text-blue-400 mb-2">
+                        <Save size={20} />
+                        <span className="text-lg font-bold">{stats.totalSaves || 0}</span>
                       </div>
-                      <p className="text-sm text-gray-500">Template Uses</p>
+                      <p className="text-sm text-gray-500">Total Saves</p>
                     </div>
                     <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
                       <div className="flex items-center gap-3 text-green-400 mb-2">
                         <LayoutTemplate size={20} />
                         <span className="text-lg font-bold">{templates.length}</span>
                       </div>
-                      <p className="text-sm text-gray-500">Total Templates</p>
+                      <p className="text-sm text-gray-500">Detailed Templates</p>
+                    </div>
+                    <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
+                      <div className="flex items-center gap-3 text-orange-400 mb-2">
+                        <CreditCard size={20} />
+                        <span className="text-lg font-bold">{withdrawals.length}</span>
+                      </div>
+                      <p className="text-sm text-gray-500">Withdrawals</p>
                     </div>
                   </div>
                 </div>
@@ -2878,11 +2909,12 @@ export default function App() {
                     <div>
                       <p className="text-xs text-gray-500 uppercase mb-2">Social Media Portfolio</p>
                       <div className="flex gap-3 flex-wrap">
-                        {application?.socialLinks.map((link, i) => (
+                        {application?.socialLinks && application.socialLinks.map((link, i) => (
                           <a key={i} href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 rounded-lg text-sm text-indigo-300 hover:bg-gray-700 transition-colors">
                             {getSocialIcon(link)} {link}
                           </a>
                         ))}
+                        {(!application?.socialLinks || application.socialLinks.length === 0) && <span className="text-gray-500 text-sm">No links provided.</span>}
                       </div>
                     </div>
                     {application?.bio && (
@@ -2901,7 +2933,7 @@ export default function App() {
                 {templates.map(t => (
                   <div key={t.id} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 group hover:border-indigo-500/50 transition-all">
                     <div className="aspect-square bg-gray-800 relative">
-                      <img src={t.imageUrl} className="w-full h-full object-cover" />
+                      <img src={t.imageUrl} className="w-full h-full object-cover" alt={t.title} />
                       <div className="absolute top-2 right-2 flex gap-1">
                         {t.isPremium && <span className="bg-yellow-500 text-black text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">Premium</span>}
                         <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase ${t.status === 'active' ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}`}>{t.status}</span>
@@ -2918,6 +2950,9 @@ export default function App() {
                     </div>
                   </div>
                 ))}
+                {templates.length === 0 && (
+                  <div className="col-span-full py-12 text-center text-gray-500">No templates found for this creator.</div>
+                )}
               </div>
             )}
 
@@ -2938,7 +2973,7 @@ export default function App() {
                         <td className="p-4 text-xs">{new Date(e.date).toLocaleString()}</td>
                         <td className="p-4">
                           <div className="font-medium text-gray-200">Template Usage</div>
-                          <div className="text-[10px] text-gray-500">Batch ID: {e.templateId?.slice(-6).toUpperCase()}</div>
+                          <div className="text-[10px] text-gray-500">Template ID: {e.templateId?.slice(-6).toUpperCase()}</div>
                         </td>
                         <td className="p-4 text-right text-indigo-400 font-bold">{(e.amount * 10).toFixed(0)} pts</td>
                         <td className="p-4 text-right text-green-400 font-bold">₹{e.amount.toFixed(2)}</td>
@@ -2978,7 +3013,7 @@ export default function App() {
                           </span>
                         </td>
                         <td className="p-4 text-right">
-                          <button onClick={() => { setSelectedCreatorProfile(null); setActiveTab('withdrawals'); }} className="p-1.5 hover:bg-gray-800 rounded-lg text-gray-500 hover:text-indigo-400 transition-all">
+                          <button className="p-1.5 hover:bg-gray-800 rounded-lg text-gray-500 hover:text-indigo-400 transition-all">
                             <Eye size={16} />
                           </button>
                         </td>
@@ -2996,12 +3031,12 @@ export default function App() {
           <div className="p-6 border-t border-gray-800 bg-gray-900/50 rounded-b-2xl flex justify-between items-center">
             <div className="flex gap-4">
               <div className="text-sm">
-                <span className="text-gray-500">Total Payouts:</span>
-                <span className="text-white font-bold ml-2">₹{summary.totalWithdrawals.toLocaleString()}</span>
+                <span className="text-gray-500">Active Templates:</span>
+                <span className="text-indigo-400 font-bold ml-2">{templates.filter(t => t.status === 'active').length}</span>
               </div>
               <div className="text-sm">
-                <span className="text-gray-500">Pending Payouts:</span>
-                <span className="text-orange-400 font-bold ml-2">₹{summary.pendingWithdrawals.toLocaleString()}</span>
+                <span className="text-gray-500">Pending Withdrawals:</span>
+                <span className="text-orange-400 font-bold ml-2">{withdrawals.filter(w => w.status === 'pending').length}</span>
               </div>
             </div>
             <button

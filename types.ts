@@ -275,17 +275,16 @@ export interface WithdrawalStats {
 
 export interface CreatorProfile {
   user: User;
-  application: CreatorApplication;
+  application: Partial<CreatorApplication>;
   templates: Template[];
   earnings: any[];
   withdrawals: Withdrawal[];
-  summary: {
+  stats: {
     totalEarnings: number;
-    monthlyEarnings: number;
-    totalWithdrawals: number;
-    pendingWithdrawals: number;
-    activeTemplates: number;
+    totalLikes: number;
+    totalUses: number;
+    totalSaves: number;
   };
-  growthStats: Array<{ _id: string; amount: number; count: number }>;
+  growthStats: Array<{ date: string; earnings: number }>;
 }
 
