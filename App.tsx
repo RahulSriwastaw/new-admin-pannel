@@ -708,6 +708,91 @@ export default function App() {
     });
   };
 
+  // Withdrawal Management Handlers
+  const fetchWithdrawals = async (status?: string) => {
+    setIsLoadingWithdrawals(true);
+    try {
+      const data = await api.getWithdrawals(status === 'all' ? undefined : status);
+      setWithdrawals(data);
+    } catch (error) {
+      addLog("Failed to fetch withdrawals", LogLevel.ERROR, "Backend");
+    } finally {
+      setIsLoadingWithdrawals(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'withdrawals') {
+      fetchWithdrawals(withdrawalFilter);
+    }
+  }, [activeTab, withdrawalFilter]);
+
+  const handleProcessWithdrawal = async (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Process Withdrawal',
+      message: 'Mark this withdrawal as processing? The creator will be notified.',
+      type: 'info',
+      confirmText: 'Process',
+      onConfirm: async () => {
+        const success = await api.processWithdrawal(id);
+        if (success) {
+          setWithdrawals(prev => prev.map(w => w.id === id ? { ...w, status: 'processing' } as Withdrawal : w));
+          addLog("Withdrawal marked as processing", LogLevel.SUCCESS, "AdminPanel");
+          const stats = await api.getWithdrawalStats();
+          setWithdrawalStats(stats);
+        }
+        closeConfirmModal();
+      }
+    });
+  };
+
+  const handleApproveWithdrawal = async (id: string) => {
+    const txnId = prompt("Enter Transaction ID (optional):");
+    if (txnId === null) return;
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'Approve Withdrawal',
+      message: 'This will mark the withdrawal as completed and notify the creator.',
+      type: 'info',
+      confirmText: 'Approve',
+      onConfirm: async () => {
+        const success = await api.approveWithdrawal(id, txnId || undefined);
+        if (success) {
+          setWithdrawals(prev => prev.map(w => w.id === id ? { ...w, status: 'completed', transactionId: txnId || w.transactionId } as Withdrawal : w));
+          addLog("Withdrawal approved successfully", LogLevel.SUCCESS, "AdminPanel");
+          const stats = await api.getWithdrawalStats();
+          setWithdrawalStats(stats);
+        }
+        closeConfirmModal();
+      }
+    });
+  };
+
+  const handleRejectWithdrawal = async (id: string) => {
+    const reason = prompt("Enter Rejection Reason:");
+    if (!reason) return;
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'Reject Withdrawal',
+      message: 'Are you sure? This will refund the amount to the creator.',
+      type: 'danger',
+      confirmText: 'Reject',
+      onConfirm: async () => {
+        const success = await api.rejectWithdrawal(id, reason);
+        if (success) {
+          setWithdrawals(prev => prev.map(w => w.id === id ? { ...w, status: 'rejected', remarks: reason } as Withdrawal : w));
+          addLog("Withdrawal rejected", LogLevel.WARN, "AdminPanel");
+          const stats = await api.getWithdrawalStats();
+          setWithdrawalStats(stats);
+        }
+        closeConfirmModal();
+      }
+    });
+  };
+
   const getSocialIcon = (url: string) => {
     const iconClass = "text-indigo-400";
     if (url.includes('instagram')) return <Instagram size={14} className={iconClass} />;
@@ -1301,90 +1386,6 @@ export default function App() {
               >
                 <Database size={14} /> Import Airtable
               </button>
-  // Withdrawal Management Handlers
-  const fetchWithdrawals = async (status?: string) => {
-                setIsLoadingWithdrawals(true);
-              try {
-      const data = await api.getWithdrawals(status === 'all' ? undefined : status);
-              setWithdrawals(data);
-    } catch (error) {
-                addLog("Failed to fetch withdrawals", LogLevel.ERROR, "Backend");
-    } finally {
-                setIsLoadingWithdrawals(false);
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab === 'withdrawals') {
-                fetchWithdrawals(withdrawalFilter);
-    }
-  }, [activeTab, withdrawalFilter]);
-
-  const handleProcessWithdrawal = async (id: string) => {
-                setConfirmModal({
-                  isOpen: true,
-                  title: 'Process Withdrawal',
-                  message: 'Mark this withdrawal as processing? The creator will be notified.',
-                  type: 'info',
-                  confirmText: 'Process',
-                  onConfirm: async () => {
-                    const success = await api.processWithdrawal(id);
-                    if (success) {
-                      setWithdrawals(prev => prev.map(w => w.id === id ? { ...w, status: 'processing' } as Withdrawal : w));
-                      addLog("Withdrawal marked as processing", LogLevel.SUCCESS, "AdminPanel");
-                      const stats = await api.getWithdrawalStats();
-                      setWithdrawalStats(stats);
-                    }
-                    closeConfirmModal();
-                  }
-                });
-  };
-
-  const handleApproveWithdrawal = async (id: string) => {
-    const txnId = prompt("Enter Transaction ID (optional):");
-              if (txnId === null) return;
-
-              setConfirmModal({
-                isOpen: true,
-              title: 'Approve Withdrawal',
-              message: 'This will mark the withdrawal as completed and notify the creator.',
-              type: 'info',
-              confirmText: 'Approve',
-      onConfirm: async () => {
-        const success = await api.approveWithdrawal(id, txnId || undefined);
-              if (success) {
-                setWithdrawals(prev => prev.map(w => w.id === id ? { ...w, status: 'completed', transactionId: txnId || w.transactionId } as Withdrawal : w));
-              addLog("Withdrawal approved successfully", LogLevel.SUCCESS, "AdminPanel");
-              const stats = await api.getWithdrawalStats();
-              setWithdrawalStats(stats);
-        }
-              closeConfirmModal();
-      }
-    });
-  };
-
-  const handleRejectWithdrawal = async (id: string) => {
-    const reason = prompt("Enter Rejection Reason:");
-              if (!reason) return;
-
-              setConfirmModal({
-                isOpen: true,
-              title: 'Reject Withdrawal',
-              message: 'Are you sure? This will refund the amount to the creator.',
-              type: 'danger',
-              confirmText: 'Reject',
-      onConfirm: async () => {
-        const success = await api.rejectWithdrawal(id, reason);
-              if (success) {
-                setWithdrawals(prev => prev.map(w => w.id === id ? { ...w, status: 'rejected', remarks: reason } as Withdrawal : w));
-              addLog("Withdrawal rejected", LogLevel.WARN, "AdminPanel");
-              const stats = await api.getWithdrawalStats();
-              setWithdrawalStats(stats);
-        }
-              closeConfirmModal();
-      }
-    });
-  };
 
               <button
                 onClick={() => setShowBulkUploadModal(true)}
