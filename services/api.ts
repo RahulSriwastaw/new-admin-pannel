@@ -670,8 +670,57 @@ export const api = {
     } catch (e) {
       throw e;
     }
+  },
+
+  // Withdrawal Management
+  getWithdrawals: async (status?: string) => {
+    const query = status ? `?status=${status}` : '';
+    return fetchWithFallback<any[]>(`/admin/withdrawals${query}`, [] as any);
+  },
+
+  approveWithdrawal: async (id: string, transactionId?: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/withdrawals/${id}/approve`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ transactionId })
+      });
+      return res.ok;
+    } catch (e) {
+      throw e;
+    }
+  },
+
+  rejectWithdrawal: async (id: string, reason?: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/withdrawals/${id}/reject`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ reason })
+      });
+      return res.ok;
+    } catch (e) {
+      throw e;
+    }
+  },
+
+  processWithdrawal: async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/withdrawals/${id}/process`, {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+      return res.ok;
+    } catch (e) {
+      throw e;
+    }
+  },
+
+  getWithdrawalStats: async () => {
+    return fetchWithFallback<any>('/admin/withdrawals/stats', {} as any);
   }
 };
+
 const __env = (typeof import.meta !== 'undefined' ? (import.meta as any).env : undefined);
 const DEBUG = false;
 const warn = (..._args: any[]) => { };
