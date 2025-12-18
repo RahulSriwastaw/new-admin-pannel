@@ -19,7 +19,7 @@ import {
   X, Check, Ban, FileText, Globe, Plus, Save, Calendar, ArrowRightLeft, ArrowUp, ArrowDown, ArrowUpDown,
   BrainCircuit, UserCheck, UserX, AlertTriangle, HelpCircle, Key, Trash2, Edit2, LayoutTemplate,
   UploadCloud, Link as LinkIcon, Download, Copy, Image as ImageIcon, Wallet, Zap, ToggleRight, ToggleLeft, Shield, Send, BellRing, Smartphone, Mail, Filter, DollarSign, Clock, Sparkles, LayoutDashboard, UserPlus, Camera,
-  MoreHorizontal, User as UserIcon, LayoutList, Grid, Instagram, Twitter, Youtube, Briefcase, TrendingUp, CheckSquare, XSquare, Eye, Award, ChevronLeft, ChevronRight, FileDown, Layers, Star, Grid3X3, FolderTree, FolderPlus, LogOut
+  MoreHorizontal, User as UserIcon, LayoutList, Grid, Instagram, Twitter, Youtube, Briefcase, TrendingUp, CheckSquare, XSquare, Eye, Award, ChevronLeft, ChevronRight, FileDown, Layers, Star, Grid3X3, FolderTree, FolderPlus, LogOut, BellOff
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -3220,6 +3220,22 @@ export default function App() {
     </div>
   );
 
+  const handleDeleteNotification = async (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Notification',
+      message: "Are you sure you want to delete this notification log? This cannot be undone.",
+      type: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        await api.deleteNotification(id);
+        setNotifications(prev => prev.filter(n => n.id !== id));
+        addLog(`Notification log deleted.`, LogLevel.WARN, "AdminPanel");
+        closeConfirmModal();
+      }
+    });
+  };
+
   const renderNotifications = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-center bg-gray-900 p-4 rounded-xl border border-gray-800">
@@ -3230,26 +3246,71 @@ export default function App() {
           <Send size={16} /> Send Notification
         </button>
       </div>
+
       <div className="space-y-4">
-        {notifications.map(notif => (
-          <div key={notif.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex gap-4">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${notif.status === 'sent' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-              <BellRing size={20} />
+        {notifications.length === 0 ? (
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-12 text-center flex flex-col items-center justify-center">
+            <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mb-4">
+              <BellOff size={32} className="text-gray-500" />
             </div>
-            <div className="flex-1">
-              <div className="flex justify-between items-start">
-                <h3 className="font-bold text-white">{notif.title}</h3>
-                <span className="text-xs text-gray-500">{new Date(notif.sentAt || notif.scheduledFor || '').toLocaleString()}</span>
-              </div>
-              <p className="text-gray-400 text-sm mt-1">{notif.message}</p>
-              <div className="flex gap-3 mt-3">
-                <span className="text-xs bg-gray-800 px-2 py-1 rounded text-gray-300 flex items-center gap-1"><Users size={10} /> Target: {notif.target}</span>
-                <span className="text-xs bg-gray-800 px-2 py-1 rounded text-gray-300 flex items-center gap-1">Type: {notif.type}</span>
-                {notif.reachCount > 0 && <span className="text-xs bg-indigo-900/30 text-indigo-400 px-2 py-1 rounded">Reached: {notif.reachCount} users</span>}
-              </div>
-            </div>
+            <h3 className="text-lg font-bold text-white mb-2">No Notifications Yet</h3>
+            <p className="text-gray-400 max-w-sm mb-6">You haven't sent any notifications. Keep your users engaged by sending updates and announcements.</p>
+            <button onClick={() => setShowNotificationModal(true)} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm flex items-center gap-2">
+              <Send size={16} /> Create First Notification
+            </button>
           </div>
-        ))}
+        ) : (
+          notifications.map(notif => (
+            <div key={notif.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex gap-4 group hover:border-gray-700 transition-all">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${notif.status === 'sent' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                <BellRing size={20} />
+              </div>
+              <div className="flex-1">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-bold text-white flex items-center gap-2">
+                      {notif.title}
+                      {notif.status === 'scheduled' && <span className="text-[10px] bg-yellow-500/20 text-yellow-500 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Scheduled</span>}
+                    </h3>
+                    <span className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                      <Clock size={10} />
+                      {new Date(notif.sentAt || notif.scheduledFor || '').toLocaleString()}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteNotification(notif.id)}
+                    className="p-2 text-gray-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                    title="Delete Log"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+                <p className="text-gray-300 text-sm mt-2 leading-relaxed">{notif.message}</p>
+                <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-gray-800/50">
+                  <span className="text-xs bg-gray-800 border border-gray-700 px-2 py-1 rounded text-gray-300 flex items-center gap-1.5">
+                    <Users size={12} className="text-indigo-400" />
+                    Target: <span className="text-white capitalize">{notif.target.replace('_', ' ')}</span>
+                  </span>
+                  <span className="text-xs bg-gray-800 border border-gray-700 px-2 py-1 rounded text-gray-300 flex items-center gap-1.5">
+                    <Send size={12} className="text-purple-400" />
+                    Type: <span className="text-white capitalize">{notif.type}</span>
+                  </span>
+                  {notif.reachCount > 0 && (
+                    <span className="text-xs bg-indigo-900/20 border border-indigo-500/20 text-indigo-300 px-2 py-1 rounded flex items-center gap-1.5">
+                      <CheckCircle size={12} />
+                      Reached: <span className="font-bold">{notif.reachCount}</span> users
+                    </span>
+                  )}
+                  {notif.ctaLink && (
+                    <span className="text-xs bg-gray-800 border border-gray-700 px-2 py-1 rounded text-blue-300 flex items-center gap-1.5">
+                      <ExternalLink size={12} /> Link Attached
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
       {/* Notification Modal */}
       {showNotificationModal && (

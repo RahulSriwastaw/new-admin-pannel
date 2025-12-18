@@ -644,6 +644,18 @@ export const api = {
     }
   },
 
+  deleteNotification: async (id: string) => {
+    try {
+      await fetch(`${API_BASE_URL}/admin/notifications/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      return true;
+    } catch (e) {
+      throw e;
+    }
+  },
+
   // Ads Management
   getAdsConfig: () => fetchWithFallback<any>('/admin/ads/config', {} as any),
 
