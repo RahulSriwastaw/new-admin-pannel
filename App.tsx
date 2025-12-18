@@ -4460,11 +4460,11 @@ export default function App() {
 
         <div className="w-full max-w-md bg-gray-900/80 backdrop-blur-xl border border-gray-800 rounded-2xl shadow-2xl p-8 relative z-10 animate-in fade-in zoom-in duration-500">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-indigo-500/20">
+            <div className="mb-6">
               <img
                 src="/logo.png"
                 alt="Rupantar AI"
-                className="w-10 h-10"
+                className="w-20 h-20"
               />
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight">Rupantar Admin</h1>
@@ -4536,11 +4536,11 @@ export default function App() {
       {/* Sidebar */}
       <aside className="w-64 bg-gray-950 border-r border-gray-800 flex flex-col z-20 shadow-2xl">
         <div className="p-6 flex flex-col items-center border-b border-gray-800">
-          <div className="w-12 h-12 bg-white rounded-xl mb-3 flex items-center justify-center shadow-lg">
+          <div className="mb-4">
             <img
               src="/logo.png"
               alt="Rupantar AI"
-              className="w-7 h-7"
+              className="w-12 h-12"
             />
           </div>
           <h1 className="text-xl font-bold text-white tracking-tight">Rupantar AI</h1>
