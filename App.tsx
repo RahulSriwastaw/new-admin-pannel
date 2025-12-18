@@ -2881,8 +2881,8 @@ export default function App() {
                         ))}
                       </div>
                     ) : (
-                      <div className="grid grid-cols-3 gap-2">
-                        {[1, 2, 3].map(i => (
+                      <div className="grid grid-cols-2 gap-2">
+                        {[1, 2].map(i => (
                           <div key={i} className="aspect-square bg-gray-800 rounded overflow-hidden flex items-center justify-center">
                             <span className="text-gray-600 text-xs">No Image</span>
                           </div>
