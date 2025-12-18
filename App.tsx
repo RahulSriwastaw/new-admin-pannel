@@ -4020,63 +4020,65 @@ export default function App() {
       </div>
     </div>
   );
-  <div className="space-y-6 animate-in fade-in duration-500">
-    <div className="flex justify-between items-center bg-gray-900 p-4 rounded-xl border border-gray-800">
-      <h2 className="text-xl font-bold text-white flex items-center gap-2">
-        <UserIcon size={24} className="text-indigo-400" /> My Profile
-      </h2>
-    </div>
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col items-center text-center">
-        <div className="relative group w-32 h-32 mb-4">
-          <div className="w-10 h-10 rounded-full overflow-hidden border-4 border-gray-800 bg-gray-800 flex items-center justify-center">
-            {profileForm.avatar ? <img src={profileForm.avatar} alt="Profile" className="w-full h-full object-cover" /> : <span className="text-4xl font-bold text-gray-600">{profileForm.name?.charAt(0) || '?'}</span>}
-          </div>
-          <label className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
-            <Camera className="text-white" size={24} />
-            <input type="file" className="hidden" accept="image/*" onChange={handleProfileAvatarUpload} />
-          </label>
-        </div>
-        <h3 className="text-xl font-bold text-white">{currentAdmin?.name}</h3>
-        <p className="text-indigo-400 text-sm capitalize">{currentAdmin?.role.replace('_', ' ')}</p>
-        <div className="mt-6 w-full space-y-2">
-          <div className="flex justify-between text-sm p-3 bg-gray-950 rounded border border-gray-800">
-            <span className="text-gray-500">Last Login</span>
-            <span className="text-gray-300">Just Now</span>
-          </div>
-          <div className="flex justify-between text-sm p-3 bg-gray-950 rounded border border-gray-800">
-            <span className="text-gray-500">Status</span>
-            <span className="text-green-400 font-bold">Active</span>
-          </div>
-        </div>
-      </div>
 
-      <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h3 className="text-lg font-bold text-white mb-6">Edit Information</h3>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-gray-500 uppercase block mb-1">Full Name</label>
-              <input type="text" value={profileForm.name} onChange={e => setProfileForm({ ...profileForm, name: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
+  const renderProfile = () => (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex justify-between items-center bg-gray-900 p-4 rounded-xl border border-gray-800">
+        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+          <UserIcon size={24} className="text-indigo-400" /> My Profile
+        </h2>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 flex flex-col items-center text-center">
+          <div className="relative group w-32 h-32 mb-4">
+            <div className="w-10 h-10 rounded-full overflow-hidden border-4 border-gray-800 bg-gray-800 flex items-center justify-center">
+              {profileForm.avatar ? <img src={profileForm.avatar} alt="Profile" className="w-full h-full object-cover" /> : <span className="text-4xl font-bold text-gray-600">{profileForm.name?.charAt(0) || '?'}</span>}
             </div>
-            <div>
-              <label className="text-xs text-gray-500 uppercase block mb-1">Role</label>
-              <input type="text" value={currentAdmin?.role} disabled className="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed capitalize" />
+            <label className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+              <Camera className="text-white" size={24} />
+              <input type="file" className="hidden" accept="image/*" onChange={handleProfileAvatarUpload} />
+            </label>
+          </div>
+          <h3 className="text-xl font-bold text-white">{currentAdmin?.name}</h3>
+          <p className="text-indigo-400 text-sm capitalize">{currentAdmin?.role.replace('_', ' ')}</p>
+          <div className="mt-6 w-full space-y-2">
+            <div className="flex justify-between text-sm p-3 bg-gray-950 rounded border border-gray-800">
+              <span className="text-gray-500">Last Login</span>
+              <span className="text-gray-300">Just Now</span>
+            </div>
+            <div className="flex justify-between text-sm p-3 bg-gray-950 rounded border border-gray-800">
+              <span className="text-gray-500">Status</span>
+              <span className="text-green-400 font-bold">Active</span>
             </div>
           </div>
-          <div>
-            <label className="text-xs text-gray-500 uppercase block mb-1">Email Address</label>
-            <input type="email" value={profileForm.email} onChange={e => setProfileForm({ ...profileForm, email: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
-          </div>
-          <div className="pt-4 border-t border-gray-800 mt-4 flex justify-end">
-            <button onClick={handleSaveProfile} className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
-              <Save size={16} /> Save Changes
-            </button>
+        </div>
+
+        <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <h3 className="text-lg font-bold text-white mb-6">Edit Information</h3>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-gray-500 uppercase block mb-1">Full Name</label>
+                <input type="text" value={profileForm.name} onChange={e => setProfileForm({ ...profileForm, name: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 uppercase block mb-1">Role</label>
+                <input type="text" value={currentAdmin?.role} disabled className="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed capitalize" />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 uppercase block mb-1">Email Address</label>
+              <input type="email" value={profileForm.email} onChange={e => setProfileForm({ ...profileForm, email: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
+            </div>
+            <div className="pt-4 border-t border-gray-800 mt-4 flex justify-end">
+              <button onClick={handleSaveProfile} className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                <Save size={16} /> Save Changes
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
   );
 
   const renderSettings = () => (
