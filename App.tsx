@@ -3302,6 +3302,402 @@ export default function App() {
     </div>
   );
 
+  // Ads Management Handler
+  const handleSaveAdsConfig = async () => {
+    setIsSavingAds(true);
+    try {
+      await api.updateAdsConfig(adsConfig);
+      addLog('Ads configuration saved successfully', LogLevel.SUCCESS, 'AdminPanel');
+    } catch (e) {
+      addLog('Failed to save ads configuration', LogLevel.ERROR, 'AdminPanel');
+    } finally {
+      setIsSavingAds(false);
+    }
+  };
+
+  // Render Ads Management Tab
+  const renderAdsManagement = () => (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Header with Master Toggle */}
+      <div className="flex justify-between items-center bg-gray-900 p-6 rounded-xl border border-gray-800">
+        <div>
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Award size={28} className="text-indigo-400" />
+            Ads Management System
+          </h2>
+          <p className="text-gray-400 text-sm mt-1">Configure ad placements, rewards, and limits</p>
+        </div>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <span className="text-gray-300 font-medium">Master Switch</span>
+          <button
+            onClick={() => setAdsConfig({ ...adsConfig, isEnabled: !adsConfig.isEnabled })}
+            className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${adsConfig.isEnabled ? 'bg-indigo-600' : 'bg-gray-700'
+              }`}
+          >
+            <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${adsConfig.isEnabled ? 'translate-x-7' : 'translate-x-1'
+              }`} />
+          </button>
+        </label>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-4 gap-4">
+        <StatCard
+          title="System Status"
+          value={adsConfig.isEnabled ? "Active" : "Disabled"}
+          icon={adsConfig.isEnabled ? CheckCircle : Ban}
+          color={adsConfig.isEnabled ? "green" : "red"}
+        />
+        <StatCard
+          title="Reward Type"
+          value={adsConfig.rewardType.toUpperCase()}
+          icon={Award}
+          color="purple"
+        />
+        <StatCard
+          title="Active Pages"
+          value={Object.values(adsConfig.pages).filter(v => v).length}
+          icon={Layout}
+          color="blue"
+        />
+        <StatCard
+          title="Daily Limit"
+          value={adsConfig.maxAdsPerUser}
+          icon={Clock}
+          color="orange"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-6">
+        {/* Reward Configuration */}
+        <div className="bg-gray-900 p-6 rounded-xl border border-gray-800">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <Sparkles size={20} className="text-yellow-400" />
+            Reward Configuration
+          </h3>
+          <div className="space-y-4">
+            {/* Reward Type Selector */}
+            <div>
+              <label className="text-xs text-gray-500 uppercase block mb-2">Reward Type</label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['fixed', 'random', 'range'] as const).map(type => (
+                  <button
+                    key={type}
+                    onClick={() => setAdsConfig({ ...adsConfig, rewardType: type })}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${adsConfig.rewardType === type
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                      }`}
+                  >
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Conditional Fields */}
+            {adsConfig.rewardType === 'fixed' && (
+              <div>
+                <label className="text-xs text-gray-500 uppercase block mb-2">Fixed Points Per Ad</label>
+                <input
+                  type="number"
+                  value={adsConfig.fixedPoints}
+                  onChange={e => setAdsConfig({ ...adsConfig, fixedPoints: Number(e.target.value) })}
+                  className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-2 text-white"
+                  min="1"
+                  max="100"
+                />
+              </div>
+            )}
+
+            {(adsConfig.rewardType === 'random' || adsConfig.rewardType === 'range') && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-gray-500 uppercase block mb-2">Min Points</label>
+                  <input
+                    type="number"
+                    value={adsConfig.randomMin}
+                    onChange={e => setAdsConfig({ ...adsConfig, randomMin: Number(e.target.value) })}
+                    className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-2 text-white"
+                    min="1"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 uppercase block mb-2">Max Points</label>
+                  <input
+                    type="number"
+                    value={adsConfig.randomMax}
+                    onChange={e => setAdsConfig({ ...adsConfig, randomMax: Number(e.target.value) })}
+                    className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-2 text-white"
+                    min={adsConfig.randomMin}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Preview */}
+            <div className="bg-indigo-900/20 border border-indigo-500/30 rounded-lg p-3">
+              <p className="text-xs text-indigo-300 font-medium">
+                {adsConfig.rewardType === 'fixed'
+                  ? `Users will earn ${adsConfig.fixedPoints} points per ad`
+                  : `Users will earn ${adsConfig.randomMin}-${adsConfig.randomMax} points per ad`}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Page Placement */}
+        <div className="bg-gray-900 p-6 rounded-xl border border-gray-800">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <Layout size={20} className="text-blue-400" />
+            Page Placement
+          </h3>
+          <div className="space-y-3">
+            {Object.entries(adsConfig.pages).map(([page, enabled]) => (
+              <label key={page} className="flex items-center justify-between cursor-pointer group">
+                <span className="text-gray-300 capitalize font-medium group-hover:text-white transition-colors">
+                  {page} Page
+                </span>
+                <button
+                  onClick={() => setAdsConfig({
+                    ...adsConfig,
+                    pages: { ...adsConfig.pages, [page]: !enabled }
+                  })}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${enabled ? 'bg-green-600' : 'bg-gray-700'
+                    }`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'
+                    }`} />
+                </button>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Template Ads Settings */}
+        <div className="bg-gray-900 p-6 rounded-xl border border-gray-800">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <LayoutTemplate size={20} className="text-purple-400" />
+            Template Page Ads
+          </h3>
+          <div className="space-y-4">
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-gray-300 font-medium">Show Between Templates</span>
+              <button
+                onClick={() => setAdsConfig({
+                  ...adsConfig,
+                  templateAdsSettings: {
+                    ...adsConfig.templateAdsSettings,
+                    showBetweenTemplates: !adsConfig.templateAdsSettings.showBetweenTemplates
+                  }
+                })}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${adsConfig.templateAdsSettings.showBetweenTemplates ? 'bg-green-600' : 'bg-gray-700'
+                  }`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${adsConfig.templateAdsSettings.showBetweenTemplates ? 'translate-x-6' : 'translate-x-1'
+                  }`} />
+              </button>
+            </label>
+
+            <div>
+              <label className="text-xs text-gray-500 uppercase block mb-2">
+                Ad Frequency (Every N Templates)
+              </label>
+              <input
+                type="range"
+                min="3"
+                max="15"
+                value={adsConfig.templateAdsSettings.frequency}
+                onChange={e => setAdsConfig({
+                  ...adsConfig,
+                  templateAdsSettings: {
+                    ...adsConfig.templateAdsSettings,
+                    frequency: Number(e.target.value)
+                  }
+                })}
+                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+              />
+              <p className="text-sm text-gray-400 mt-2">
+                Show ad every <span className="text-indigo-400 font-bold">{adsConfig.templateAdsSettings.frequency}</span> templates
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Daily Limits */}
+        <div className="bg-gray-900 p-6 rounded-xl border border-gray-800">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <Shield size={20} className="text-orange-400" />
+            Limits & Controls
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs text-gray-500 uppercase block mb-2">Max Ads Per User / Day</label>
+              <input
+                type="number"
+                value={adsConfig.maxAdsPerUser}
+                onChange={e => setAdsConfig({ ...adsConfig, maxAdsPerUser: Number(e.target.value) })}
+                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-2 text-white"
+                min="1"
+                max="100"
+              />
+              <p className="text-xs text-gray-500 mt-1">Recommended: 15-30</p>
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-500 uppercase block mb-2">Cooldown Between Ads (minutes)</label>
+              <input
+                type="number"
+                value={adsConfig.cooldownMinutes}
+                onChange={e => setAdsConfig({ ...adsConfig, cooldownMinutes: Number(e.target.value) })}
+                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-2 text-white"
+                min="1"
+                max="60"
+              />
+              <p className="text-xs text-gray-500 mt-1">Recommended: 2-5 minutes</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Provider Configuration */}
+        <div className="bg-gray-900 p-6 rounded-xl border border-gray-800 col-span-2">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <Globe size={20} className="text-green-400" />
+            Ad Provider Configuration
+          </h3>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="text-xs text-gray-500 uppercase block mb-2">Provider</label>
+              <select
+                value={adsConfig.provider}
+                onChange={e => setAdsConfig({ ...adsConfig, provider: e.target.value as any })}
+                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-2 text-white"
+              >
+                <option value="google_admob">Google AdMob</option>
+                <option value="facebook_audience">Facebook Audience</option>
+                <option value="custom">Custom Network</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-500 uppercase block mb-2">Banner Ad ID</label>
+              <input
+                type="text"
+                value={adsConfig.adIds.bannerId}
+                onChange={e => setAdsConfig({
+                  ...adsConfig,
+                  adIds: { ...adsConfig.adIds, bannerId: e.target.value }
+                })}
+                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-2 text-white font-mono text-xs"
+                placeholder="ca-app-pub-xxx"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-500 uppercase block mb-2">Interstitial Ad ID</label>
+              <input
+                type="text"
+                value={adsConfig.adIds.interstitialId}
+                onChange={e => setAdsConfig({
+                  ...adsConfig,
+                  adIds: { ...adsConfig.adIds, interstitialId: e.target.value }
+                })}
+                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-2 text-white font-mono text-xs"
+                placeholder="ca-app-pub-xxx"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-500 uppercase block mb-2">Rewarded Ad ID</label>
+              <input
+                type="text"
+                value={adsConfig.adIds.rewardedId}
+                onChange={e => setAdsConfig({
+                  ...adsConfig,
+                  adIds: { ...adsConfig.adIds, rewardedId: e.target.value }
+                })}
+                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-2 text-white font-mono text-xs"
+                placeholder="ca-app-pub-xxx"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-500 uppercase block mb-2">Native Ad ID</label>
+              <input
+                type="text"
+                value={adsConfig.adIds.nativeId}
+                onChange={e => setAdsConfig({
+                  ...adsConfig,
+                  adIds: { ...adsConfig.adIds, nativeId: e.target.value }
+                })}
+                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-2 text-white font-mono text-xs"
+                placeholder="ca-app-pub-xxx"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Save Button */}
+      <div className="flex justify-end gap-4 bg-gray-900 p-6 rounded-xl border border-gray-800">
+        <button
+          onClick={() => {
+            // Reset to defaults
+            setAdsConfig({
+              isEnabled: true,
+              provider: 'google_admob',
+              rewardType: 'fixed',
+              fixedPoints: 5,
+              randomMin: 3,
+              randomMax: 10,
+              pages: {
+                home: true,
+                templates: true,
+                generate: true,
+                history: false,
+                profile: false,
+                wallet: true,
+                rewards: true
+              },
+              templateAdsSettings: {
+                showBetweenTemplates: true,
+                frequency: 6
+              },
+              adIds: {
+                bannerId: '',
+                interstitialId: '',
+                rewardedId: '',
+                nativeId: ''
+              },
+              maxAdsPerUser: 20,
+              cooldownMinutes: 3
+            });
+          }}
+          className="px-6 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg font-medium transition-colors"
+        >
+          Reset to Defaults
+        </button>
+        <button
+          onClick={handleSaveAdsConfig}
+          disabled={isSavingAds}
+          className="px-8 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          {isSavingAds ? (
+            <>
+              <RefreshCw size={16} className="animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <Save size={16} />
+              Save Configuration
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+
   const renderProfile = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-center bg-gray-900 p-4 rounded-xl border border-gray-800">
@@ -3604,17 +4000,7 @@ export default function App() {
         {activeTab === 'templates' && renderTemplates()}
         {activeTab === 'finance' && renderFinance()}
         {activeTab === 'ai-config' && renderAIConfig()}
-        {activeTab === 'ads' && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 text-center">
-            <Award size={48} className="mx-auto text-indigo-400 mb-4" />
-            <h3 className="text-xl font-bold text-white mb-2">Ads Management System</h3>
-            <p className="text-gray-400 mb-6">Complete ads system is ready! Backend APIs are live and working.</p>
-            <p className="text-sm text-gray-500 bg-gray-950 p-4 rounded-lg">
-              The full UI code is available in <span className="text-indigo-400 font-mono">ADS_UI_COMPLETE_CODE.md</span>
-              <br />Just copy the renderAdsManagement() function to enable the complete interface.
-            </p>
-          </div>
-        )}
+        {activeTab === 'ads' && renderAdsManagement()}
         {activeTab === 'notifications' && renderNotifications()}
         {activeTab === 'settings' && renderSettings()}
         {activeTab === 'profile' && renderProfile()}
