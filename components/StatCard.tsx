@@ -15,7 +15,9 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, tr
     blue: "text-blue-500 bg-blue-500/10",
     green: "text-green-500 bg-green-500/10",
     purple: "text-purple-500 bg-purple-500/10",
-    orange: "text-orange-500 bg-orange-500/10"
+    orange: "text-orange-500 bg-orange-500/10",
+    red: "text-red-500 bg-red-500/10",
+    yellow: "text-yellow-500 bg-yellow-500/10"
   };
 
   const selectedColor = colorClasses[color as keyof typeof colorClasses] || colorClasses.blue;
