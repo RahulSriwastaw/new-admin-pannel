@@ -273,3 +273,19 @@ export interface WithdrawalStats {
   completedAmount: number;
 }
 
+export interface CreatorProfile {
+  user: User;
+  application: CreatorApplication;
+  templates: Template[];
+  earnings: any[];
+  withdrawals: Withdrawal[];
+  summary: {
+    totalEarnings: number;
+    monthlyEarnings: number;
+    totalWithdrawals: number;
+    pendingWithdrawals: number;
+    activeTemplates: number;
+  };
+  growthStats: Array<{ _id: string; amount: number; count: number }>;
+}
+

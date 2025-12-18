@@ -112,6 +112,9 @@ export default function App() {
   const [withdrawalFilter, setWithdrawalFilter] = useState<'all' | 'pending' | 'processing' | 'completed' | 'rejected'>('all');
   const [isLoadingWithdrawals, setIsLoadingWithdrawals] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
+  const [selectedCreatorProfile, setSelectedCreatorProfile] = useState<CreatorProfile | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [profileTab, setProfileTab] = useState<'overview' | 'templates' | 'earnings' | 'withdrawals'>('overview');
 
   // Ads Management State
   const [adsConfig, setAdsConfig] = useState<AdsConfig>({
@@ -695,6 +698,20 @@ export default function App() {
         closeConfirmModal();
       }
     });
+  };
+
+  const handleViewProfile = async (creator: any) => {
+    setIsProfileLoading(true);
+    try {
+      const profile = await api.getCreatorProfile(creator.id || creator.id);
+      setSelectedCreatorProfile(profile);
+      setProfileTab('overview');
+      addLog(`Viewing detailed profile for ${profile.user.name}`, LogLevel.INFO, 'AdminPanel');
+    } catch (error) {
+      addLog("Failed to load creator profile", LogLevel.ERROR, 'Backend');
+    } finally {
+      setIsProfileLoading(false);
+    }
   };
 
   const openAddCreatorModal = () => {
@@ -2717,6 +2734,288 @@ export default function App() {
     </div>
   );
 
+  const renderCreatorProfileModal = () => {
+    if (!selectedCreatorProfile) return null;
+
+    const { user, application, templates, earnings, withdrawals, summary, growthStats } = selectedCreatorProfile;
+
+    return (
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[60] flex items-center justify-center p-4 overflow-y-auto">
+        <div className="bg-[#0f172a] border border-gray-800 rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl animate-in fade-in zoom-in duration-300">
+          {/* Header */}
+          <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-900/50 rounded-t-2xl">
+            <div className="flex items-center gap-5">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg border border-white/10">
+                {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover rounded-2xl" /> : user.name.charAt(0)}
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                  {user.name} <Award size={20} className="text-yellow-400" />
+                </h2>
+                <div className="flex items-center gap-4 mt-1 text-sm">
+                  <span className="text-gray-400 flex items-center gap-1.5"><Mail size={14} /> {user.email}</span>
+                  <span className="text-gray-400 flex items-center gap-1.5"><Calendar size={14} /> Joined {new Date(user.joinedDate).toLocaleDateString()}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${user.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{user.status}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => { setSelectedUserIds([user.id]); handleBulkAction('role', 'user'); setSelectedCreatorProfile(null); }}
+                className="px-4 py-2 bg-red-900/20 hover:bg-red-900/40 text-red-400 rounded-xl text-sm font-medium border border-red-900/30 transition-all flex items-center gap-2"
+              >
+                <UserX size={16} /> Demote to User
+              </button>
+              <button
+                onClick={() => setSelectedCreatorProfile(null)}
+                className="p-2.5 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-xl transition-all"
+              >
+                <X size={24} />
+              </button>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-gray-950/30">
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-2xl">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Total Earnings</p>
+                <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                  ₹{summary.totalEarnings.toLocaleString()}
+                  <span className="text-xs text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded">+12%</span>
+                </h3>
+              </div>
+              <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-2xl">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Wallet Balance</p>
+                <h3 className="text-2xl font-bold text-indigo-400">₹{(user.points * 0.10).toFixed(2)}</h3>
+              </div>
+              <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-2xl">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Current Month</p>
+                <h3 className="text-2xl font-bold text-green-400">₹{summary.monthlyEarnings.toLocaleString()}</h3>
+              </div>
+              <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-2xl">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Performance Score</p>
+                <h3 className="text-2xl font-bold text-purple-400">9.2/10</h3>
+              </div>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div className="flex gap-2 p-1 bg-gray-900 rounded-xl border border-gray-800 mb-6 w-fit">
+              {(['overview', 'templates', 'earnings', 'withdrawals'] as const).map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setProfileTab(tab)}
+                  className={`px-5 py-2 rounded-lg text-sm font-bold capitalize transition-all ${profileTab === tab ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab Content */}
+            {profileTab === 'overview' && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Performance Chart */}
+                  <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="font-bold text-white">Earnings Growth (30 Days)</h3>
+                      <TrendingUp className="text-green-400" size={20} />
+                    </div>
+                    <div className="h-64 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={growthStats}>
+                          <XAxis dataKey="_id" hide />
+                          <YAxis hide />
+                          <Tooltip
+                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
+                            itemStyle={{ color: '#818cf8' }}
+                          />
+                          <Line type="monotone" dataKey="amount" stroke="#6366f1" strokeWidth={3} dot={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Summary Metrics */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
+                      <div className="flex items-center gap-3 text-pink-400 mb-2">
+                        <Star size={20} />
+                        <span className="text-lg font-bold">{user.likes || 0}</span>
+                      </div>
+                      <p className="text-sm text-gray-500">Total Profile Likes</p>
+                    </div>
+                    <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
+                      <div className="flex items-center gap-3 text-indigo-400 mb-2">
+                        <Users size={20} />
+                        <span className="text-lg font-bold">{user.followers || 0}</span>
+                      </div>
+                      <p className="text-sm text-gray-500">Active Followers</p>
+                    </div>
+                    <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
+                      <div className="flex items-center gap-3 text-yellow-500 mb-2">
+                        <Zap size={20} />
+                        <span className="text-lg font-bold">{user.uses || 0}</span>
+                      </div>
+                      <p className="text-sm text-gray-500">Template Uses</p>
+                    </div>
+                    <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
+                      <div className="flex items-center gap-3 text-green-400 mb-2">
+                        <LayoutTemplate size={20} />
+                        <span className="text-lg font-bold">{templates.length}</span>
+                      </div>
+                      <p className="text-sm text-gray-500">Total Templates</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Social Links & Bio */}
+                <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl">
+                  <h3 className="font-bold text-white mb-4">Creator Background</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-xs text-gray-500 uppercase mb-2">Social Media Portfolio</p>
+                      <div className="flex gap-3 flex-wrap">
+                        {application?.socialLinks.map((link, i) => (
+                          <a key={i} href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 rounded-lg text-sm text-indigo-300 hover:bg-gray-700 transition-colors">
+                            {getSocialIcon(link)} {link}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                    {application?.bio && (
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase mb-2">Bio / Description</p>
+                        <p className="text-gray-300 text-sm italic">"{application.bio}"</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {profileTab === 'templates' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-2">
+                {templates.map(t => (
+                  <div key={t.id} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 group hover:border-indigo-500/50 transition-all">
+                    <div className="aspect-square bg-gray-800 relative">
+                      <img src={t.imageUrl} className="w-full h-full object-cover" />
+                      <div className="absolute top-2 right-2 flex gap-1">
+                        {t.isPremium && <span className="bg-yellow-500 text-black text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">Premium</span>}
+                        <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase ${t.status === 'active' ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}`}>{t.status}</span>
+                      </div>
+                    </div>
+                    <div className="p-3">
+                      <h4 className="font-bold text-white text-sm truncate">{t.title}</h4>
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-[10px] text-gray-500">{t.category}</span>
+                        <div className="flex items-center gap-1 text-[10px] text-indigo-400">
+                          <Zap size={10} /> {t.useCount} uses
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {profileTab === 'earnings' && (
+              <div className="bg-gray-900/50 border border-gray-800 rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+                <table className="w-full text-left text-sm text-gray-400">
+                  <thead className="bg-gray-900 text-xs uppercase text-gray-500 font-bold border-b border-gray-800">
+                    <tr>
+                      <th className="p-4">Date</th>
+                      <th className="p-4">Activity</th>
+                      <th className="p-4 text-right">Points Earned</th>
+                      <th className="p-4 text-right">Revenue Share</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {earnings.length > 0 ? earnings.map((e, idx) => (
+                      <tr key={idx} className="hover:bg-gray-800/30">
+                        <td className="p-4 text-xs">{new Date(e.date).toLocaleString()}</td>
+                        <td className="p-4">
+                          <div className="font-medium text-gray-200">Template Usage</div>
+                          <div className="text-[10px] text-gray-500">Batch ID: {e.templateId?.slice(-6).toUpperCase()}</div>
+                        </td>
+                        <td className="p-4 text-right text-indigo-400 font-bold">{(e.amount * 10).toFixed(0)} pts</td>
+                        <td className="p-4 text-right text-green-400 font-bold">₹{e.amount.toFixed(2)}</td>
+                      </tr>
+                    )) : (
+                      <tr><td colSpan={4} className="p-10 text-center text-gray-500">No earning history available yet.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {profileTab === 'withdrawals' && (
+              <div className="bg-gray-900/50 border border-gray-800 rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+                <table className="w-full text-left text-sm text-gray-400">
+                  <thead className="bg-gray-900 text-xs uppercase text-gray-500 font-bold border-b border-gray-800">
+                    <tr>
+                      <th className="p-4">Requested At</th>
+                      <th className="p-4">Method</th>
+                      <th className="p-4">Amount</th>
+                      <th className="p-4">Status</th>
+                      <th className="p-4 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {withdrawals.length > 0 ? withdrawals.map(w => (
+                      <tr key={w.id} className="hover:bg-gray-800/30">
+                        <td className="p-4 text-xs">{new Date(w.requestedAt).toLocaleString()}</td>
+                        <td className="p-4">
+                          <span className="font-medium text-gray-200 uppercase">{w.method}</span>
+                          <div className="text-[10px] text-gray-500 italic truncate max-w-[150px]">{w.method === 'upi' ? w.upiId : w.bankDetails?.accountNumber}</div>
+                        </td>
+                        <td className="p-4 font-bold text-white">₹{w.amount.toLocaleString()}</td>
+                        <td className="p-4">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${w.status === 'completed' ? 'bg-green-500/20 text-green-400' : w.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
+                            {w.status}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right">
+                          <button onClick={() => { setSelectedCreatorProfile(null); setActiveTab('withdrawals'); }} className="p-1.5 hover:bg-gray-800 rounded-lg text-gray-500 hover:text-indigo-400 transition-all">
+                            <Eye size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr><td colSpan={5} className="p-10 text-center text-gray-500">No withdrawal requests found.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="p-6 border-t border-gray-800 bg-gray-900/50 rounded-b-2xl flex justify-between items-center">
+            <div className="flex gap-4">
+              <div className="text-sm">
+                <span className="text-gray-500">Total Payouts:</span>
+                <span className="text-white font-bold ml-2">₹{summary.totalWithdrawals.toLocaleString()}</span>
+              </div>
+              <div className="text-sm">
+                <span className="text-gray-500">Pending Payouts:</span>
+                <span className="text-orange-400 font-bold ml-2">₹{summary.pendingWithdrawals.toLocaleString()}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => setSelectedCreatorProfile(null)}
+              className="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20"
+            >
+              Close Profile
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderCreators = () => {
     // Stats Calculation
     const totalCreators = users.filter(u => u.role === 'creator').length;
@@ -3069,6 +3368,9 @@ export default function App() {
                       <td className="px-6 py-4 text-xs">{new Date(creator.joinedDate).toLocaleDateString()}</td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2">
+                          <button onClick={() => handleViewProfile(creator)} className="p-2 text-gray-400 hover:text-indigo-400 hover:bg-gray-800 rounded transition-colors" title="View Detailed Profile">
+                            <Eye size={16} />
+                          </button>
                           <button onClick={() => handleEditUser(creator)} className="p-2 text-gray-400 hover:text-indigo-400 hover:bg-gray-800 rounded transition-colors" title="Edit Profile">
                             <Edit2 size={16} />
                           </button>
@@ -4341,6 +4643,19 @@ export default function App() {
         {activeTab === 'settings' && renderSettings()}
         {activeTab === 'profile' && renderProfile()}
       </main>
+
+      {/* Profile Modal */}
+      {renderCreatorProfileModal()}
+
+      {/* Global Loading Overlay for Profile */}
+      {isProfileLoading && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <RefreshCw className="animate-spin text-indigo-500" size={48} />
+            <p className="text-white font-bold animate-pulse">Loading Creator Profile...</p>
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Modal */}
       {confirmModal.isOpen && (

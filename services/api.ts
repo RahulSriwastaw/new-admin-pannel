@@ -233,6 +233,10 @@ export const api = {
     }
   },
 
+  getCreatorProfile: async (userId: string) => {
+    return fetchWithFallback<any>(`/admin/creators/${userId}/profile`, null);
+  },
+
   // Finance
   getTransactions: () => fetchWithFallback<Transaction[]>('/admin/finance/transactions', [] as any),
 
