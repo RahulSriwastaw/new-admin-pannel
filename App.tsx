@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Terminal } from './components/Terminal';
 import { ConnectionVisualizer } from './components/ConnectionVisualizer';
 import { StatCard } from './components/StatCard';
+import CreatorProfileModal from './components/CreatorProfileModal';
 import {
   INITIAL_REPOS,
   BACKEND_URL,
@@ -112,8 +113,8 @@ export default function App() {
   const [withdrawalFilter, setWithdrawalFilter] = useState<'all' | 'pending' | 'processing' | 'completed' | 'rejected'>('all');
   const [isLoadingWithdrawals, setIsLoadingWithdrawals] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
-  const [selectedCreatorProfile, setSelectedCreatorProfile] = useState<CreatorProfile | null>(null);
-  const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [selectedCreatorId, setSelectedCreatorId] = useState<string | null>(null);
+  const [isCreatorModalOpen, setIsCreatorModalOpen] = useState(false);
   const [isLoginAsLoading, setIsLoginAsLoading] = useState(false);
   const [notifModal, setNotifModal] = useState<{ isOpen: boolean, title: string, message: string, userId: string }>({
     isOpen: false,
@@ -1196,8 +1197,8 @@ export default function App() {
   };
 
   const refreshCurrentProfile = () => {
-    if (selectedCreatorProfile) {
-      handleViewProfile(selectedCreatorProfile.user);
+    if (selectedCreatorId) {
+      // Profile data is managed by CreatorProfileModal and refreshes on actions
     }
   };
 
@@ -2752,19 +2753,9 @@ export default function App() {
     </div>
   );
 
-  const handleViewProfile = async (creator: User) => {
-    try {
-      setIsProfileLoading(true);
-      addLog(`Fetching profile for ${creator.name}...`, LogLevel.INFO, 'AdminPanel');
-      const profile = await api.getCreatorProfile(creator.id);
-      setSelectedCreatorProfile(profile);
-      setProfileTab('overview');
-    } catch (e) {
-      console.error(e);
-      addLog('Failed to fetch creator profile. Ensure backend is running.', LogLevel.ERROR, 'Backend');
-    } finally {
-      setIsProfileLoading(false);
-    }
+  const handleViewProfile = (creator: User) => {
+    setSelectedCreatorId(creator.id);
+    setIsCreatorModalOpen(true);
   };
 
   const handleLoginAsCreator = async (creatorId: string) => {
@@ -2802,520 +2793,8 @@ export default function App() {
     }
   };
 
-  const renderCreatorProfileModal = () => {
-    if (!selectedCreatorProfile) return null;
-    const { user, application, templates, earnings, withdrawals, stats, growthStats } = selectedCreatorProfile;
 
-    return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[60] flex items-center justify-center p-4 overflow-y-auto">
-        <div className="bg-[#0f172a] border border-gray-800 rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl animate-in fade-in zoom-in duration-300">
-          {/* Header */}
-          <div className="p-6 border-b border-gray-800 flex justify-between items-start bg-gray-900/50">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 p-0.5">
-                <div className="w-full h-full bg-gray-900 rounded-full overflow-hidden">
-                  {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover" alt={user.name} /> : <div className="w-full h-full flex items-center justify-center text-xl font-bold text-white">{user.name.charAt(0)}</div>}
-                </div>
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                  {user.name}
-                  {user.isVerified && <CheckCircle size={20} className="text-blue-400" title="Verified Creator" />}
-                  <Award size={20} className="text-yellow-400" />
-                </h2>
-                <div className="flex items-center gap-4 mt-1 text-sm">
-                  <span className="text-gray-400 flex items-center gap-1.5"><Mail size={14} /> {user.email}</span>
-                  <span className="text-gray-400 flex items-center gap-1.5"><Calendar size={14} /> Joined {new Date(user.joinedDate).toLocaleDateString()}</span>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${user.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{user.status}</span>
-                  {user.isWalletFrozen && <span className="bg-red-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded">Wallet Frozen</span>}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setNotifModal({ isOpen: true, title: '', message: '', userId: user.id })}
-                className="bg-gray-800 text-gray-400 hover:text-indigo-400 hover:bg-gray-700 p-2 rounded-lg transition-colors"
-                title="Send Notification"
-              >
-                <Mail size={18} />
-              </button>
-              <button
-                onClick={() => handleLoginAsCreator(user.id)}
-                disabled={isLoginAsLoading}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"
-                title="Login as Creator"
-              >
-                {isLoginAsLoading ? <RefreshCw className="animate-spin" size={16} /> : <ExternalLink size={16} />}
-                Login as Creator
-              </button>
-              <button
-                onClick={async () => {
-                  if (confirm(`Are you sure you want to ${user.isVerified ? 'unverify' : 'verify'} this creator?`)) {
-                    await api.updateUser(user.id, { isVerified: !user.isVerified });
-                    handleViewProfile(user); // Refresh
-                  }
-                }}
-                className={`p-2 rounded-lg transition-colors ${user.isVerified ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'}`}
-                title={user.isVerified ? "Unverify Creator" : "Verify Creator"}
-              >
-                <CheckCircle size={18} />
-              </button>
-              <button
-                onClick={async () => {
-                  if (confirm(`Are you sure you want to ${user.isWalletFrozen ? 'unfreeze' : 'freeze'} this creator's wallet?`)) {
-                    await api.updateUser(user.id, { isWalletFrozen: !user.isWalletFrozen });
-                    handleViewProfile(user); // Refresh
-                  }
-                }}
-                className={`p-2 rounded-lg transition-colors ${user.isWalletFrozen ? 'bg-indigo-500 text-white' : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'}`}
-                title={user.isWalletFrozen ? "Unfreeze Wallet" : "Freeze Wallet"}
-              >
-                <Lock size={18} />
-              </button>
-              <button
-                onClick={async () => {
-                  const newStatus = user.status === 'active' ? 'banned' : 'active';
-                  if (confirm(`Are you sure you want to ${newStatus} this creator?`)) {
-                    await api.updateUserStatus(user.id, newStatus);
-                    handleViewProfile(user);
-                  }
-                }}
-                className={`p-2 rounded-lg transition-colors ${user.status === 'banned' ? 'bg-red-500 text-white' : 'bg-gray-800 text-gray-400 hover:text-red-400 hover:bg-gray-700'}`}
-                title={user.status === 'banned' ? "Unsuspend" : "Suspend"}
-              >
-                <Ban size={18} />
-              </button>
-              <div className="h-8 w-px bg-gray-800 mx-1"></div>
-              <button
-                onClick={() => { setSelectedUserIds([user.id]); handleBulkAction('role', 'user'); setSelectedCreatorProfile(null); }}
-                className="px-3 py-2 bg-gray-800 hover:bg-red-900/30 text-gray-400 hover:text-red-400 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
-                title="Demote to User"
-              >
-                <UserX size={16} /> Demote
-              </button>
-              <button
-                onClick={() => setSelectedCreatorProfile(null)}
-                className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-lg transition-all"
-              >
-                <X size={20} />
-              </button>
-            </div>
-          </div>
 
-          {/* Body */}
-          <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-gray-950/30">
-            {/* Quick Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-2xl relative overflow-hidden group hover:border-indigo-500/30 transition-all">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <DollarSign size={48} className="text-white" />
-                </div>
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Total Earnings</p>
-                <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                  ₹{stats.totalEarnings.toLocaleString()}
-                </h3>
-              </div>
-              <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-2xl relative overflow-hidden group hover:border-green-500/30 transition-all">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Wallet size={48} className="text-green-400" />
-                </div>
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Wallet Balance</p>
-                <h3 className="text-2xl font-bold text-green-400">{user.points.toFixed(0)} pts</h3>
-              </div>
-              <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-2xl relative overflow-hidden group hover:border-pink-500/30 transition-all">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Heart size={48} className="text-pink-400" />
-                </div>
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Total Likes</p>
-                <h3 className="text-2xl font-bold text-pink-400">{stats.totalLikes.toLocaleString()}</h3>
-              </div>
-              <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-2xl relative overflow-hidden group hover:border-yellow-500/30 transition-all">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <Zap size={48} className="text-yellow-400" />
-                </div>
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Total Uses</p>
-                <h3 className="text-2xl font-bold text-yellow-400">{stats.totalUses.toLocaleString()}</h3>
-              </div>
-            </div>
-
-            {/* Navigation Tabs */}
-            <div className="flex gap-2 p-1 bg-gray-900 rounded-xl border border-gray-800 mb-6 w-fit overflow-x-auto max-w-full">
-              {(['overview', 'templates', 'earnings', 'withdrawals', 'payment', 'activity'] as const).map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setProfileTab(tab)}
-                  className={`px-5 py-2 rounded-lg text-sm font-bold capitalize transition-all whitespace-nowrap ${profileTab === tab ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-
-            {/* Tab Content */}
-            <div className="min-h-[400px]">
-              {profileTab === 'overview' && (
-                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl">
-                      <div className="flex justify-between items-center mb-6">
-                        <h3 className="font-bold text-white">Earnings Growth (30 Days)</h3>
-                        <TrendingUp className="text-green-400" size={20} />
-                      </div>
-                      <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={growthStats}>
-                            <XAxis dataKey="date" hide />
-                            <YAxis hide />
-                            <Tooltip
-                              contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
-                              itemStyle={{ color: '#818cf8' }}
-                              labelStyle={{ color: '#9ca3af' }}
-                            />
-                            <Line type="monotone" dataKey="earnings" stroke="#6366f1" strokeWidth={3} dot={false} />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
-                        <div className="flex items-center gap-3 text-purple-400 mb-2">
-                          <Users size={20} />
-                          <span className="text-lg font-bold">{user.followers || 0}</span>
-                        </div>
-                        <p className="text-sm text-gray-500">Total Followers</p>
-                      </div>
-                      <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
-                        <div className="flex items-center gap-3 text-blue-400 mb-2">
-                          <Save size={20} />
-                          <span className="text-lg font-bold">{stats.totalSaves || 0}</span>
-                        </div>
-                        <p className="text-sm text-gray-500">Total Saves</p>
-                      </div>
-                      <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
-                        <div className="flex items-center gap-3 text-green-400 mb-2">
-                          <LayoutTemplate size={20} />
-                          <span className="text-lg font-bold">{templates.length}</span>
-                        </div>
-                        <p className="text-sm text-gray-500">Total Templates</p>
-                      </div>
-                      <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
-                        <div className="flex items-center gap-3 text-orange-400 mb-2">
-                          <CreditCard size={20} />
-                          <span className="text-lg font-bold">{withdrawals.length}</span>
-                        </div>
-                        <p className="text-sm text-gray-500">Withdrawal Requests</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl">
-                    <h3 className="font-bold text-white mb-4">Creator Background</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase mb-2">Social Media Portfolio</p>
-                        <div className="flex gap-3 flex-wrap">
-                          {application?.socialLinks && application.socialLinks.map((link, i) => (
-                            <a key={i} href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 rounded-lg text-sm text-indigo-300 hover:bg-gray-700 transition-colors">
-                              {getSocialIcon(link)} {link}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                      {application?.bio && (
-                        <div>
-                          <p className="text-xs text-gray-500 uppercase mb-2">Bio / Description</p>
-                          <p className="text-gray-300 text-sm italic">"{application.bio}"</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {profileTab === 'templates' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-2">
-                  {templates.map(t => (
-                    <div key={t.id} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 group hover:border-indigo-500/50 transition-all flex flex-col">
-                      <div className="aspect-square bg-gray-800 relative">
-                        <img src={t.imageUrl} className="w-full h-full object-cover" alt={t.title} />
-                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => handleEditTemplate(t)} className="p-1.5 bg-black/60 backdrop-blur-md rounded-lg text-white hover:bg-indigo-600 transition-colors" title="Edit Template"><Edit2 size={14} /></button>
-                          <button onClick={() => handleDeleteTemplate(t.id)} className="p-1.5 bg-black/60 backdrop-blur-md rounded-lg text-white hover:bg-red-600 transition-colors" title="Delete Template"><Trash2 size={14} /></button>
-                        </div>
-                      </div>
-                      <div className="p-3 flex-1">
-                        <h4 className="font-bold text-white text-sm truncate">{t.title}</h4>
-                        <div className="flex justify-between items-center mt-2">
-                          <span className="text-[10px] text-gray-500">{t.category}</span>
-                          <div className="flex items-center gap-1 text-[10px] text-indigo-400 font-bold">
-                            <Zap size={10} /> {t.useCount} uses
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-800">
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${t.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-gray-800 text-gray-500'}`}>
-                            {t.status}
-                          </span>
-                          <button
-                            onClick={async () => {
-                              const newStatus = t.status === 'active' ? 'draft' : 'active';
-                              await api.updateTemplate(t.id, { status: newStatus });
-                              handleViewProfile(user); // Refresh
-                            }}
-                            className="text-[10px] text-indigo-400 hover:text-white transition-colors underline"
-                          >
-                            Mark as {t.status === 'active' ? 'Draft' : 'Active'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {templates.length === 0 && (
-                    <div className="col-span-full py-20 text-center bg-gray-900/50 border border-gray-800 border-dashed rounded-2xl">
-                      <p className="text-gray-500">No templates found for this creator.</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {profileTab === 'earnings' && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-gray-900/50 border border-gray-800 p-4 rounded-xl">
-                      <p className="text-xs text-gray-500 uppercase">Lifetime Earnings</p>
-                      <p className="text-xl font-bold text-white">₹{stats.totalEarnings.toFixed(2)}</p>
-                    </div>
-                    <div className="bg-gray-900/50 border border-gray-800 p-4 rounded-xl">
-                      <p className="text-xs text-gray-500 uppercase">Pending Withdrawals</p>
-                      <p className="text-xl font-bold text-yellow-400">
-                        ₹{withdrawals.filter(w => w.status === 'pending').reduce((a, b) => a + b.amount, 0).toFixed(2)}
-                      </p>
-                    </div>
-                    <div className="bg-gray-900/50 border border-gray-800 p-4 rounded-xl">
-                      <p className="text-xs text-gray-500 uppercase">Completed Withdrawals</p>
-                      <p className="text-xl font-bold text-green-400">
-                        ₹{withdrawals.filter(w => w.status === 'completed').reduce((a, b) => a + b.amount, 0).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="bg-gray-900/50 border border-gray-800 rounded-2xl overflow-hidden">
-                    <table className="w-full text-left text-sm text-gray-400">
-                      <thead className="bg-gray-900 text-xs uppercase text-gray-500 font-bold border-b border-gray-800">
-                        <tr>
-                          <th className="p-4">Date</th>
-                          <th className="p-4">Activity</th>
-                          <th className="p-4 text-right">Points Earned</th>
-                          <th className="p-4 text-right">Revenue Share</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-800">
-                        {earnings.map((e, idx) => (
-                          <tr key={idx} className="hover:bg-gray-800/30">
-                            <td className="p-4 text-xs">{new Date(e.date).toLocaleString()}</td>
-                            <td className="p-4">Template Usage: {e.templateId?.slice(-6)}</td>
-                            <td className="p-4 text-right text-indigo-400 font-bold">{(e.amount * 10).toFixed(0)} pts</td>
-                            <td className="p-4 text-right text-green-400 font-bold">₹{e.amount.toFixed(2)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {profileTab === 'withdrawals' && (
-                <div className="bg-gray-900/50 border border-gray-800 rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2">
-                  <table className="w-full text-left text-sm text-gray-400">
-                    <thead className="bg-gray-900 text-xs uppercase text-gray-500 font-bold border-b border-gray-800">
-                      <tr>
-                        <th className="p-4">Requested At</th>
-                        <th className="p-4">Method</th>
-                        <th className="p-4">Amount</th>
-                        <th className="p-4">Status</th>
-                        <th className="p-4 text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-800">
-                      {withdrawals.map(w => (
-                        <tr key={w.id} className="hover:bg-gray-800/30">
-                          <td className="p-4 text-xs">{new Date(w.requestedAt).toLocaleString()}</td>
-                          <td className="p-4 uppercase">{w.method}</td>
-                          <td className="p-4 font-bold text-white">₹{w.amount.toLocaleString()}</td>
-                          <td className="p-4">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${w.status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                              {w.status}
-                            </span>
-                          </td>
-                          <td className="p-4 text-right">
-                            <div className="flex justify-end gap-2">
-                              {w.status === 'pending' && (
-                                <button
-                                  onClick={async () => {
-                                    await handleProcessWithdrawal(w.id);
-                                    handleViewProfile(user);
-                                  }}
-                                  className="p-1.5 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-colors"
-                                  title="Mark as Processing"
-                                >
-                                  <Activity size={16} />
-                                </button>
-                              )}
-                              {w.status === 'processing' && (
-                                <button
-                                  onClick={async () => {
-                                    await handleApproveWithdrawal(w.id);
-                                    handleViewProfile(user);
-                                  }}
-                                  className="p-1.5 hover:bg-green-500/20 text-green-400 rounded-lg transition-colors"
-                                  title="Approve & Pay"
-                                >
-                                  <CheckCircle size={16} />
-                                </button>
-                              )}
-                              {(w.status === 'pending' || w.status === 'processing') && (
-                                <button
-                                  onClick={async () => {
-                                    await handleRejectWithdrawal(w.id);
-                                    handleViewProfile(user);
-                                  }}
-                                  className="p-1.5 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
-                                  title="Reject"
-                                >
-                                  <X size={16} />
-                                </button>
-                              )}
-                              <button className="p-1.5 hover:bg-gray-800 rounded-lg text-gray-500 hover:text-white transition-all"><Eye size={16} /></button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {profileTab === 'payment' && (
-                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-xl">
-                      <h3 className="font-bold text-white mb-6 flex items-center gap-2">
-                        <UserCheck className="text-indigo-400" size={20} /> Creator Verification
-                      </h3>
-                      <div className="p-4 bg-gray-950 rounded-xl border border-gray-800 flex items-center justify-between">
-                        <div>
-                          <p className="font-bold text-sm text-white">Verification Status</p>
-                          <p className="text-xs text-gray-500">Enable/Disable verified badge.</p>
-                        </div>
-                        <button
-                          onClick={async () => {
-                            await api.updateUser(user.id, { isVerified: !user.isVerified });
-                            handleViewProfile(user);
-                          }}
-                          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${user.isVerified ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
-                        >
-                          {user.isVerified ? 'Verified' : 'Unverified'}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-xl">
-                      <h3 className="font-bold text-white mb-6 flex items-center gap-2">
-                        <ShieldAlert className="text-red-400" size={20} /> Wallet Safety
-                      </h3>
-                      <div className="p-4 bg-red-950/10 rounded-xl border border-red-900/20 flex items-center justify-between">
-                        <div>
-                          <p className="font-bold text-sm text-white">Freeze Wallet</p>
-                          <p className="text-xs text-gray-500">Stop all withdrawals.</p>
-                        </div>
-                        <button
-                          onClick={async () => {
-                            await api.updateUser(user.id, { isWalletFrozen: !user.isWalletFrozen });
-                            handleViewProfile(user);
-                          }}
-                          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${user.isWalletFrozen ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
-                        >
-                          {user.isWalletFrozen ? 'Frozen' : 'Active'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6">
-                    <h3 className="font-bold text-white mb-6 flex items-center gap-2"><CreditCard size={18} className="text-indigo-400" /> Payout Details</h3>
-                    {application?.paymentDetails ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-4">
-                          <div className="bg-gray-950 p-4 rounded-xl border border-gray-800">
-                            <p className="text-xs text-gray-500 uppercase">Account Holder</p>
-                            <p className="text-lg font-mono text-white">{application.paymentDetails.accountHolderName || 'N/A'}</p>
-                          </div>
-                          <div className="bg-gray-950 p-4 rounded-xl border border-gray-800">
-                            <p className="text-xs text-gray-500 uppercase">Bank Name</p>
-                            <p className="text-lg font-mono text-white">{application.paymentDetails.bankName || 'N/A'}</p>
-                          </div>
-                        </div>
-                        <div className="space-y-4">
-                          <div className="bg-gray-950 p-4 rounded-xl border border-gray-800">
-                            <p className="text-xs text-gray-500 uppercase">IFSC Code</p>
-                            <p className="text-lg font-mono text-white">{application.paymentDetails.ifscCode || 'N/A'}</p>
-                          </div>
-                          <div className="bg-gray-950 p-4 rounded-xl border border-gray-800">
-                            <p className="text-xs text-gray-500 uppercase">UPI ID</p>
-                            <p className="text-lg font-mono text-white">{application.paymentDetails.upiId || 'N/A'}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-10 text-gray-500">No payment details linked.</div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {profileTab === 'activity' && (
-                <div className="bg-gray-900/50 border border-gray-800 rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2">
-                  <table className="w-full text-left text-sm text-gray-400">
-                    <thead className="bg-gray-900 text-xs uppercase text-gray-500 font-bold border-b border-gray-800">
-                      <tr>
-                        <th className="p-4">Time</th>
-                        <th className="p-4">Action</th>
-                        <th className="p-4">Path</th>
-                        <th className="p-4">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-800">
-                      {selectedCreatorProfile.activityLogs?.map((log, i) => (
-                        <tr key={i} className="hover:bg-gray-800/30">
-                          <td className="p-4 text-xs">{new Date(log.ts).toLocaleString()}</td>
-                          <td className="p-4 font-mono text-xs">{log.method}</td>
-                          <td className="p-4 font-mono text-xs truncate max-w-[200px]">{log.path}</td>
-                          <td className="p-4"><span className={`px-2 py-0.5 rounded text-[10px] ${log.status === 200 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{log.status}</span></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="p-6 border-t border-gray-800 bg-gray-900/50 rounded-b-2xl flex justify-between items-center">
-            <div className="flex gap-4">
-              <div className="text-sm">
-                <span className="text-gray-500">Active Templates:</span>
-                <span className="text-indigo-400 font-bold ml-2">{templates.filter(t => t.status === 'active').length}</span>
-              </div>
-            </div>
-            <button
-              onClick={() => setSelectedCreatorProfile(null)}
-              className="px-8 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20"
-            >
-              Close Profile
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   const renderCreators = () => {
     // Stats Calculation
@@ -4975,18 +4454,16 @@ export default function App() {
         {activeTab === 'profile' && renderProfile()}
       </main>
 
-      {/* Profile Modal */}
-      {renderCreatorProfileModal()}
-
-      {/* Global Loading Overlay for Profile */}
-      {isProfileLoading && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <RefreshCw className="animate-spin text-indigo-500" size={48} />
-            <p className="text-white font-bold animate-pulse">Loading Creator Profile...</p>
-          </div>
-        </div>
-      )}
+      {/* Creator Profile Modal */}
+      <CreatorProfileModal
+        creatorId={selectedCreatorId || ''}
+        isOpen={isCreatorModalOpen}
+        onClose={() => {
+          setIsCreatorModalOpen(false);
+          setSelectedCreatorId(null);
+          refreshData(); // Refresh data when modal closes
+        }}
+      />
 
       {/* Confirmation Modal */}
       {confirmModal.isOpen && (
