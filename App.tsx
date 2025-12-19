@@ -3111,12 +3111,12 @@ export default function App() {
                     <th className="px-6 py-4">Uses</th>
                     <th className="px-6 py-4">Status</th>
                     <th className="px-6 py-4">Joined</th>
-                    <th className="px-6 py-4 text-right">Actions</th>
+                    <th className="px-6 py-4 text-right sticky right-0 bg-gray-950 z-10 border-l border-gray-800 shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.5)]">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
                   {paginatedCreators.map(creator => (
-                    <tr key={creator.id} className={`hover:bg-gray-800/50 transition-colors ${selectedCreatorIds.includes(creator.id) ? 'bg-indigo-900/10' : ''}`}>
+                    <tr key={creator.id} className={`group hover:bg-gray-800/50 transition-colors ${selectedCreatorIds.includes(creator.id) ? 'bg-indigo-900/10' : ''}`}>
                       <td className="px-6 py-4">
                         <input
                           type="checkbox"
@@ -3146,7 +3146,7 @@ export default function App() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-xs">{new Date(creator.joinedDate).toLocaleDateString()}</td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-4 text-right sticky right-0 bg-gray-900 group-hover:bg-gray-800 border-l border-gray-800 transition-colors shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.5)]">
                         <div className="flex justify-end gap-2">
                           <button onClick={() => handleViewProfile(creator)} className="p-2 text-gray-400 hover:text-indigo-400 hover:bg-gray-800 rounded transition-colors" title="View Detailed Profile">
                             <Eye size={16} />
