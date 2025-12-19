@@ -3,7 +3,7 @@
  * Handles all API calls related to creator profile management
  */
 
-import { API_BASE_URL } from './api';
+import { API_BASE_URL } from '../constants';
 import type {
     CreatorProfile,
     CreatorTemplateResponse,
