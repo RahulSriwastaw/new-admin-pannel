@@ -2892,15 +2892,21 @@ export default function App() {
         type: 'danger',
         confirmText: 'Yes, Proceed',
         onConfirm: async () => {
-          if (action === 'demote' || action === 'remove') {
-            // Using bulk user update to change role to user
-            await api.bulkUpdateUsers(selectedCreatorIds, { role: 'user' });
-            // In a real scenario, you might have a specific endpoint for removing creators
-            setUsers(prev => prev.map(u => selectedCreatorIds.includes(u.id) ? { ...u, role: 'user' } : u));
+          try {
+            if (action === 'demote' || action === 'remove') {
+              // Using bulk user update to change role to user
+              await api.bulkUpdateUsers(selectedCreatorIds, { role: 'user' });
+              // In a real scenario, you might have a specific endpoint for removing creators
+              setUsers(prev => prev.map(u => selectedCreatorIds.includes(u.id) ? { ...u, role: 'user' } : u));
+            }
+            setSelectedCreatorIds([]);
+            closeConfirmModal();
+            addLog(`Bulk ${action} completed for active creators.`, LogLevel.WARN, 'AdminPanel');
+          } catch (err: any) {
+            console.error('Bulk Creator Action Error:', err);
+            alert(`Action Failed: ${err.message}`);
+            addLog(`Bulk creator action failed: ${err.message}`, LogLevel.ERROR, 'AdminPanel');
           }
-          setSelectedCreatorIds([]);
-          closeConfirmModal();
-          addLog(`Bulk ${action} completed for active creators.`, LogLevel.WARN, 'AdminPanel');
         }
       });
     };
