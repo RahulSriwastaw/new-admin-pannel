@@ -722,6 +722,25 @@ export const api = {
 
   getWithdrawalStats: async () => {
     return fetchWithFallback<any>('/admin/withdrawals/stats', {} as any);
+  },
+
+  // Admin special actions
+  loginAsUser: async (userId: string) => {
+    const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/login-as`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to login as user');
+    return await res.json();
+  },
+
+  sendCreatorNotification: async (userId: string, data: { title: string, message: string, type?: string }) => {
+    const res = await fetch(`${API_BASE_URL}/admin/notifications/send-to/${userId}`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data)
+    });
+    return res.ok;
   }
 };
 

@@ -18,7 +18,7 @@ import {
   CheckCircle, BarChart3, Database, ShieldCheck, Lock, LogIn, RefreshCw, ExternalLink,
   X, Check, Ban, FileText, Globe, Plus, Save, Calendar, ArrowRightLeft, ArrowUp, ArrowDown, ArrowUpDown,
   BrainCircuit, UserCheck, UserX, AlertTriangle, HelpCircle, Key, Trash2, Edit2, LayoutTemplate,
-  UploadCloud, Link as LinkIcon, Download, Copy, Image as ImageIcon, Wallet, Zap, ToggleRight, ToggleLeft, Shield, Send, BellRing, Smartphone, Mail, Filter, DollarSign, Clock, Sparkles, LayoutDashboard, UserPlus, Camera,
+  UploadCloud, Link as LinkIcon, Download, Copy, Image as ImageIcon, Wallet, Zap, ToggleRight, ToggleLeft, Shield, ShieldAlert, Send, BellRing, Smartphone, Mail, Filter, DollarSign, Clock, Sparkles, LayoutDashboard, UserPlus, Camera,
   MoreHorizontal, User as UserIcon, LayoutList, Grid, Instagram, Twitter, Youtube, Briefcase, TrendingUp, CheckSquare, XSquare, Eye, Award, ChevronLeft, ChevronRight, FileDown, Layers, Star, Grid3X3, FolderTree, FolderPlus, LogOut, BellOff, Heart
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -114,7 +114,14 @@ export default function App() {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [selectedCreatorProfile, setSelectedCreatorProfile] = useState<CreatorProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
-  const [profileTab, setProfileTab] = useState<'overview' | 'templates' | 'earnings' | 'withdrawals'>('overview');
+  const [isLoginAsLoading, setIsLoginAsLoading] = useState(false);
+  const [notifModal, setNotifModal] = useState<{ isOpen: boolean, title: string, message: string, userId: string }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    userId: ''
+  });
+  const [profileTab, setProfileTab] = useState<'overview' | 'templates' | 'earnings' | 'withdrawals' | 'payment' | 'activity'>('overview');
 
   // Ads Management State
   const [adsConfig, setAdsConfig] = useState<AdsConfig>({
@@ -733,7 +740,7 @@ export default function App() {
     }
   }, [activeTab, withdrawalFilter]);
 
-  const handleProcessWithdrawal = async (id: string) => {
+  const handleProcessWithdrawal = async (id: string, onSuccess?: () => void) => {
     setConfirmModal({
       isOpen: true,
       title: 'Process Withdrawal',
@@ -747,13 +754,15 @@ export default function App() {
           addLog("Withdrawal marked as processing", LogLevel.SUCCESS, "AdminPanel");
           const stats = await api.getWithdrawalStats();
           setWithdrawalStats(stats);
+          if (onSuccess) onSuccess();
+          refreshCurrentProfile();
         }
         closeConfirmModal();
       }
     });
   };
 
-  const handleApproveWithdrawal = async (id: string) => {
+  const handleApproveWithdrawal = async (id: string, onSuccess?: () => void) => {
     const txnId = prompt("Enter Transaction ID (optional):");
     if (txnId === null) return;
 
@@ -770,13 +779,15 @@ export default function App() {
           addLog("Withdrawal approved successfully", LogLevel.SUCCESS, "AdminPanel");
           const stats = await api.getWithdrawalStats();
           setWithdrawalStats(stats);
+          if (onSuccess) onSuccess();
+          refreshCurrentProfile();
         }
         closeConfirmModal();
       }
     });
   };
 
-  const handleRejectWithdrawal = async (id: string) => {
+  const handleRejectWithdrawal = async (id: string, onSuccess?: () => void) => {
     const reason = prompt("Enter Rejection Reason:");
     if (!reason) return;
 
@@ -793,6 +804,8 @@ export default function App() {
           addLog("Withdrawal rejected", LogLevel.WARN, "AdminPanel");
           const stats = await api.getWithdrawalStats();
           setWithdrawalStats(stats);
+          if (onSuccess) onSuccess();
+          refreshCurrentProfile();
         }
         closeConfirmModal();
       }
@@ -1182,6 +1195,172 @@ export default function App() {
     });
   };
 
+  const refreshCurrentProfile = () => {
+    if (selectedCreatorProfile) {
+      handleViewProfile(selectedCreatorProfile.user);
+    }
+  };
+
+  const toggleSelectTemplate = (id: string) => {
+    setSelectedTemplateIds(prev => prev.includes(id) ? prev.filter(tid => tid !== id) : [...prev, id]);
+  };
+
+  const handleBulkTemplateAction = (action: 'delete' | 'active' | 'draft') => {
+    if (!selectedTemplateIds.length) return;
+
+    const title = action === 'delete' ? 'Bulk Delete Templates' : 'Bulk Update Status';
+    const message = action === 'delete'
+      ? `Permanently delete ${selectedTemplateIds.length} templates?`
+      : `Set ${selectedTemplateIds.length} templates to ${action.toUpperCase()}?`;
+
+    setConfirmModal({
+      isOpen: true,
+      title,
+      message,
+      type: action === 'delete' ? 'danger' : 'info',
+      confirmText: 'Confirm',
+      onConfirm: async () => {
+        if (action === 'delete') {
+          await Promise.all(selectedTemplateIds.map(id => api.deleteTemplate(id)));
+          setTemplates(prev => prev.filter(t => !selectedTemplateIds.includes(t.id)));
+        } else {
+          const updates = { status: action } as Partial<Template>;
+          await Promise.all(selectedTemplateIds.map(id => api.updateTemplate(id, updates)));
+          setTemplates(prev => prev.map(t => selectedTemplateIds.includes(t.id) ? { ...t, status: action } as Template : t));
+        }
+        setSelectedTemplateIds([]);
+        addLog(`Bulk template action (${action}) completed.`, LogLevel.SUCCESS, 'AdminPanel');
+        refreshCurrentProfile();
+        closeConfirmModal();
+      }
+    });
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setTemplateFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      setNewTemplate({ ...newTemplate, imageUrl: '' }); // Clear manual URL if file selected
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      setTemplateFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      setNewTemplate({ ...newTemplate, imageUrl: '' });
+    }
+  };
+
+  const handleSaveTemplate = async () => {
+    setIsUploading(true);
+    try {
+      let finalImageUrl = newTemplate.imageUrl;
+
+      // If a file is selected, upload it first
+      if (templateFile) {
+        addLog("Uploading image file...", LogLevel.INFO, "System");
+        const uploadedUrl = await api.uploadImage(templateFile);
+        finalImageUrl = uploadedUrl;
+        addLog("Image uploaded successfully.", LogLevel.SUCCESS, "System");
+      }
+
+      if (!finalImageUrl) {
+        alert("Please upload an image or provide a valid URL.");
+        setIsUploading(false);
+        return;
+      }
+
+      const templateData = { ...newTemplate, imageUrl: finalImageUrl };
+
+      if (isEditingTemplate && templateData.id) {
+        await api.updateTemplate(templateData.id, templateData);
+        setTemplates(prev => prev.map(t => t.id === templateData.id ? { ...t, ...templateData } as Template : t));
+        addLog(`Template '${templateData.title}' updated successfully.`, LogLevel.SUCCESS, 'AdminPanel');
+      } else {
+        const created = await api.addTemplate(templateData as any);
+        setTemplates(prev => [created, ...prev]);
+        addLog(`Template '${created.title}' created successfully.`, LogLevel.SUCCESS, 'AdminPanel');
+      }
+      setShowTemplateModal(false);
+      refreshCurrentProfile();
+    } catch (e) {
+      addLog("Failed to save template.", LogLevel.ERROR, "Backend");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleEditTemplate = (template: Template) => {
+    setNewTemplate(template);
+    setPreviewUrl(template.imageUrl); // Show existing image
+    setTemplateFile(null);
+    setIsEditingTemplate(true);
+    setShowTemplateModal(true);
+  };
+
+  const openAddTemplateModal = () => {
+    setNewTemplate({ title: '', imageUrl: '', category: 'General', subCategory: 'Misc', prompt: '', negativePrompt: '', isPremium: false, status: 'active', source: 'manual' });
+    setPreviewUrl('');
+    setTemplateFile(null);
+    setIsEditingTemplate(false);
+    setShowTemplateModal(true);
+  }
+
+  const handleDeleteTemplate = async (id: string, onSuccess?: () => void) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Template',
+      message: "Are you sure? This template will be permanently removed.",
+      type: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        await api.deleteTemplate(id);
+        setTemplates(prev => prev.filter(t => t.id !== id));
+        addLog(`Template ${id} deleted.`, LogLevel.WARN, 'AdminPanel');
+        if (onSuccess) onSuccess();
+        refreshCurrentProfile();
+        closeConfirmModal();
+      }
+    });
+  };
+
+  const handleBulkUpload = async () => {
+    if (!bulkFile) return;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      if (e.target?.result) {
+        // Simulate adding some templates for visual feedback
+        const mockBulkTemplates = [
+          { id: `B_${Math.random()}`, title: 'Bulk Imported 1', imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500', category: 'Abstract', prompt: 'abstract fluid art', status: 'active', useCount: 0, isPremium: false, source: 'bulk' }
+        ];
+        setTemplates(prev => [...(mockBulkTemplates as Template[]), ...prev]);
+        setShowBulkUploadModal(false);
+        setBulkFile(null);
+        addLog("Bulk upload processed successfully. 15 templates added.", LogLevel.SUCCESS, 'Backend');
+      }
+    };
+  };
+
+  const handleAirtableSync = async () => {
+    setIsSyncingAirtable(true);
+    addLog("Connecting to Airtable API...", LogLevel.INFO, 'System');
+    try {
+      const syncedTemplates = await api.syncAirtable(airtableConfig);
+      setTemplates(prev => [...syncedTemplates, ...prev]);
+      setShowAirtableModal(false);
+      addLog(`Synced ${syncedTemplates.length} templates from Airtable Base.`, LogLevel.SUCCESS, 'Backend');
+    } catch (e) {
+      addLog("Airtable Sync Failed. Check API Key.", LogLevel.ERROR, 'System');
+    } finally {
+      setIsSyncingAirtable(false);
+    }
+  };
+
   // Template Management Functions
   const renderTemplates = () => {
     // Stats calculation
@@ -1207,164 +1386,14 @@ export default function App() {
 
     const paginatedTemplates = filteredTemplates.slice((templatePage - 1) * itemsPerPage, templatePage * itemsPerPage);
 
-    const toggleSelectTemplate = (id: string) => {
-      setSelectedTemplateIds(prev => prev.includes(id) ? prev.filter(tid => tid !== id) : [...prev, id]);
-    };
 
-    const handleBulkTemplateAction = (action: 'delete' | 'active' | 'draft') => {
-      if (!selectedTemplateIds.length) return;
 
-      const title = action === 'delete' ? 'Bulk Delete Templates' : 'Bulk Update Status';
-      const message = action === 'delete'
-        ? `Permanently delete ${selectedTemplateIds.length} templates?`
-        : `Set ${selectedTemplateIds.length} templates to ${action.toUpperCase()}?`;
 
-      setConfirmModal({
-        isOpen: true,
-        title,
-        message,
-        type: action === 'delete' ? 'danger' : 'info',
-        confirmText: 'Confirm',
-        onConfirm: async () => {
-          if (action === 'delete') {
-            await Promise.all(selectedTemplateIds.map(id => api.deleteTemplate(id)));
-            setTemplates(prev => prev.filter(t => !selectedTemplateIds.includes(t.id)));
-          } else {
-            const updates = { status: action } as Partial<Template>;
-            await Promise.all(selectedTemplateIds.map(id => api.updateTemplate(id, updates)));
-            setTemplates(prev => prev.map(t => selectedTemplateIds.includes(t.id) ? { ...t, status: action } as Template : t));
-          }
-          setSelectedTemplateIds([]);
-          addLog(`Bulk template action (${action}) completed.`, LogLevel.SUCCESS, 'AdminPanel');
-          closeConfirmModal();
-        }
-      });
-    };
 
     // Helper for drag and drop
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files && e.target.files[0]) {
-        const file = e.target.files[0];
-        setTemplateFile(file);
-        setPreviewUrl(URL.createObjectURL(file));
-        setNewTemplate({ ...newTemplate, imageUrl: '' }); // Clear manual URL if file selected
-      }
-    };
 
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        const file = e.dataTransfer.files[0];
-        setTemplateFile(file);
-        setPreviewUrl(URL.createObjectURL(file));
-        setNewTemplate({ ...newTemplate, imageUrl: '' });
-      }
-    };
 
-    const handleSaveTemplate = async () => {
-      setIsUploading(true);
-      try {
-        let finalImageUrl = newTemplate.imageUrl;
 
-        // If a file is selected, upload it first
-        if (templateFile) {
-          addLog("Uploading image file...", LogLevel.INFO, "System");
-          const uploadedUrl = await api.uploadImage(templateFile);
-          finalImageUrl = uploadedUrl;
-          addLog("Image uploaded successfully.", LogLevel.SUCCESS, "System");
-        }
-
-        if (!finalImageUrl) {
-          alert("Please upload an image or provide a valid URL.");
-          setIsUploading(false);
-          return;
-        }
-
-        const templateData = { ...newTemplate, imageUrl: finalImageUrl };
-
-        if (isEditingTemplate && templateData.id) {
-          await api.updateTemplate(templateData.id, templateData);
-          setTemplates(prev => prev.map(t => t.id === templateData.id ? { ...t, ...templateData } as Template : t));
-          addLog(`Template '${templateData.title}' updated successfully.`, LogLevel.SUCCESS, 'AdminPanel');
-        } else {
-          const created = await api.addTemplate(templateData as any);
-          setTemplates(prev => [created, ...prev]);
-          addLog(`Template '${created.title}' created successfully.`, LogLevel.SUCCESS, 'AdminPanel');
-        }
-        setShowTemplateModal(false);
-        setIsEditingTemplate(false);
-        setNewTemplate({ title: '', imageUrl: '', category: 'General', subCategory: 'Misc', prompt: '', negativePrompt: '', isPremium: false, status: 'active', source: 'manual' });
-        setTemplateFile(null);
-        setPreviewUrl('');
-      } catch (e) {
-        addLog("Failed to save template.", LogLevel.ERROR, "Backend");
-      } finally {
-        setIsUploading(false);
-      }
-    };
-
-    const handleEditTemplate = (template: Template) => {
-      setNewTemplate(template);
-      setPreviewUrl(template.imageUrl); // Show existing image
-      setTemplateFile(null);
-      setIsEditingTemplate(true);
-      setShowTemplateModal(true);
-    };
-
-    const openAddTemplateModal = () => {
-      setNewTemplate({ title: '', imageUrl: '', category: 'General', subCategory: 'Misc', prompt: '', negativePrompt: '', isPremium: false, status: 'active', source: 'manual' });
-      setPreviewUrl('');
-      setTemplateFile(null);
-      setIsEditingTemplate(false);
-      setShowTemplateModal(true);
-    }
-
-    const handleDeleteTemplate = async (id: string) => {
-      setConfirmModal({
-        isOpen: true,
-        title: 'Delete Template',
-        message: "Are you sure? This template will be permanently removed.",
-        type: 'danger',
-        confirmText: 'Delete',
-        onConfirm: async () => {
-          await api.deleteTemplate(id);
-          setTemplates(prev => prev.filter(t => t.id !== id));
-          addLog(`Template ${id} deleted.`, LogLevel.WARN, 'AdminPanel');
-          closeConfirmModal();
-        }
-      });
-    };
-
-    const handleBulkUpload = async () => {
-      if (bulkFile) {
-        addLog(`Processing bulk upload file: ${bulkFile.name}`, LogLevel.INFO, 'System');
-        await api.bulkUploadTemplates(bulkFile);
-        // Simulate adding some templates for visual feedback
-        const mockBulkTemplates = [
-          { id: `B_${Math.random()}`, title: 'Bulk Imported 1', imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500', category: 'Abstract', prompt: 'abstract fluid art', status: 'active', useCount: 0, isPremium: false, source: 'bulk' }
-        ];
-        setTemplates(prev => [...(mockBulkTemplates as Template[]), ...prev]);
-        setShowBulkUploadModal(false);
-        setBulkFile(null);
-        addLog("Bulk upload processed successfully. 15 templates added.", LogLevel.SUCCESS, 'Backend');
-      }
-    };
-
-    const handleAirtableSync = async () => {
-      setIsSyncingAirtable(true);
-      addLog("Connecting to Airtable API...", LogLevel.INFO, 'System');
-      try {
-        const syncedTemplates = await api.syncAirtable(airtableConfig);
-        setTemplates(prev => [...syncedTemplates, ...prev]);
-        setShowAirtableModal(false);
-        addLog(`Synced ${syncedTemplates.length} templates from Airtable Base.`, LogLevel.SUCCESS, 'Backend');
-      } catch (e) {
-        addLog("Airtable Sync Failed. Check API Key.", LogLevel.ERROR, 'System');
-      } finally {
-        setIsSyncingAirtable(false);
-      }
-    };
 
     return (
       <div className="space-y-6 animate-in fade-in duration-500">
@@ -2738,43 +2767,137 @@ export default function App() {
     }
   };
 
+  const handleLoginAsCreator = async (creatorId: string) => {
+    setIsLoginAsLoading(true);
+    try {
+      const data = await api.loginAsUser(creatorId);
+      if (data.token) {
+        // Build the frontend URL - assuming it's host (e.g. localhost:3000)
+        // If production, we might need a specific domain.
+        // For now, assume it's same origin but without /admin path if any
+        const url = `${window.location.origin}?token=${data.token}`;
+        window.open(url, '_blank');
+        addLog(`Login as ${data.user.name} successful`, LogLevel.SUCCESS, 'AdminPanel');
+      }
+    } catch (e: any) {
+      addLog(`Login as creator failed: ${e.message}`, LogLevel.ERROR, 'AdminPanel');
+    } finally {
+      setIsLoginAsLoading(false);
+    }
+  };
+
+  const handleSendCreatorNotification = async () => {
+    if (!notifModal.userId || !notifModal.title || !notifModal.message) return;
+    try {
+      const success = await api.sendCreatorNotification(notifModal.userId, {
+        title: notifModal.title,
+        message: notifModal.message
+      });
+      if (success) {
+        addLog(`Notification sent to creator`, LogLevel.SUCCESS, 'AdminPanel');
+        setNotifModal({ ...notifModal, isOpen: false });
+      }
+    } catch (e: any) {
+      addLog(`Failed to send notification: ${e.message}`, LogLevel.ERROR, 'AdminPanel');
+    }
+  };
+
   const renderCreatorProfileModal = () => {
     if (!selectedCreatorProfile) return null;
-
     const { user, application, templates, earnings, withdrawals, stats, growthStats } = selectedCreatorProfile;
 
     return (
       <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[60] flex items-center justify-center p-4 overflow-y-auto">
         <div className="bg-[#0f172a] border border-gray-800 rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col shadow-2xl animate-in fade-in zoom-in duration-300">
           {/* Header */}
-          <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-900/50 rounded-t-2xl">
-            <div className="flex items-center gap-5">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg border border-white/10 overflow-hidden">
-                {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover" alt={user.name} /> : user.name.charAt(0)}
+          <div className="p-6 border-b border-gray-800 flex justify-between items-start bg-gray-900/50">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 p-0.5">
+                <div className="w-full h-full bg-gray-900 rounded-full overflow-hidden">
+                  {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover" alt={user.name} /> : <div className="w-full h-full flex items-center justify-center text-xl font-bold text-white">{user.name.charAt(0)}</div>}
+                </div>
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                  {user.name} <Award size={20} className="text-yellow-400" />
+                  {user.name}
+                  {user.isVerified && <CheckCircle size={20} className="text-blue-400" title="Verified Creator" />}
+                  <Award size={20} className="text-yellow-400" />
                 </h2>
                 <div className="flex items-center gap-4 mt-1 text-sm">
                   <span className="text-gray-400 flex items-center gap-1.5"><Mail size={14} /> {user.email}</span>
                   <span className="text-gray-400 flex items-center gap-1.5"><Calendar size={14} /> Joined {new Date(user.joinedDate).toLocaleDateString()}</span>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold tracking-wider ${user.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{user.status}</span>
+                  {user.isWalletFrozen && <span className="bg-red-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded">Wallet Frozen</span>}
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setNotifModal({ isOpen: true, title: '', message: '', userId: user.id })}
+                className="bg-gray-800 text-gray-400 hover:text-indigo-400 hover:bg-gray-700 p-2 rounded-lg transition-colors"
+                title="Send Notification"
+              >
+                <Mail size={18} />
+              </button>
+              <button
+                onClick={() => handleLoginAsCreator(user.id)}
+                disabled={isLoginAsLoading}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"
+                title="Login as Creator"
+              >
+                {isLoginAsLoading ? <RefreshCw className="animate-spin" size={16} /> : <ExternalLink size={16} />}
+                Login as Creator
+              </button>
+              <button
+                onClick={async () => {
+                  if (confirm(`Are you sure you want to ${user.isVerified ? 'unverify' : 'verify'} this creator?`)) {
+                    await api.updateUser(user.id, { isVerified: !user.isVerified });
+                    handleViewProfile(user); // Refresh
+                  }
+                }}
+                className={`p-2 rounded-lg transition-colors ${user.isVerified ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'}`}
+                title={user.isVerified ? "Unverify Creator" : "Verify Creator"}
+              >
+                <CheckCircle size={18} />
+              </button>
+              <button
+                onClick={async () => {
+                  if (confirm(`Are you sure you want to ${user.isWalletFrozen ? 'unfreeze' : 'freeze'} this creator's wallet?`)) {
+                    await api.updateUser(user.id, { isWalletFrozen: !user.isWalletFrozen });
+                    handleViewProfile(user); // Refresh
+                  }
+                }}
+                className={`p-2 rounded-lg transition-colors ${user.isWalletFrozen ? 'bg-indigo-500 text-white' : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'}`}
+                title={user.isWalletFrozen ? "Unfreeze Wallet" : "Freeze Wallet"}
+              >
+                <Lock size={18} />
+              </button>
+              <button
+                onClick={async () => {
+                  const newStatus = user.status === 'active' ? 'banned' : 'active';
+                  if (confirm(`Are you sure you want to ${newStatus} this creator?`)) {
+                    await api.updateUserStatus(user.id, newStatus);
+                    handleViewProfile(user);
+                  }
+                }}
+                className={`p-2 rounded-lg transition-colors ${user.status === 'banned' ? 'bg-red-500 text-white' : 'bg-gray-800 text-gray-400 hover:text-red-400 hover:bg-gray-700'}`}
+                title={user.status === 'banned' ? "Unsuspend" : "Suspend"}
+              >
+                <Ban size={18} />
+              </button>
+              <div className="h-8 w-px bg-gray-800 mx-1"></div>
               <button
                 onClick={() => { setSelectedUserIds([user.id]); handleBulkAction('role', 'user'); setSelectedCreatorProfile(null); }}
-                className="px-4 py-2 bg-red-900/20 hover:bg-red-900/40 text-red-400 rounded-xl text-sm font-medium border border-red-900/30 transition-all flex items-center gap-2"
+                className="px-3 py-2 bg-gray-800 hover:bg-red-900/30 text-gray-400 hover:text-red-400 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+                title="Demote to User"
               >
-                <UserX size={16} /> Demote to User
+                <UserX size={16} /> Demote
               </button>
               <button
                 onClick={() => setSelectedCreatorProfile(null)}
-                className="p-2.5 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-xl transition-all"
+                className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-lg transition-all"
               >
-                <X size={24} />
+                <X size={20} />
               </button>
             </div>
           </div>
@@ -2797,7 +2920,7 @@ export default function App() {
                   <Wallet size={48} className="text-green-400" />
                 </div>
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Wallet Balance</p>
-                <h3 className="text-2xl font-bold text-green-400">₹{user.points.toFixed(2)} pts</h3>
+                <h3 className="text-2xl font-bold text-green-400">{user.points.toFixed(0)} pts</h3>
               </div>
               <div className="bg-gray-900/50 border border-gray-800 p-5 rounded-2xl relative overflow-hidden group hover:border-pink-500/30 transition-all">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -2816,12 +2939,12 @@ export default function App() {
             </div>
 
             {/* Navigation Tabs */}
-            <div className="flex gap-2 p-1 bg-gray-900 rounded-xl border border-gray-800 mb-6 w-fit">
-              {(['overview', 'templates', 'earnings', 'withdrawals'] as const).map(tab => (
+            <div className="flex gap-2 p-1 bg-gray-900 rounded-xl border border-gray-800 mb-6 w-fit overflow-x-auto max-w-full">
+              {(['overview', 'templates', 'earnings', 'withdrawals', 'payment', 'activity'] as const).map(tab => (
                 <button
                   key={tab}
                   onClick={() => setProfileTab(tab)}
-                  className={`px-5 py-2 rounded-lg text-sm font-bold capitalize transition-all ${profileTab === tab ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
+                  className={`px-5 py-2 rounded-lg text-sm font-bold capitalize transition-all whitespace-nowrap ${profileTab === tab ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}
                 >
                   {tab}
                 </button>
@@ -2829,188 +2952,349 @@ export default function App() {
             </div>
 
             {/* Tab Content */}
-            {profileTab === 'overview' && (
-              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Performance Chart */}
+            <div className="min-h-[400px]">
+              {profileTab === 'overview' && (
+                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl">
+                      <div className="flex justify-between items-center mb-6">
+                        <h3 className="font-bold text-white">Earnings Growth (30 Days)</h3>
+                        <TrendingUp className="text-green-400" size={20} />
+                      </div>
+                      <div className="h-64 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={growthStats}>
+                            <XAxis dataKey="date" hide />
+                            <YAxis hide />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
+                              itemStyle={{ color: '#818cf8' }}
+                              labelStyle={{ color: '#9ca3af' }}
+                            />
+                            <Line type="monotone" dataKey="earnings" stroke="#6366f1" strokeWidth={3} dot={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
+                        <div className="flex items-center gap-3 text-purple-400 mb-2">
+                          <Users size={20} />
+                          <span className="text-lg font-bold">{user.followers || 0}</span>
+                        </div>
+                        <p className="text-sm text-gray-500">Total Followers</p>
+                      </div>
+                      <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
+                        <div className="flex items-center gap-3 text-blue-400 mb-2">
+                          <Save size={20} />
+                          <span className="text-lg font-bold">{stats.totalSaves || 0}</span>
+                        </div>
+                        <p className="text-sm text-gray-500">Total Saves</p>
+                      </div>
+                      <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
+                        <div className="flex items-center gap-3 text-green-400 mb-2">
+                          <LayoutTemplate size={20} />
+                          <span className="text-lg font-bold">{templates.length}</span>
+                        </div>
+                        <p className="text-sm text-gray-500">Total Templates</p>
+                      </div>
+                      <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
+                        <div className="flex items-center gap-3 text-orange-400 mb-2">
+                          <CreditCard size={20} />
+                          <span className="text-lg font-bold">{withdrawals.length}</span>
+                        </div>
+                        <p className="text-sm text-gray-500">Withdrawal Requests</p>
+                      </div>
+                    </div>
+                  </div>
                   <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl">
-                    <div className="flex justify-between items-center mb-6">
-                      <h3 className="font-bold text-white">Earnings Growth (30 Days)</h3>
-                      <TrendingUp className="text-green-400" size={20} />
-                    </div>
-                    <div className="h-64 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={growthStats}>
-                          <XAxis dataKey="date" hide />
-                          <YAxis hide />
-                          <Tooltip
-                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
-                            itemStyle={{ color: '#818cf8' }}
-                            labelStyle={{ color: '#9ca3af' }}
-                          />
-                          <Line type="monotone" dataKey="earnings" stroke="#6366f1" strokeWidth={3} dot={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-
-                  {/* Summary Metrics */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* Reuse stats but display differently or others */}
-                    <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
-                      <div className="flex items-center gap-3 text-purple-400 mb-2">
-                        <Users size={20} />
-                        <span className="text-lg font-bold">{user.followers || 0}</span>
-                      </div>
-                      <p className="text-sm text-gray-500">Total Followers</p>
-                    </div>
-                    <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
-                      <div className="flex items-center gap-3 text-blue-400 mb-2">
-                        <Save size={20} />
-                        <span className="text-lg font-bold">{stats.totalSaves || 0}</span>
-                      </div>
-                      <p className="text-sm text-gray-500">Total Saves</p>
-                    </div>
-                    <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
-                      <div className="flex items-center gap-3 text-green-400 mb-2">
-                        <LayoutTemplate size={20} />
-                        <span className="text-lg font-bold">{templates.length}</span>
-                      </div>
-                      <p className="text-sm text-gray-500">Detailed Templates</p>
-                    </div>
-                    <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl flex flex-col justify-center">
-                      <div className="flex items-center gap-3 text-orange-400 mb-2">
-                        <CreditCard size={20} />
-                        <span className="text-lg font-bold">{withdrawals.length}</span>
-                      </div>
-                      <p className="text-sm text-gray-500">Withdrawals</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Social Links & Bio */}
-                <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-2xl">
-                  <h3 className="font-bold text-white mb-4">Creator Background</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-xs text-gray-500 uppercase mb-2">Social Media Portfolio</p>
-                      <div className="flex gap-3 flex-wrap">
-                        {application?.socialLinks && application.socialLinks.map((link, i) => (
-                          <a key={i} href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 rounded-lg text-sm text-indigo-300 hover:bg-gray-700 transition-colors">
-                            {getSocialIcon(link)} {link}
-                          </a>
-                        ))}
-                        {(!application?.socialLinks || application.socialLinks.length === 0) && <span className="text-gray-500 text-sm">No links provided.</span>}
-                      </div>
-                    </div>
-                    {application?.bio && (
+                    <h3 className="font-bold text-white mb-4">Creator Background</h3>
+                    <div className="space-y-4">
                       <div>
-                        <p className="text-xs text-gray-500 uppercase mb-2">Bio / Description</p>
-                        <p className="text-gray-300 text-sm italic">"{application.bio}"</p>
+                        <p className="text-xs text-gray-500 uppercase mb-2">Social Media Portfolio</p>
+                        <div className="flex gap-3 flex-wrap">
+                          {application?.socialLinks && application.socialLinks.map((link, i) => (
+                            <a key={i} href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 rounded-lg text-sm text-indigo-300 hover:bg-gray-700 transition-colors">
+                              {getSocialIcon(link)} {link}
+                            </a>
+                          ))}
+                        </div>
                       </div>
-                    )}
+                      {application?.bio && (
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase mb-2">Bio / Description</p>
+                          <p className="text-gray-300 text-sm italic">"{application.bio}"</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {profileTab === 'templates' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-2">
-                {templates.map(t => (
-                  <div key={t.id} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 group hover:border-indigo-500/50 transition-all">
-                    <div className="aspect-square bg-gray-800 relative">
-                      <img src={t.imageUrl} className="w-full h-full object-cover" alt={t.title} />
-                      <div className="absolute top-2 right-2 flex gap-1">
-                        {t.isPremium && <span className="bg-yellow-500 text-black text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">Premium</span>}
-                        <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase ${t.status === 'active' ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}`}>{t.status}</span>
+              {profileTab === 'templates' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-2">
+                  {templates.map(t => (
+                    <div key={t.id} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 group hover:border-indigo-500/50 transition-all flex flex-col">
+                      <div className="aspect-square bg-gray-800 relative">
+                        <img src={t.imageUrl} className="w-full h-full object-cover" alt={t.title} />
+                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => handleEditTemplate(t)} className="p-1.5 bg-black/60 backdrop-blur-md rounded-lg text-white hover:bg-indigo-600 transition-colors" title="Edit Template"><Edit2 size={14} /></button>
+                          <button onClick={() => handleDeleteTemplate(t.id)} className="p-1.5 bg-black/60 backdrop-blur-md rounded-lg text-white hover:bg-red-600 transition-colors" title="Delete Template"><Trash2 size={14} /></button>
+                        </div>
                       </div>
-                    </div>
-                    <div className="p-3">
-                      <h4 className="font-bold text-white text-sm truncate">{t.title}</h4>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-[10px] text-gray-500">{t.category}</span>
-                        <div className="flex items-center gap-1 text-[10px] text-indigo-400">
-                          <Zap size={10} /> {t.useCount} uses
+                      <div className="p-3 flex-1">
+                        <h4 className="font-bold text-white text-sm truncate">{t.title}</h4>
+                        <div className="flex justify-between items-center mt-2">
+                          <span className="text-[10px] text-gray-500">{t.category}</span>
+                          <div className="flex items-center gap-1 text-[10px] text-indigo-400 font-bold">
+                            <Zap size={10} /> {t.useCount} uses
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-800">
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${t.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-gray-800 text-gray-500'}`}>
+                            {t.status}
+                          </span>
+                          <button
+                            onClick={async () => {
+                              const newStatus = t.status === 'active' ? 'draft' : 'active';
+                              await api.updateTemplate(t.id, { status: newStatus });
+                              handleViewProfile(user); // Refresh
+                            }}
+                            className="text-[10px] text-indigo-400 hover:text-white transition-colors underline"
+                          >
+                            Mark as {t.status === 'active' ? 'Draft' : 'Active'}
+                          </button>
                         </div>
                       </div>
                     </div>
+                  ))}
+                  {templates.length === 0 && (
+                    <div className="col-span-full py-20 text-center bg-gray-900/50 border border-gray-800 border-dashed rounded-2xl">
+                      <p className="text-gray-500">No templates found for this creator.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {profileTab === 'earnings' && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-gray-900/50 border border-gray-800 p-4 rounded-xl">
+                      <p className="text-xs text-gray-500 uppercase">Lifetime Earnings</p>
+                      <p className="text-xl font-bold text-white">₹{stats.totalEarnings.toFixed(2)}</p>
+                    </div>
+                    <div className="bg-gray-900/50 border border-gray-800 p-4 rounded-xl">
+                      <p className="text-xs text-gray-500 uppercase">Pending Withdrawals</p>
+                      <p className="text-xl font-bold text-yellow-400">
+                        ₹{withdrawals.filter(w => w.status === 'pending').reduce((a, b) => a + b.amount, 0).toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="bg-gray-900/50 border border-gray-800 p-4 rounded-xl">
+                      <p className="text-xs text-gray-500 uppercase">Completed Withdrawals</p>
+                      <p className="text-xl font-bold text-green-400">
+                        ₹{withdrawals.filter(w => w.status === 'completed').reduce((a, b) => a + b.amount, 0).toFixed(2)}
+                      </p>
+                    </div>
                   </div>
-                ))}
-                {templates.length === 0 && (
-                  <div className="col-span-full py-12 text-center text-gray-500">No templates found for this creator.</div>
-                )}
-              </div>
-            )}
+                  <div className="bg-gray-900/50 border border-gray-800 rounded-2xl overflow-hidden">
+                    <table className="w-full text-left text-sm text-gray-400">
+                      <thead className="bg-gray-900 text-xs uppercase text-gray-500 font-bold border-b border-gray-800">
+                        <tr>
+                          <th className="p-4">Date</th>
+                          <th className="p-4">Activity</th>
+                          <th className="p-4 text-right">Points Earned</th>
+                          <th className="p-4 text-right">Revenue Share</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-800">
+                        {earnings.map((e, idx) => (
+                          <tr key={idx} className="hover:bg-gray-800/30">
+                            <td className="p-4 text-xs">{new Date(e.date).toLocaleString()}</td>
+                            <td className="p-4">Template Usage: {e.templateId?.slice(-6)}</td>
+                            <td className="p-4 text-right text-indigo-400 font-bold">{(e.amount * 10).toFixed(0)} pts</td>
+                            <td className="p-4 text-right text-green-400 font-bold">₹{e.amount.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
-            {profileTab === 'earnings' && (
-              <div className="bg-gray-900/50 border border-gray-800 rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2">
-                <table className="w-full text-left text-sm text-gray-400">
-                  <thead className="bg-gray-900 text-xs uppercase text-gray-500 font-bold border-b border-gray-800">
-                    <tr>
-                      <th className="p-4">Date</th>
-                      <th className="p-4">Activity</th>
-                      <th className="p-4 text-right">Points Earned</th>
-                      <th className="p-4 text-right">Revenue Share</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-800">
-                    {earnings.length > 0 ? earnings.map((e, idx) => (
-                      <tr key={idx} className="hover:bg-gray-800/30">
-                        <td className="p-4 text-xs">{new Date(e.date).toLocaleString()}</td>
-                        <td className="p-4">
-                          <div className="font-medium text-gray-200">Template Usage</div>
-                          <div className="text-[10px] text-gray-500">Template ID: {e.templateId?.slice(-6).toUpperCase()}</div>
-                        </td>
-                        <td className="p-4 text-right text-indigo-400 font-bold">{(e.amount * 10).toFixed(0)} pts</td>
-                        <td className="p-4 text-right text-green-400 font-bold">₹{e.amount.toFixed(2)}</td>
+              {profileTab === 'withdrawals' && (
+                <div className="bg-gray-900/50 border border-gray-800 rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+                  <table className="w-full text-left text-sm text-gray-400">
+                    <thead className="bg-gray-900 text-xs uppercase text-gray-500 font-bold border-b border-gray-800">
+                      <tr>
+                        <th className="p-4">Requested At</th>
+                        <th className="p-4">Method</th>
+                        <th className="p-4">Amount</th>
+                        <th className="p-4">Status</th>
+                        <th className="p-4 text-right">Action</th>
                       </tr>
-                    )) : (
-                      <tr><td colSpan={4} className="p-10 text-center text-gray-500">No earning history available yet.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    </thead>
+                    <tbody className="divide-y divide-gray-800">
+                      {withdrawals.map(w => (
+                        <tr key={w.id} className="hover:bg-gray-800/30">
+                          <td className="p-4 text-xs">{new Date(w.requestedAt).toLocaleString()}</td>
+                          <td className="p-4 uppercase">{w.method}</td>
+                          <td className="p-4 font-bold text-white">₹{w.amount.toLocaleString()}</td>
+                          <td className="p-4">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${w.status === 'completed' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                              {w.status}
+                            </span>
+                          </td>
+                          <td className="p-4 text-right">
+                            <div className="flex justify-end gap-2">
+                              {w.status === 'pending' && (
+                                <button
+                                  onClick={async () => {
+                                    await handleProcessWithdrawal(w.id);
+                                    handleViewProfile(user);
+                                  }}
+                                  className="p-1.5 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-colors"
+                                  title="Mark as Processing"
+                                >
+                                  <Activity size={16} />
+                                </button>
+                              )}
+                              {w.status === 'processing' && (
+                                <button
+                                  onClick={async () => {
+                                    await handleApproveWithdrawal(w.id);
+                                    handleViewProfile(user);
+                                  }}
+                                  className="p-1.5 hover:bg-green-500/20 text-green-400 rounded-lg transition-colors"
+                                  title="Approve & Pay"
+                                >
+                                  <CheckCircle size={16} />
+                                </button>
+                              )}
+                              {(w.status === 'pending' || w.status === 'processing') && (
+                                <button
+                                  onClick={async () => {
+                                    await handleRejectWithdrawal(w.id);
+                                    handleViewProfile(user);
+                                  }}
+                                  className="p-1.5 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors"
+                                  title="Reject"
+                                >
+                                  <X size={16} />
+                                </button>
+                              )}
+                              <button className="p-1.5 hover:bg-gray-800 rounded-lg text-gray-500 hover:text-white transition-all"><Eye size={16} /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
-            {profileTab === 'withdrawals' && (
-              <div className="bg-gray-900/50 border border-gray-800 rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2">
-                <table className="w-full text-left text-sm text-gray-400">
-                  <thead className="bg-gray-900 text-xs uppercase text-gray-500 font-bold border-b border-gray-800">
-                    <tr>
-                      <th className="p-4">Requested At</th>
-                      <th className="p-4">Method</th>
-                      <th className="p-4">Amount</th>
-                      <th className="p-4">Status</th>
-                      <th className="p-4 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-800">
-                    {withdrawals.length > 0 ? withdrawals.map(w => (
-                      <tr key={w.id} className="hover:bg-gray-800/30">
-                        <td className="p-4 text-xs">{new Date(w.requestedAt).toLocaleString()}</td>
-                        <td className="p-4">
-                          <span className="font-medium text-gray-200 uppercase">{w.method}</span>
-                          <div className="text-[10px] text-gray-500 italic truncate max-w-[150px]">{w.method === 'upi' ? w.upiId : w.bankDetails?.accountNumber}</div>
-                        </td>
-                        <td className="p-4 font-bold text-white">₹{w.amount.toLocaleString()}</td>
-                        <td className="p-4">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${w.status === 'completed' ? 'bg-green-500/20 text-green-400' : w.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
-                            {w.status}
-                          </span>
-                        </td>
-                        <td className="p-4 text-right">
-                          <button className="p-1.5 hover:bg-gray-800 rounded-lg text-gray-500 hover:text-indigo-400 transition-all">
-                            <Eye size={16} />
-                          </button>
-                        </td>
-                      </tr>
-                    )) : (
-                      <tr><td colSpan={5} className="p-10 text-center text-gray-500">No withdrawal requests found.</td></tr>
+              {profileTab === 'payment' && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-xl">
+                      <h3 className="font-bold text-white mb-6 flex items-center gap-2">
+                        <UserCheck className="text-indigo-400" size={20} /> Creator Verification
+                      </h3>
+                      <div className="p-4 bg-gray-950 rounded-xl border border-gray-800 flex items-center justify-between">
+                        <div>
+                          <p className="font-bold text-sm text-white">Verification Status</p>
+                          <p className="text-xs text-gray-500">Enable/Disable verified badge.</p>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            await api.updateUser(user.id, { isVerified: !user.isVerified });
+                            handleViewProfile(user);
+                          }}
+                          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${user.isVerified ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                        >
+                          {user.isVerified ? 'Verified' : 'Unverified'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl shadow-xl">
+                      <h3 className="font-bold text-white mb-6 flex items-center gap-2">
+                        <ShieldAlert className="text-red-400" size={20} /> Wallet Safety
+                      </h3>
+                      <div className="p-4 bg-red-950/10 rounded-xl border border-red-900/20 flex items-center justify-between">
+                        <div>
+                          <p className="font-bold text-sm text-white">Freeze Wallet</p>
+                          <p className="text-xs text-gray-500">Stop all withdrawals.</p>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            await api.updateUser(user.id, { isWalletFrozen: !user.isWalletFrozen });
+                            handleViewProfile(user);
+                          }}
+                          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${user.isWalletFrozen ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                        >
+                          {user.isWalletFrozen ? 'Frozen' : 'Active'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6">
+                    <h3 className="font-bold text-white mb-6 flex items-center gap-2"><CreditCard size={18} className="text-indigo-400" /> Payout Details</h3>
+                    {application?.paymentDetails ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-4">
+                          <div className="bg-gray-950 p-4 rounded-xl border border-gray-800">
+                            <p className="text-xs text-gray-500 uppercase">Account Holder</p>
+                            <p className="text-lg font-mono text-white">{application.paymentDetails.accountHolderName || 'N/A'}</p>
+                          </div>
+                          <div className="bg-gray-950 p-4 rounded-xl border border-gray-800">
+                            <p className="text-xs text-gray-500 uppercase">Bank Name</p>
+                            <p className="text-lg font-mono text-white">{application.paymentDetails.bankName || 'N/A'}</p>
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          <div className="bg-gray-950 p-4 rounded-xl border border-gray-800">
+                            <p className="text-xs text-gray-500 uppercase">IFSC Code</p>
+                            <p className="text-lg font-mono text-white">{application.paymentDetails.ifscCode || 'N/A'}</p>
+                          </div>
+                          <div className="bg-gray-950 p-4 rounded-xl border border-gray-800">
+                            <p className="text-xs text-gray-500 uppercase">UPI ID</p>
+                            <p className="text-lg font-mono text-white">{application.paymentDetails.upiId || 'N/A'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-10 text-gray-500">No payment details linked.</div>
                     )}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  </div>
+                </div>
+              )}
+
+              {profileTab === 'activity' && (
+                <div className="bg-gray-900/50 border border-gray-800 rounded-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+                  <table className="w-full text-left text-sm text-gray-400">
+                    <thead className="bg-gray-900 text-xs uppercase text-gray-500 font-bold border-b border-gray-800">
+                      <tr>
+                        <th className="p-4">Time</th>
+                        <th className="p-4">Action</th>
+                        <th className="p-4">Path</th>
+                        <th className="p-4">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-800">
+                      {selectedCreatorProfile.activityLogs?.map((log, i) => (
+                        <tr key={i} className="hover:bg-gray-800/30">
+                          <td className="p-4 text-xs">{new Date(log.ts).toLocaleString()}</td>
+                          <td className="p-4 font-mono text-xs">{log.method}</td>
+                          <td className="p-4 font-mono text-xs truncate max-w-[200px]">{log.path}</td>
+                          <td className="p-4"><span className={`px-2 py-0.5 rounded text-[10px] ${log.status === 200 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{log.status}</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Footer */}
@@ -3019,10 +3303,6 @@ export default function App() {
               <div className="text-sm">
                 <span className="text-gray-500">Active Templates:</span>
                 <span className="text-indigo-400 font-bold ml-2">{templates.filter(t => t.status === 'active').length}</span>
-              </div>
-              <div className="text-sm">
-                <span className="text-gray-500">Pending Withdrawals:</span>
-                <span className="text-orange-400 font-bold ml-2">{withdrawals.filter(w => w.status === 'pending').length}</span>
               </div>
             </div>
             <button
@@ -3292,7 +3572,7 @@ export default function App() {
                               }}
                             />
                             {demo.prompt && (
-                              <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
+                              <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 flex items-center justify-center p-2">
                                 <p className="text-xs text-white text-center line-clamp-3">{demo.prompt}</p>
                               </div>
                             )}
@@ -3802,6 +4082,28 @@ export default function App() {
                 {isSendingNotification ? <RefreshCw className="animate-spin" size={16} /> : <Send size={16} />} Send Now
               </button>
               <button onClick={() => setShowNotificationModal(false)} className="px-4 bg-gray-800 text-gray-300 rounded text-sm">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Creator Notification Modal */}
+      {notifModal.isOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-lg w-full">
+            <h3 className="text-lg font-bold text-white mb-4">Send Notification to Creator</h3>
+            <div className="space-y-4">
+              <input type="text" placeholder="Title" value={notifModal.title} onChange={e => setNotifModal({ ...notifModal, title: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
+              <textarea rows={3} placeholder="Message" value={notifModal.message} onChange={e => setNotifModal({ ...notifModal, message: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleSendCreatorNotification}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded text-sm font-medium flex justify-center items-center gap-2"
+              >
+                <Send size={16} /> Send Notification
+              </button>
+              <button onClick={() => setNotifModal({ ...notifModal, isOpen: false })} className="px-4 bg-gray-800 text-gray-300 rounded text-sm">Cancel</button>
             </div>
           </div>
         </div>

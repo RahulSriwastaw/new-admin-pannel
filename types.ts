@@ -51,6 +51,18 @@ export interface User {
   followers?: number;
   likes?: number;
   uses?: number;
+  isVerified?: boolean;
+  isWalletFrozen?: boolean;
+}
+
+export interface CreatorPaymentDetails {
+  accountHolderName?: string;
+  bankName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  panNumber?: string;
+  upiId?: string;
+  lastUpdated?: string;
 }
 
 export interface CreatorApplication {
@@ -61,6 +73,7 @@ export interface CreatorApplication {
   status: 'pending' | 'approved' | 'rejected';
   appliedDate: string;
   demoTemplates?: Array<{ image: string; prompt: string }>;
+  paymentDetails?: CreatorPaymentDetails;
 }
 
 export interface Transaction {
@@ -72,6 +85,14 @@ export interface Transaction {
   gateway: 'Razorpay' | 'Stripe' | 'System' | 'PhonePe';
   date: string;
   status: 'success' | 'failed';
+}
+
+export interface ActivityLog {
+  ts: string;
+  method: string;
+  path: string;
+  status: number;
+  ms: number;
 }
 
 export interface AIModelConfig {
@@ -99,7 +120,7 @@ export interface Template {
   negativePrompt?: string;
 
   description?: string;
-  tags: string[]; // should be string[]
+  tags: string[];
   gender: 'Male' | 'Female' | 'Unisex' | '';
   state: string;
   ageGroup: string;
@@ -177,9 +198,9 @@ export type NotificationTarget =
   | 'all_users'
   | 'all_creators'
   | 'active_users'
-  | 'paid_users'   // Bought at least 1 pack
-  | 'free_users'   // Never bought a pack
-  | 'churned_users' // Inactive > 30 days
+  | 'paid_users'
+  | 'free_users'
+  | 'churned_users'
   | 'specific_user';
 
 export type NotificationType = 'push' | 'in_app' | 'email';
@@ -192,10 +213,10 @@ export interface NotificationLog {
   type: NotificationType;
   status: 'sent' | 'scheduled' | 'failed';
   sentAt?: string;
-  scheduledFor?: string; // ISO String for scheduled time
+  scheduledFor?: string;
   reachCount: number;
   imageUrl?: string;
-  ctaLink?: string; // Deep link or URL
+  ctaLink?: string;
 }
 
 // Ads Configuration Type
@@ -275,10 +296,11 @@ export interface WithdrawalStats {
 
 export interface CreatorProfile {
   user: User;
-  application: Partial<CreatorApplication>;
+  application: CreatorApplication | null;
   templates: Template[];
   earnings: any[];
   withdrawals: Withdrawal[];
+  activityLogs: ActivityLog[];
   stats: {
     totalEarnings: number;
     totalLikes: number;
@@ -287,4 +309,3 @@ export interface CreatorProfile {
   };
   growthStats: Array<{ date: string; earnings: number }>;
 }
-
