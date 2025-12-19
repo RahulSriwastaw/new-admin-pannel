@@ -2281,7 +2281,7 @@ export default function App() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={revenueChartData}>
                 <XAxis dataKey="name" stroke="#4b5563" tick={{ fill: '#9ca3af', fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis stroke="#4b5563" tick={{ fill: '#9ca3af', fontSize: 12 }} axisLine={false} tickLine={false} prefix="₹" />
+                <YAxis stroke="#4b5563" tick={{ fill: '#9ca3af', fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(value) => '₹' + value} />
                 <Tooltip
                   contentStyle={{ backgroundColor: '#111827', borderColor: '#374151', color: '#f3f4f6' }}
                   itemStyle={{ color: '#e5e7eb' }}

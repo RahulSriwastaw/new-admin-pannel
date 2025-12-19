@@ -8,9 +8,10 @@ interface StatCardProps {
   trend?: string;
   trendUp?: boolean;
   color?: string;
+  change?: string;
 }
 
-export const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, trend, trendUp, color = "blue" }) => {
+export const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, trend, trendUp, color = "blue", change }) => {
   const colorClasses = {
     blue: "text-blue-500 bg-blue-500/10",
     green: "text-green-500 bg-green-500/10",
@@ -36,6 +37,7 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, tr
       </div>
       <h3 className="text-gray-400 text-sm font-medium">{title}</h3>
       <p className="text-2xl font-bold text-white mt-1">{value}</p>
+      {change && <p className="text-xs text-gray-500 mt-2">{change}</p>}
     </div>
   );
 };
