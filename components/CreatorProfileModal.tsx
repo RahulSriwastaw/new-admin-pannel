@@ -243,6 +243,8 @@ interface CreatorHeaderProps {
 const CreatorHeader: React.FC<CreatorHeaderProps> = ({ creator, stats, onAction }) => {
     const [showActions, setShowActions] = useState(false);
 
+    if (!creator) return null;
+
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'active':
@@ -270,7 +272,7 @@ const CreatorHeader: React.FC<CreatorHeaderProps> = ({ creator, stats, onAction 
             {/* Profile Info */}
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '24px', marginBottom: '24px' }}>
                 <img
-                    src={creator.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name)}&size=128&background=6366f1&color=fff`}
+                    src={creator?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(creator?.name || 'User')}&size=128&background=6366f1&color=fff`}
                     alt={creator.name}
                     style={{
                         width: '96px',
