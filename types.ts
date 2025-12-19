@@ -295,17 +295,178 @@ export interface WithdrawalStats {
 }
 
 export interface CreatorProfile {
-  user: User;
-  application: CreatorApplication | null;
-  templates: Template[];
-  earnings: any[];
-  withdrawals: Withdrawal[];
-  activityLogs: ActivityLog[];
-  stats: {
-    totalEarnings: number;
-    totalLikes: number;
-    totalUses: number;
-    totalSaves: number;
+  creator: {
+    id: string;
+    name: string;
+    email: string;
+    username: string;
+    photoURL?: string;
+    status: 'active' | 'banned' | 'pending' | 'suspended';
+    isVerified: boolean;
+    isWalletFrozen: boolean;
+    joinedDate: string;
+    suspensionReason?: string;
+    suspendedUntil?: string;
   };
-  growthStats: Array<{ date: string; earnings: number }>;
+  stats: {
+    totalTemplates: number;
+    totalUses: number;
+    totalFollowers: number;
+    totalLikes: number;
+    totalSaves: number;
+    totalEarnings: number;
+    totalEarningsINR: number;
+    thisMonthEarnings: number;
+    lastMonthEarnings: number;
+    pendingWithdrawal: number;
+    rank: number;
+  };
+  paymentDetails?: CreatorPaymentDetails;
+  recentActivity: Array<{
+    date: string;
+    action: string;
+    details: string;
+    adminName?: string;
+  }>;
 }
+
+export interface CreatorTemplateResponse {
+  templates: Array<{
+    id: string;
+    title: string;
+    imageUrl: string;
+    category: string;
+    isPremium: boolean;
+    pointsCost: number;
+    useCount: number;
+    likeCount: number;
+    savesCount: number;
+    earningsGenerated: number;
+    approvalStatus: 'pending' | 'approved' | 'rejected';
+    isPaused: boolean;
+    status: string;
+    createdAt: string;
+    rejectionReason?: string;
+    adminNotes?: string;
+  }>;
+  pagination: {
+    total: number;
+    page: number;
+    pages: number;
+    limit: number;
+  };
+}
+
+export interface CreatorEarningsResponse {
+  summary: {
+    totalLifetime: number;
+    thisMonth: number;
+    lastMonth: number;
+    pendingWithdrawal: number;
+  };
+  chartData: {
+    daily: Array<{ date: string; earnings: number }>;
+  };
+  templateBreakdown: Array<{
+    templateId: string;
+    templateName: string;
+    uses: number;
+    pointsEarned: number;
+    platformCommission: number;
+    netEarnings: number;
+  }>;
+}
+
+export interface CreatorWithdrawal {
+  id: string;
+  amount: number;
+  method: 'bank' | 'upi';
+  status: 'pending' | 'processing' | 'completed' | 'rejected';
+  requestedAt: string;
+  processedAt?: string;
+  transactionId?: string;
+  utr?: string;
+  remarks?: string;
+  adminNotes?: string;
+  proofOfPayment?: string;
+  bankDetails?: {
+    bankName: string;
+    accountNumber: string;
+    ifscCode: string;
+    accountHolderName: string;
+  };
+  upiId?: string;
+  processedBy?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+}
+
+export interface CreatorWithdrawalsResponse {
+  withdrawals: CreatorWithdrawal[];
+  stats: {
+    totalRequests: number;
+    pending: number;
+    processing: number;
+    completed: number;
+    rejected: number;
+    totalWithdrawn: number;
+  };
+}
+
+export interface CreatorFollowersResponse {
+  totalFollowers: number;
+  growthData: Array<{ date: string; count: number }>;
+  topFollowers: User[];
+}
+
+export interface CreatorEngagementResponse {
+  engagementRate: number;
+  topPerformingTemplates: Array<{
+    id: string;
+    title: string;
+    imageUrl: string;
+    useCount: number;
+    likeCount: number;
+    savesCount: number;
+    viewCount: number;
+    score: number;
+  }>;
+}
+
+export interface CreatorActivityLog {
+  date: string;
+  type: 'admin_action' | 'template_upload' | 'withdrawal_request' | 'earning';
+  description: string;
+  metadata?: any;
+}
+
+export interface CreatorActivityLogsResponse {
+  logs: CreatorActivityLog[];
+}
+
+export interface TemplateAnalyticsResponse {
+  template: {
+    id: string;
+    title: string;
+    imageUrl: string;
+    category: string;
+    creator: any;
+    createdAt: string;
+  };
+  analytics: {
+    useCount: number;
+    viewCount: number;
+    likeCount: number;
+    savesCount: number;
+    earningsGenerated: number;
+    conversionRate: string;
+  };
+  earningsHistory: Array<{
+    date: string;
+    pointsEarned: number;
+    usageCount: number;
+  }>;
+}
+
