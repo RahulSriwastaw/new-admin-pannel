@@ -906,18 +906,25 @@ export default function App() {
       type: isBan ? 'danger' : 'warning',
       confirmText: 'Yes, Proceed',
       onConfirm: async () => {
-        let updates: Partial<User> = {};
-        if (action === 'ban') updates.status = 'banned';
-        if (action === 'unban') updates.status = 'active';
-        if (action === 'role' && value) updates.role = value as User['role'];
+        try {
+          let updates: Partial<User> = {};
+          if (action === 'ban') updates.status = 'banned';
+          if (action === 'unban') updates.status = 'active';
+          if (action === 'role' && value) updates.role = value as User['role'];
 
-        await api.bulkUpdateUsers(selectedUserIds, updates);
+          await api.bulkUpdateUsers(selectedUserIds, updates);
 
-        // Optimistic update
-        setUsers(prev => prev.map(u => selectedUserIds.includes(u.id) ? { ...u, ...updates } : u));
-        setSelectedUserIds([]);
-        addLog(`Bulk action (${action}) performed on ${selectedUserIds.length} users.`, LogLevel.WARN, "AdminPanel");
-        closeConfirmModal();
+          // Optimistic update
+          setUsers(prev => prev.map(u => selectedUserIds.includes(u.id) ? { ...u, ...updates } : u));
+          setSelectedUserIds([]);
+          addLog(`Bulk action (${action}) performed on ${selectedUserIds.length} users.`, LogLevel.WARN, "AdminPanel");
+          closeConfirmModal();
+        } catch (err: any) {
+          console.error('Bulk Action Error:', err);
+          addLog(`Bulk action failed: ${err.message}`, LogLevel.ERROR, "System");
+          alert(`Action Failed: ${err.message}`);
+          // We don't close the modal so user can retry or cancel
+        }
       }
     });
   };
