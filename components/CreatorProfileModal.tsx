@@ -203,7 +203,7 @@ const CreatorProfileModal: React.FC<CreatorProfileModalProps> = ({
                 )}
 
                 {/* Main Content */}
-                {!loading && !error && profile && (
+                {!loading && !error && profile && profile.stats && (
                     <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
                         {/* Creator Header Section */}
                         <CreatorHeader creator={profile.creator} stats={profile.stats} onAction={handleAdminAction} />
@@ -257,11 +257,11 @@ const CreatorHeader: React.FC<CreatorHeaderProps> = ({ creator, stats, onAction 
     };
 
     const statCards = [
-        { label: 'Templates', value: stats.totalTemplates, icon: '📄' },
-        { label: 'Total Uses', value: stats.totalUses.toLocaleString(), icon: '🔥' },
-        { label: 'Followers', value: stats.totalFollowers.toLocaleString(), icon: '👥' },
-        { label: 'Earnings (₹)', value: `₹${stats.totalEarningsINR.toLocaleString()}`, icon: '💰' },
-        { label: 'This Month', value: `₹${stats.thisMonthEarnings.toLocaleString()}`, icon: '📈' },
+        { label: 'Templates', value: stats.totalTemplates || 0, icon: '📄' },
+        { label: 'Total Uses', value: (stats.totalUses || 0).toLocaleString(), icon: '🔥' },
+        { label: 'Followers', value: (stats.totalFollowers || 0).toLocaleString(), icon: '👥' },
+        { label: 'Earnings (₹)', value: `₹${(stats.totalEarningsINR || 0).toLocaleString()}`, icon: '💰' },
+        { label: 'This Month', value: `₹${(stats.thisMonthEarnings || 0).toLocaleString()}`, icon: '📈' },
         { label: 'Rank', value: `#${stats.rank || 'N/A'}`, icon: '🏆' }
     ];
 
