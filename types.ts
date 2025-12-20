@@ -97,6 +97,7 @@ export interface ActivityLog {
 
 export interface AIModelConfig {
   id: string;
+  key?: string; // API key for backend (gemini, minimax, stability)
   name: string;
   provider: 'Google' | 'OpenAI' | 'Stability' | 'MiniMax';
   costPerImage: number;
