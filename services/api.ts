@@ -745,6 +745,21 @@ export const api = {
       body: JSON.stringify(data)
     });
     return res.ok;
+  },
+
+  // AI Model Management
+  deleteAIModel: async (key: string) => {
+    const res = await fetch(`${API_BASE_URL}/api/admin/ai-models/${key}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.message || error.error || 'Failed to delete AI model');
+    }
+
+    return await res.json();
   }
 };
 
