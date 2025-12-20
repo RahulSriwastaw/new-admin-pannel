@@ -624,7 +624,8 @@ export default function App() {
         provider: newModel.provider as any,
         costPerImage: newModel.costPerImage,
         config: {
-          apiKey: newModel.apiKey
+          apiKey: newModel.apiKey,
+          model: (newModel as any).modelId
         }
       };
 
@@ -632,7 +633,7 @@ export default function App() {
       setAiModels([...aiModels, createdModel]);
       setShowAddModelModal(false);
       setShowConfirmAddModal(false);
-      setNewModel({ name: '', provider: 'Google', costPerImage: 1.0, isActive: false, apiKey: '' });
+      setNewModel({ name: '', provider: 'Google', costPerImage: 1.0, isActive: false, apiKey: '', modelId: '' } as any);
       addLog(`New AI Model ${createdModel.name} added successfully.`, LogLevel.SUCCESS, 'AdminPanel');
       refreshData();
     } catch (error: any) {
@@ -3473,8 +3474,16 @@ export default function App() {
                   <option value="OpenAI">OpenAI</option>
                   <option value="Stability">Stability</option>
                   <option value="MiniMax">MiniMax</option>
+                  <option value="Replicate">Replicate</option>
                 </select>
               </div>
+              {newModel.provider === 'Replicate' && (
+                <div>
+                  <label className="text-xs text-gray-500 uppercase block mb-1">Replicate Model ID</label>
+                  <input type="text" value={(newModel as any).modelId || ''} onChange={e => setNewModel({ ...newModel, modelId: e.target.value } as any)} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" placeholder="owner/model_name:version" />
+                  <p className="text-[10px] text-gray-500 mt-1">Example: google/gemini-2.5-flash-image</p>
+                </div>
+              )}
               <div>
                 <label className="text-xs text-gray-500 uppercase block mb-1">Cost Per Image (₹)</label>
                 <input type="number" step="0.1" value={newModel.costPerImage} onChange={e => setNewModel({ ...newModel, costPerImage: parseFloat(e.target.value) })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />

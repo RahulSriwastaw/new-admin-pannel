@@ -99,7 +99,7 @@ export interface AIModelConfig {
   id: string;
   key?: string; // API key for backend (gemini, minimax, stability)
   name: string;
-  provider: 'Google' | 'OpenAI' | 'Stability' | 'MiniMax';
+  provider: 'Google' | 'OpenAI' | 'Stability' | 'MiniMax' | 'Replicate';
   costPerImage: number;
   isActive: boolean;
   apiKey?: string;
