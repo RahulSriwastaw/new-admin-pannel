@@ -3442,9 +3442,9 @@ export default function App() {
             </div>
             <div>
               <p className="text-xs text-gray-500 mb-1">Status</p>
-              <Badge className={localStorage.getItem('MINIMAX_API_KEY') ? 'bg-green-500' : 'bg-gray-500'}>
+              <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${localStorage.getItem('MINIMAX_API_KEY') ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}`}>
                 {localStorage.getItem('MINIMAX_API_KEY') ? 'Configured' : 'Not Configured'}
-              </Badge>
+              </span>
             </div>
           </div>
         </div>
