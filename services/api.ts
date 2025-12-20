@@ -159,11 +159,15 @@ export const api = {
 
   bulkUpdateUsers: async (userIds: string[], updates: Partial<User>) => {
     try {
-      await fetch(`${API_BASE_URL}/admin/users/bulk`, {
+      const res = await fetch(`${API_BASE_URL}/admin/users/bulk`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ userIds, updates })
       });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Failed to update users' }));
+        throw new Error(errorData.error || errorData.message || `HTTP ${res.status}`);
+      }
       return true;
     } catch (e) {
       throw e;
