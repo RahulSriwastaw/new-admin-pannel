@@ -749,7 +749,7 @@ export const api = {
 
   // AI Model Management
   deleteAIModel: async (key: string) => {
-    const res = await fetch(`${API_BASE_URL}/api/admin/ai-models/${key}`, {
+    const res = await fetch(`${API_BASE_URL}/admin/ai-models/${key}`, {
       method: 'DELETE',
       headers: getAuthHeaders()
     });
