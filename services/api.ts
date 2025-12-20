@@ -360,7 +360,7 @@ export const api = {
   // AI Config
   getAIModels: async (): Promise<AIModelConfig[]> => {
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/config/ai`, { headers: getAuthHeaders() });
+      const res = await fetch(`${API_BASE_URL}/admin/ai-models`, { headers: getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) return data as AIModelConfig[];
@@ -373,11 +373,18 @@ export const api = {
   // Toggle AI Model
   toggleAIModel: async (modelId: string, isActive: boolean) => {
     try {
-      await fetch(`${API_BASE_URL}/admin/config/ai/${modelId}/activate`, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ isActive })
-      });
+      if (isActive) {
+        await fetch(`${API_BASE_URL}/admin/ai-models/${modelId}/activate`, {
+          method: 'POST',
+          headers: getAuthHeaders()
+        });
+      } else {
+        await fetch(`${API_BASE_URL}/admin/ai-models/${modelId}`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ active: false })
+        });
+      }
       return true;
     } catch (e) {
       throw e;
@@ -386,10 +393,10 @@ export const api = {
 
   updateAIModelCost: async (modelId: string, cost: number) => {
     try {
-      await fetch(`${API_BASE_URL}/admin/config/ai/${modelId}/cost`, {
+      await fetch(`${API_BASE_URL}/admin/ai-models/${modelId}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ cost })
+        body: JSON.stringify({ costPerImage: cost })
       });
       return true;
     } catch (e) {
@@ -399,10 +406,10 @@ export const api = {
 
   updateAIModelApiKey: async (modelId: string, apiKey: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/config/ai/${modelId}/apikey`, {
+      const res = await fetch(`${API_BASE_URL}/admin/ai-models/${modelId}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ apiKey })
+        body: JSON.stringify({ config: { apiKey } })
       });
       if (!res.ok) throw new Error('Failed to update API Key');
       return true;
@@ -413,10 +420,11 @@ export const api = {
 
   testAIModelConnection: async (modelId: string) => {
     try {
-      await fetch(`${API_BASE_URL}/admin/config/ai/${modelId}/test`, {
-        method: 'POST',
+      const res = await fetch(`${API_BASE_URL}/admin/ai-models/${modelId}`, {
+        method: 'GET',
         headers: getAuthHeaders()
       });
+      if (!res.ok) throw new Error("Connection failed");
       return true;
     } catch (e) {
       throw e;
