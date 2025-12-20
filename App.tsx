@@ -3433,72 +3433,7 @@ export default function App() {
         ))}
       </div>
 
-      {/* Minimax API Configuration */}
-      <div className="flex justify-between items-center bg-gray-900 p-4 rounded-xl border border-gray-800 mt-8">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <Sparkles size={24} className="text-purple-400" /> Minimax I2I Configuration
-        </h2>
-      </div>
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm text-gray-400 block mb-2">API Key</label>
-            <div className="flex gap-3">
-              <input
-                type="password"
-                value={localStorage.getItem('MINIMAX_API_KEY') || ''}
-                onChange={(e) => localStorage.setItem('MINIMAX_API_KEY', e.target.value)}
-                className="flex-1 bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white font-mono text-sm"
-                placeholder="sk-..."
-              />
-              <button
-                onClick={() => {
-                  const key = localStorage.getItem('MINIMAX_API_KEY');
-                  if (key) {
-                    addLog('Minimax API Key saved successfully', LogLevel.SUCCESS, 'AdminPanel');
-                  } else {
-                    addLog('Please enter a valid API key', LogLevel.ERROR, 'AdminPanel');
-                  }
-                }}
-                className="px-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-medium"
-              >
-                Save Key
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Get your API key from{' '}
-              <a
-                href="https://platform.minimax.io/user-center/basic-information/interface-key"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-indigo-400 hover:text-indigo-300 underline"
-              >
-                Minimax Platform
-              </a>
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-4 p-4 bg-gray-950 rounded-lg border border-gray-800">
-            <div>
-              <p className="text-xs text-gray-500 mb-1">I2I Model</p>
-              <p className="text-sm text-white font-medium">image-01</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Feature</p>
-              <p className="text-sm text-white font-medium">Character & Style Reference</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Cost per Generation</p>
-              <p className="text-sm text-white font-medium">~₹1.5 - ₹2.0</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Status</p>
-              <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${localStorage.getItem('MINIMAX_API_KEY') ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}`}>
-                {localStorage.getItem('MINIMAX_API_KEY') ? 'Configured' : 'Not Configured'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+
 
       {/* API Key Modal */}
       {apiKeyModalState && (
