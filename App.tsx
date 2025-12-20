@@ -154,6 +154,8 @@ export default function App() {
     maxAdsPerUser: 20,
     cooldownMinutes: 3
   });
+  const [genRules, setGenRules] = useState({ facePreservationPrompt: '', globalNegativePrompt: '' });
+  const [isSavingGenRules, setIsSavingGenRules] = useState(false);
   const [isSavingAds, setIsSavingAds] = useState(false);
 
   // New Features State
@@ -437,6 +439,10 @@ export default function App() {
         if (adsCfg) {
           setAdsConfig(adsCfg);
         }
+      } catch { }
+      try {
+        const gRules = await api.getGenerationRules();
+        if (gRules) setGenRules(gRules);
       } catch { }
       addLog("Dashboard data synchronized with Backend.", LogLevel.INFO, "Database");
     } catch (e) {
@@ -3250,8 +3256,61 @@ export default function App() {
     )
   };
 
+  const handleSaveGenRules = async () => {
+    setIsSavingGenRules(true);
+    try {
+      await api.updateGenerationRules(genRules);
+      addLog("Generation Rules updated successfully.", LogLevel.SUCCESS, "AdminPanel");
+    } catch (e) {
+      addLog("Failed to save Generation Rules.", LogLevel.ERROR, "Backend");
+    } finally {
+      setIsSavingGenRules(false);
+    }
+  };
+
   const renderAIConfig = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
+
+      {/* Generation Rules Section */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          <ShieldCheck size={20} className="text-green-400" />
+          Generation Rules & Safety
+        </h3>
+        <p className="text-gray-400 text-sm mb-4">
+          Configure global prompts injected into every generation request. Use this to enforce safety, preserve identity, or apply style consistency.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="text-xs text-gray-500 uppercase block mb-2">Face Preservation Suffix (for Uploaded Images)</label>
+            <textarea
+              value={genRules.facePreservationPrompt}
+              onChange={e => setGenRules({ ...genRules, facePreservationPrompt: e.target.value })}
+              className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 text-white text-sm h-24 resize-none"
+              placeholder="e.g. ensure strong facial resemblance..."
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 uppercase block mb-2">Global Negative Prompt (Safety)</label>
+            <textarea
+              value={genRules.globalNegativePrompt}
+              onChange={e => setGenRules({ ...genRules, globalNegativePrompt: e.target.value })}
+              className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 text-white text-sm h-24 resize-none"
+              placeholder="e.g. nsfw, nude, bad anatomy..."
+            />
+          </div>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={handleSaveGenRules}
+            disabled={isSavingGenRules}
+            className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2"
+          >
+            <Save size={16} /> {isSavingGenRules ? 'Saving...' : 'Save Rules'}
+          </button>
+        </div>
+      </div>
+
       <div className="flex justify-between items-center bg-gray-900 p-4 rounded-xl border border-gray-800">
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <Bot size={24} className="text-indigo-400" /> AI Models Configuration

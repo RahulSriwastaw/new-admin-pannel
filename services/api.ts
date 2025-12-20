@@ -357,6 +357,28 @@ export const api = {
     }
   },
 
+  // Generation Rules
+  getGenerationRules: async () => {
+    try {
+      return await fetchWithFallback<any>('/admin/generation-rules', {});
+    } catch (e) {
+      return {};
+    }
+  },
+
+  updateGenerationRules: async (rules: any) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/generation-rules`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(rules)
+      });
+      return await res.json();
+    } catch (e) {
+      throw e;
+    }
+  },
+
   // AI Config
   getAIModels: async (): Promise<AIModelConfig[]> => {
     try {
