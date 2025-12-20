@@ -625,15 +625,25 @@ export default function App() {
 
   const handleAddModel = async () => {
     try {
-      const payload = {
+      const payload: any = {
         name: newModel.name,
-        provider: newModel.provider as any,
+        provider: newModel.provider,
         costPerImage: newModel.costPerImage,
-        config: {
+        config: {} // Initialize config as an empty object
+      };
+
+      if (newModel.provider === 'Replicate') {
+        payload.config = {
+          model: (newModel as any).modelId || '',
+          apiKey: newModel.apiKey
+        };
+      } else {
+        // Default config for other providers, or if Replicate-specific config is not needed
+        payload.config = {
           apiKey: newModel.apiKey,
           model: (newModel as any).modelId
-        }
-      };
+        };
+      }
 
       const createdModel = await api.addAIModel(payload);
       setAiModels([...aiModels, createdModel]);
