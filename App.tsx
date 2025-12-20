@@ -154,7 +154,13 @@ export default function App() {
     maxAdsPerUser: 20,
     cooldownMinutes: 3
   });
-  const [genRules, setGenRules] = useState({ facePreservationPrompt: '', globalNegativePrompt: '' });
+  const [guardRules, setGuardRules] = useState<any[]>([]);
+  const [showRuleModal, setShowRuleModal] = useState(false);
+  const [editingRule, setEditingRule] = useState<any>(null);
+  const [newRule, setNewRule] = useState({
+    ruleName: '', ruleType: 'face_preserve', enabled: true, priority: 0,
+    hiddenPrompt: '', applyTo: ['image', 'image_to_image', 'text_to_image']
+  });
   const [isSavingGenRules, setIsSavingGenRules] = useState(false);
   const [isSavingAds, setIsSavingAds] = useState(false);
 
@@ -440,9 +446,10 @@ export default function App() {
           setAdsConfig(adsCfg);
         }
       } catch { }
+
       try {
-        const gRules = await api.getGenerationRules();
-        if (gRules) setGenRules(gRules);
+        const rules = await api.getGuardRules();
+        setGuardRules(rules);
       } catch { }
       addLog("Dashboard data synchronized with Backend.", LogLevel.INFO, "Database");
     } catch (e) {
@@ -3266,60 +3273,224 @@ export default function App() {
     )
   };
 
-  const handleSaveGenRules = async () => {
-    setIsSavingGenRules(true);
+
+
+  const handleSaveGuardRule = async () => {
     try {
-      await api.updateGenerationRules(genRules);
-      addLog("Generation Rules updated successfully.", LogLevel.SUCCESS, "AdminPanel");
+      if (editingRule) {
+        const updated = await api.updateGuardRule(editingRule._id || editingRule.id, newRule);
+        setGuardRules(prev => prev.map(r => (r._id === updated._id || r.id === updated.id) ? updated : r));
+        addLog("Guard Rule Updated", LogLevel.SUCCESS, "AdminPanel");
+      } else {
+        const created = await api.addGuardRule(newRule);
+        setGuardRules(prev => [...prev, created].sort((a: any, b: any) => a.priority - b.priority));
+        addLog("Guard Rule Created", LogLevel.SUCCESS, "AdminPanel");
+      }
+      setShowRuleModal(false);
+      setEditingRule(null);
+      setNewRule({ ruleName: '', ruleType: 'face_preserve', enabled: true, priority: 0, hiddenPrompt: '', applyTo: ['image', 'image_to_image', 'text_to_image'] });
     } catch (e) {
-      addLog("Failed to save Generation Rules.", LogLevel.ERROR, "Backend");
-    } finally {
-      setIsSavingGenRules(false);
+      addLog("Failed to save guard rule", LogLevel.ERROR, "Backend");
     }
+  };
+
+  const handleDeleteGuardRule = async (id: string) => {
+    if (!confirm("Delete this rule?")) return;
+    await api.deleteGuardRule(id);
+    setGuardRules(prev => prev.filter(r => r.id !== id && r._id !== id));
+    addLog("Guard Rule Deleted", LogLevel.WARN, "AdminPanel");
+  };
+
+  const handleSeedGuardRules = async () => {
+    if (!confirm("Reset to System Defaults? This wipes custom rules.")) return;
+    await api.seedGuardRules();
+    refreshData();
   };
 
   const renderAIConfig = () => (
     <div className="space-y-6 animate-in fade-in duration-500">
 
-      {/* Generation Rules Section */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <ShieldCheck size={20} className="text-green-400" />
-          Generation Rules & Safety
-        </h3>
-        <p className="text-gray-400 text-sm mb-4">
-          Configure global prompts injected into every generation request. Use this to enforce safety, preserve identity, or apply style consistency.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* AI Guard Rules Section */}
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+          <ShieldCheck size={120} className="text-indigo-500" />
+        </div>
+        <div className="flex justify-between items-start mb-6 relative z-10">
           <div>
-            <label className="text-xs text-gray-500 uppercase block mb-2">Face Preservation Suffix (for Uploaded Images)</label>
-            <textarea
-              value={genRules.facePreservationPrompt}
-              onChange={e => setGenRules({ ...genRules, facePreservationPrompt: e.target.value })}
-              className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 text-white text-sm h-24 resize-none"
-              placeholder="e.g. ensure strong facial resemblance..."
-            />
+            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+              <ShieldCheck size={24} className="text-green-400" />
+              AI Guard System & Safety Rules
+            </h3>
+            <p className="text-gray-400 text-sm mt-1 max-w-2xl">
+              Configure hidden prompts and safety layers that act as a firewall between users and AI models.
+              Rules are applied in priority order.
+            </p>
           </div>
-          <div>
-            <label className="text-xs text-gray-500 uppercase block mb-2">Global Negative Prompt (Safety)</label>
-            <textarea
-              value={genRules.globalNegativePrompt}
-              onChange={e => setGenRules({ ...genRules, globalNegativePrompt: e.target.value })}
-              className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 text-white text-sm h-24 resize-none"
-              placeholder="e.g. nsfw, nude, bad anatomy..."
-            />
+          <div className="flex gap-2">
+            <button onClick={handleSeedGuardRules} className="bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-2 rounded-lg text-xs border border-gray-700">
+              Reset Defaults
+            </button>
+            <button
+              onClick={() => {
+                setEditingRule(null);
+                setNewRule({ ruleName: '', ruleType: 'face_preserve', enabled: true, priority: 0, hiddenPrompt: '', applyTo: ['image', 'image_to_image', 'text_to_image'] });
+                setShowRuleModal(true);
+              }}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 shadow-lg shadow-indigo-900/20"
+            >
+              <Plus size={16} /> Add Guard Rule
+            </button>
           </div>
         </div>
-        <div className="mt-4 flex justify-end">
-          <button
-            onClick={handleSaveGenRules}
-            disabled={isSavingGenRules}
-            className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2"
-          >
-            <Save size={16} /> {isSavingGenRules ? 'Saving...' : 'Save Rules'}
-          </button>
+
+        {/* Rules List */}
+        <div className="space-y-3 relative z-10">
+          {guardRules.length === 0 && (
+            <div className="text-center py-10 bg-gray-950/50 rounded-xl border border-dashed border-gray-800">
+              <p className="text-gray-500">No active guard rules.</p>
+              <button onClick={handleSeedGuardRules} className="text-indigo-400 text-sm mt-2 hover:underline">Apply Standard Safety Protocol</button>
+            </div>
+          )}
+          {guardRules.map((rule: any) => (
+            <div key={rule.id || rule._id} className={`p-4 rounded-xl border ${rule.enabled ? 'bg-gray-950/80 border-gray-700' : 'bg-gray-900/50 border-gray-800 opacity-60'} transition-all hover:border-gray-600`}>
+              <div className="flex justify-between items-start gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="bg-gray-900 text-gray-500 font-mono text-xs px-2 py-1 rounded border border-gray-800">
+                    P{rule.priority}
+                  </div>
+                  <div className={`p-2 rounded-lg ${rule.ruleType === 'safety_nsfw' ? 'bg-red-500/10 text-red-500' : rule.ruleType === 'face_preserve' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'}`}>
+                    {rule.ruleType === 'safety_nsfw' ? <ShieldCheck size={18} /> : <Sparkles size={18} />}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                      {rule.ruleName}
+                      {!rule.enabled && <span className="text-xs text-gray-500 bg-gray-900 px-1.5 rounded">DISABLED</span>}
+                    </h4>
+                    <div className="flex gap-2 mt-1">
+                      {rule.applyTo.map((t: string) => (
+                        <span key={t} className="text-[10px] uppercase tracking-wider text-gray-500 bg-gray-900 px-1.5 py-0.5 rounded border border-gray-800">
+                          {t.replace(/_/g, ' ')}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 flex-1 justify-end">
+                  <code className="text-xs text-gray-500 bg-black/40 px-3 py-2 rounded-lg border border-gray-800 max-w-md truncate font-mono hidden md:block">
+                    {rule.hiddenPrompt}
+                  </code>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setEditingRule(rule); setNewRule(rule); setShowRuleModal(true); }}
+                      className="p-2 hover:bg-gray-800 rounded-lg text-gray-400 hover:text-white transition-colors"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteGuardRule(rule.id || rule._id)}
+                      className="p-2 hover:bg-red-900/20 rounded-lg text-gray-400 hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {showRuleModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="p-6 border-b border-gray-800 flex justify-between items-center sticky top-0 bg-gray-900 z-10">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                {editingRule ? 'Edit Guard Rule' : 'New Guard Rule'}
+              </h3>
+              <button onClick={() => setShowRuleModal(false)} className="text-gray-400 hover:text-white"><X size={24} /></button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-gray-400 uppercase font-bold block mb-2">Rule Name</label>
+                  <input type="text" value={newRule.ruleName}
+                    onChange={e => setNewRule({ ...newRule, ruleName: e.target.value })}
+                    className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Identity Protection" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 uppercase font-bold block mb-2">Rule Type</label>
+                  <select value={newRule.ruleType}
+                    onChange={e => setNewRule({ ...newRule, ruleType: e.target.value })}
+                    className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 text-white outline-none">
+                    <option value="face_preserve">Face Preservation</option>
+                    <option value="safety_nsfw">Safety / NSFW Block</option>
+                    <option value="negative_prompt">Global Negative Prompt</option>
+                    <option value="quality_control">Quality Control</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-gray-400 uppercase font-bold block mb-2">Hidden Prompt (Injected System Instruction)</label>
+                <p className="text-xs text-gray-500 mb-2">This prompt effectively tells the AI what to do/avoid. It is never displayed to the user.</p>
+                <textarea value={newRule.hiddenPrompt}
+                  onChange={e => setNewRule({ ...newRule, hiddenPrompt: e.target.value })}
+                  className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 text-white h-32 font-mono text-sm leading-relaxed focus:ring-2 focus:ring-indigo-500 outline-none"
+                  placeholder="Enter the system instruction here..." />
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="text-xs text-gray-400 uppercase font-bold block mb-2">Priority (Lower = First)</label>
+                  <input type="number" value={newRule.priority}
+                    onChange={e => setNewRule({ ...newRule, priority: parseInt(e.target.value) })}
+                    className="w-full bg-gray-950 border border-gray-700 rounded-lg p-3 text-white" />
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-xs text-gray-400 uppercase font-bold block">Apply Context</label>
+                  <div className="flex gap-4">
+                    {['text_to_image', 'image_to_image'].map(ctx => (
+                      <label key={ctx} className="flex items-center gap-2 cursor-pointer text-sm text-gray-300">
+                        <input type="checkbox"
+                          checked={newRule.applyTo.includes(ctx)}
+                          onChange={() => {
+                            const has = newRule.applyTo.includes(ctx);
+                            setNewRule({
+                              ...newRule,
+                              applyTo: has ? newRule.applyTo.filter(x => x !== ctx) : [...newRule.applyTo, ctx]
+                            })
+                          }}
+                          className="rounded bg-gray-800 border-gray-700"
+                        />
+                        {ctx.replace(/_/g, ' ')}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-4 bg-gray-950 rounded-lg border border-gray-800">
+                <div className={`w-10 h-6 rounded-full p-1 cursor-pointer transition-colors ${newRule.enabled ? 'bg-green-600' : 'bg-gray-700'}`}
+                  onClick={() => setNewRule({ ...newRule, enabled: !newRule.enabled })}>
+                  <div className={`w-4 h-4 rounded-full bg-white transition-transform ${newRule.enabled ? 'translate-x-4' : ''}`} />
+                </div>
+                <span className="text-sm font-medium text-white">Rule Enabled</span>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-800 bg-gray-950 flex justify-end gap-3 sticky bottom-0">
+              <button onClick={() => setShowRuleModal(false)} className="px-4 py-2 hover:bg-gray-800 rounded-lg text-gray-400">Cancel</button>
+              <button onClick={handleSaveGuardRule} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold shadow-lg shadow-indigo-900/20">
+                {editingRule ? 'Update Rule' : 'Create Guard Rule'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       <div className="flex justify-between items-center bg-gray-900 p-4 rounded-xl border border-gray-800">
         <h2 className="text-xl font-bold text-white flex items-center gap-2">

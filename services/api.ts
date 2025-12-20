@@ -357,26 +357,35 @@ export const api = {
     }
   },
 
-  // Generation Rules
-  getGenerationRules: async () => {
+  // AI Guard Rules
+  getGuardRules: async (): Promise<any[]> => {
     try {
-      return await fetchWithFallback<any>('/admin/generation-rules', {});
-    } catch (e) {
-      return {};
-    }
+      return await fetchWithFallback<any[]>('/admin/guard-rules', []);
+    } catch (e) { return []; }
   },
-
-  updateGenerationRules: async (rules: any) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/admin/generation-rules`, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(rules)
-      });
-      return await res.json();
-    } catch (e) {
-      throw e;
-    }
+  addGuardRule: async (rule: any) => {
+    const res = await fetch(`${API_BASE_URL}/admin/guard-rules`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(rule)
+    });
+    return await res.json();
+  },
+  updateGuardRule: async (id: string, updates: any) => {
+    const res = await fetch(`${API_BASE_URL}/admin/guard-rules/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(updates)
+    });
+    return await res.json();
+  },
+  deleteGuardRule: async (id: string) => {
+    await fetch(`${API_BASE_URL}/admin/guard-rules/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+    return true;
+  },
+  seedGuardRules: async () => {
+    const res = await fetch(`${API_BASE_URL}/admin/guard-rules/seed`, { method: 'POST', headers: getAuthHeaders() });
+    return await res.json();
   },
 
   // AI Config
