@@ -3313,6 +3313,44 @@ export default function App() {
                 ) : (
                   <button onClick={() => handleEditModel(model)} className="px-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg"><Edit2 size={14} /></button>
                 )}
+                {/* Delete Button */}
+                <button
+                  onClick={async () => {
+                    if (model.isActive) {
+                      alert('Cannot delete active AI model. Please activate another AI model first.');
+                      return;
+                    }
+                    if (aiModels.length <= 1) {
+                      alert('Cannot delete the last AI model. At least one AI must exist in the system.');
+                      return;
+                    }
+                    if (!confirm(`Delete ${model.name}?\n\nThis action cannot be undone.`)) {
+                      return;
+                    }
+                    try {
+                      await api.deleteAIModel(model.key || model.id);
+                      addLog(`AI model "${model.name}" deleted successfully`, LogLevel.SUCCESS);
+                      refreshData();
+                    } catch (error: any) {
+                      addLog(`Failed to delete AI model: ${error.message}`, LogLevel.ERROR);
+                      alert(`Error: ${error.message}`);
+                    }
+                  }}
+                  disabled={model.isActive || aiModels.length <= 1}
+                  className={`px-3 rounded-lg transition-all ${model.isActive || aiModels.length <= 1
+                      ? 'bg-gray-800 text-gray-600 cursor-not-allowed opacity-50'
+                      : 'bg-red-600 hover:bg-red-500 text-white'
+                    }`}
+                  title={
+                    model.isActive
+                      ? 'Cannot delete active AI model'
+                      : aiModels.length <= 1
+                        ? 'Cannot delete the last AI model'
+                        : 'Delete AI model'
+                  }
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
             </div>
           </div>
