@@ -378,8 +378,13 @@ export const api = {
         body: JSON.stringify(model)
       });
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || error.error || 'Failed to create AI model');
+        let errorData;
+        try {
+          errorData = await res.json();
+        } catch (e) {
+          throw new Error(`Server Error (${res.status}): ${res.statusText}`);
+        }
+        throw new Error(errorData.message || errorData.error || 'Failed to create AI model');
       }
       return await res.json();
     } catch (e) {
