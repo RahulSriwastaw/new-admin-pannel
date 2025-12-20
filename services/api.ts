@@ -370,6 +370,23 @@ export const api = {
     throw new Error('Failed to load AI models');
   },
 
+  addAIModel: async (model: Partial<AIModelConfig>) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/ai-models`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(model)
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || error.error || 'Failed to create AI model');
+      }
+      return await res.json();
+    } catch (e) {
+      throw e;
+    }
+  },
+
   // Toggle AI Model
   toggleAIModel: async (modelId: string, isActive: boolean) => {
     try {
@@ -456,19 +473,7 @@ export const api = {
     }
   },
 
-  addAIModel: async (model: Omit<AIModelConfig, 'id'>) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/admin/config/ai`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(model)
-      });
-      if (res.ok) return await res.json();
-      throw new Error("Failed");
-    } catch (e) {
-      throw e;
-    }
-  },
+
 
   // Templates Management
   getTemplates: () => fetchWithFallback<Template[]>('/admin/templates', [] as any),

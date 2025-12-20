@@ -618,16 +618,28 @@ export default function App() {
   };
 
   const handleAddModel = async () => {
-    const modelData: Omit<AIModelConfig, 'id'> = {
-      ...newModel,
-      provider: newModel.provider as any
-    };
-    const createdModel = await api.addAIModel(modelData);
-    setAiModels([...aiModels, createdModel]);
-    setShowAddModelModal(false);
-    setShowConfirmAddModal(false);
-    setNewModel({ name: '', provider: 'Google', costPerImage: 1.0, isActive: false, apiKey: '' });
-    addLog(`New AI Model ${modelData.name} added.`, LogLevel.SUCCESS, 'AdminPanel');
+    try {
+      const payload = {
+        name: newModel.name,
+        provider: newModel.provider as any,
+        costPerImage: newModel.costPerImage,
+        config: {
+          apiKey: newModel.apiKey
+        }
+      };
+
+      const createdModel = await api.addAIModel(payload);
+      setAiModels([...aiModels, createdModel]);
+      setShowAddModelModal(false);
+      setShowConfirmAddModal(false);
+      setNewModel({ name: '', provider: 'Google', costPerImage: 1.0, isActive: false, apiKey: '' });
+      addLog(`New AI Model ${createdModel.name} added successfully.`, LogLevel.SUCCESS, 'AdminPanel');
+      refreshData();
+    } catch (error: any) {
+      console.error('Add model error:', error);
+      alert(`Failed to add model: ${error.message}`);
+      addLog(`Failed to add AI Model: ${error.message}`, LogLevel.ERROR, 'AdminPanel');
+    }
   };
 
   const handleApproveCreator = async (id: string, name: string) => {
@@ -3338,8 +3350,8 @@ export default function App() {
                   }}
                   disabled={model.isActive || aiModels.length <= 1}
                   className={`px-3 rounded-lg transition-all ${model.isActive || aiModels.length <= 1
-                      ? 'bg-gray-800 text-gray-600 cursor-not-allowed opacity-50'
-                      : 'bg-red-600 hover:bg-red-500 text-white'
+                    ? 'bg-gray-800 text-gray-600 cursor-not-allowed opacity-50'
+                    : 'bg-red-600 hover:bg-red-500 text-white'
                     }`}
                   title={
                     model.isActive

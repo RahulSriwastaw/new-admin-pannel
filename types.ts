@@ -103,6 +103,7 @@ export interface AIModelConfig {
   costPerImage: number;
   isActive: boolean;
   apiKey?: string;
+  config?: any;
 }
 
 export interface Category {
