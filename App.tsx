@@ -234,7 +234,7 @@ export default function App() {
 
   // AI Edit/API Key State
   const [editingModelId, setEditingModelId] = useState<string | null>(null);
-  const [editFormData, setEditFormData] = useState<{ name: string, provider: string }>({ name: '', provider: '' });
+  const [editFormData, setEditFormData] = useState<{ name: string, provider: string, modelId: string }>({ name: '', provider: '', modelId: '' });
   const [apiKeyModalState, setApiKeyModalState] = useState<{ model: AIModelConfig, key: string } | null>(null);
   const [testingModelId, setTestingModelId] = useState<string | null>(null);
   const [togglingModelId, setTogglingModelId] = useState<string | null>(null);
