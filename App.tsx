@@ -603,7 +603,7 @@ export default function App() {
 
   const handleEditModel = (model: AIModelConfig) => {
     setEditingModelId(model.id);
-    setEditFormData({ name: model.name, provider: model.provider });
+    setEditFormData({ name: model.name, provider: model.provider, modelId: model.config?.model || '' });
   };
 
   const handleSaveModelDetails = async (id: string) => {
