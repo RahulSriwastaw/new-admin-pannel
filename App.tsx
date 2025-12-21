@@ -3717,11 +3717,23 @@ export default function App() {
                   <option value="Replicate">Replicate</option>
                 </select>
               </div>
-              {newModel.provider === 'Replicate' && (
+              {(newModel.provider === 'Replicate' || newModel.provider === 'Google') && (
                 <div>
-                  <label className="text-xs text-gray-500 uppercase block mb-1">Replicate Model ID</label>
-                  <input type="text" value={(newModel as any).modelId || ''} onChange={e => setNewModel({ ...newModel, modelId: e.target.value } as any)} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" placeholder="owner/model_name:version" />
-                  <p className="text-[10px] text-gray-500 mt-1">Example: google/gemini-2.5-flash-image</p>
+                  <label className="text-xs text-gray-500 uppercase block mb-1">
+                    {newModel.provider === 'Replicate' ? 'Replicate Model ID' : 'Google Model ID (Optional)'}
+                  </label>
+                  <input 
+                    type="text" 
+                    value={(newModel as any).modelId || ''} 
+                    onChange={e => setNewModel({ ...newModel, modelId: e.target.value } as any)} 
+                    className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" 
+                    placeholder={newModel.provider === 'Replicate' ? "owner/model_name:version" : "gemini-2.5-flash-image"} 
+                  />
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    {newModel.provider === 'Replicate' 
+                      ? "Example: stability-ai/sdxl:39ed52f2..." 
+                      : "Defaults to gemini-2.5-flash-image (Nano Banana). Supports gemini-3.0-pro-image."}
+                  </p>
                 </div>
               )}
               <div>
