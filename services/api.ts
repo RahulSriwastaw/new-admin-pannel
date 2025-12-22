@@ -614,7 +614,19 @@ export const api = {
   },
 
   // Category Management
-  getCategories: () => fetchWithFallback<Category[]>('/admin/categories', [] as any),
+  getCategories: async (): Promise<Category[]> => {
+    try {
+      const response = await fetchWithFallback<any>('/admin/categories', { categories: [] });
+      // Handle both old array format and new {success, categories} format
+      if (Array.isArray(response)) {
+        return response;
+      }
+      return response.categories || [];
+    } catch (e) {
+      console.error('Failed to fetch categories:', e);
+      return [];
+    }
+  },
 
   addCategory: async (category: Omit<Category, 'id'>) => {
     try {
