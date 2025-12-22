@@ -1684,7 +1684,6 @@ export default function App() {
                         REJECTED
                       </span>
                     )}
-                    </span>
                   </div>
                   <div className="absolute bottom-0 left-0 p-4 w-full pointer-events-none">
                     <h3 className="text-white font-bold truncate">{template.title}</h3>
