@@ -1155,7 +1155,9 @@ export default function App() {
     try {
       if (String(activeGateway.id).startsWith('new')) {
         const { id, ...gwData } = activeGateway;
-        const created = await api.createPaymentGateway(gwData);
+        // Remove credential fields - they are stored in environment variables
+        const { publicKey, secretKey, ...gatewayData } = gwData as any;
+        const created = await api.createPaymentGateway(gatewayData);
         setPaymentGateways(prev => [...prev, created]);
         addLog(`Gateway '${created.name}' created.`, LogLevel.SUCCESS, "AdminPanel");
       } else {
