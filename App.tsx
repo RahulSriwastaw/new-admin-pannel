@@ -1526,8 +1526,20 @@ export default function App() {
     const draftTemplates = templates.filter(t => t.status === 'draft').length;
     
     // Separate Creator and Official stats
-    const officialTemplates = templates.filter(t => t.type === 'Official' || t.source === 'admin').length;
-    const creatorTemplates = templates.filter(t => t.type === 'Creator' || t.source === 'creator').length;
+    // Check multiple fields to identify Official vs Creator templates
+    const officialTemplates = templates.filter(t => 
+      t.type === 'Official' || 
+      t.source === 'admin' || 
+      t.isOfficial === true || 
+      !t.creatorId || 
+      t.creatorId === 'Creator' || 
+      t.creatorId === null
+    ).length;
+    const creatorTemplates = templates.filter(t => 
+      t.type === 'Creator' || 
+      t.source === 'creator' || 
+      (t.creatorId && t.creatorId !== 'Creator' && t.creatorId !== null && !t.isOfficial)
+    ).length;
     const pendingTemplates = templates.filter(t => t.approvalStatus === 'pending').length;
     const rejectedTemplates = templates.filter(t => t.approvalStatus === 'rejected').length;
 
@@ -1543,11 +1555,12 @@ export default function App() {
         ? true
         : (templateFilterPremium === 'premium' ? t.isPremium : !t.isPremium);
       // Template type filter (Official/Creator)
+      // Check multiple fields: type, source, isOfficial, and creatorId
       const matchesType = templateFilterType === 'all' 
         ? true 
         : (templateFilterType === 'official' 
-          ? (t.type === 'Official' || t.source === 'admin')
-          : (t.type === 'Creator' || t.source === 'creator'));
+          ? (t.type === 'Official' || t.source === 'admin' || t.isOfficial === true || !t.creatorId || t.creatorId === 'Creator' || t.creatorId === null)
+          : (t.type === 'Creator' || t.source === 'creator' || (t.creatorId && t.creatorId !== 'Creator' && t.creatorId !== null && !t.isOfficial)));
 
       return matchesSearch && matchesCategory && matchesStatus && matchesPremium && matchesType;
     });
@@ -1735,12 +1748,12 @@ export default function App() {
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-80 pointer-events-none"></div>
                   <div className="absolute top-2 right-2 flex gap-1 pointer-events-none">
                     {/* Template Type Badge */}
-                    {(template.type === 'Official' || template.source === 'admin') && (
+                    {(template.type === 'Official' || template.source === 'admin' || template.isOfficial === true || !template.creatorId || template.creatorId === 'Creator' || template.creatorId === null) && (
                       <span className="px-2 py-0.5 bg-yellow-500/90 text-black text-[10px] font-bold rounded uppercase flex items-center gap-1 shadow-lg">
                         <Star size={10} fill="black" /> OFFICIAL
                       </span>
                     )}
-                    {(template.type === 'Creator' || template.source === 'creator') && (
+                    {(template.type === 'Creator' || template.source === 'creator' || (template.creatorId && template.creatorId !== 'Creator' && template.creatorId !== null && !template.isOfficial)) && (
                       <span className="px-2 py-0.5 bg-indigo-500/90 text-white text-[10px] font-bold rounded uppercase flex items-center gap-1 shadow-lg">
                         👤 CREATOR
                       </span>
@@ -1782,7 +1795,7 @@ export default function App() {
 
                 <div className={`p-3 grid gap-2 ${(template.type === 'Creator' || template.source === 'creator') && template.approvalStatus === 'pending' ? 'grid-cols-2' : 'grid-cols-3'}`}>
                   {/* Review Actions for Pending Creator Templates */}
-                  {(template.type === 'Creator' || template.source === 'creator') && template.approvalStatus === 'pending' && (
+                  {(template.type === 'Creator' || template.source === 'creator' || (template.creatorId && template.creatorId !== 'Creator' && template.creatorId !== null && !template.isOfficial)) && template.approvalStatus === 'pending' && (
                     <>
                       <button
                         onClick={() => handleApproveTemplate(template.id)}
@@ -1802,7 +1815,7 @@ export default function App() {
                   )}
                   
                   {/* Regular Actions */}
-                  {(!(template.type === 'Creator' || template.source === 'creator') || template.approvalStatus !== 'pending') && (
+                  {(!(template.type === 'Creator' || template.source === 'creator' || (template.creatorId && template.creatorId !== 'Creator' && template.creatorId !== null && !template.isOfficial)) || template.approvalStatus !== 'pending') && (
                     <>
                       <button
                         onClick={() => handleDuplicateTemplate(template)}
@@ -1875,12 +1888,12 @@ export default function App() {
                         <div className="flex items-center gap-2">
                           <div className="font-bold text-white">{template.title}</div>
                           {/* Template Type Badge */}
-                          {(template.type === 'Official' || template.source === 'admin') && (
+                          {(template.type === 'Official' || template.source === 'admin' || template.isOfficial === true || !template.creatorId || template.creatorId === 'Creator' || template.creatorId === null) && (
                             <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded flex items-center gap-1">
                               <Star size={8} fill="currentColor" /> OFFICIAL
                             </span>
                           )}
-                          {(template.type === 'Creator' || template.source === 'creator') && (
+                          {(template.type === 'Creator' || template.source === 'creator' || (template.creatorId && template.creatorId !== 'Creator' && template.creatorId !== null && !template.isOfficial)) && (
                             <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded flex items-center gap-1">
                               👤 CREATOR
                             </span>
@@ -1925,7 +1938,7 @@ export default function App() {
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">
                         {/* Review Actions for Pending Creator Templates */}
-                        {(template.type === 'Creator' || template.source === 'creator') && template.approvalStatus === 'pending' && (
+                        {(template.type === 'Creator' || template.source === 'creator' || (template.creatorId && template.creatorId !== 'Creator' && template.creatorId !== null && !template.isOfficial)) && template.approvalStatus === 'pending' && (
                           <>
                             <button
                               onClick={() => handleApproveTemplate(template.id)}
