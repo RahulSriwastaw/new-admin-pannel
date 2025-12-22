@@ -2533,12 +2533,31 @@ export default function App() {
             </div>
             <div className="space-y-2">
               {pointsPackages.map(pkg => (
-                <div key={pkg.id} className="flex justify-between items-center p-2 bg-gray-950 border border-gray-800 rounded hover:border-gray-600 cursor-pointer" onClick={() => { setActivePackage(pkg); setShowPackageModal(true); }}>
-                  <div>
-                    <div className="text-white text-sm font-bold">{pkg.name}</div>
-                    <div className="text-xs text-gray-500">{pkg.points} pts • ₹{pkg.price}</div>
+                <div key={pkg.id} className="flex justify-between items-center p-3 bg-gray-950 border border-gray-800 rounded">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="flex-1">
+                      <div className="text-white text-sm font-bold">{pkg.name}</div>
+                      <div className="text-xs text-gray-500">{pkg.points} pts • ₹{pkg.price}</div>
+                    </div>
+                    {pkg.isPopular && <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded">POPULAR</span>}
+                    {!pkg.isActive && <span className="text-[10px] bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded">INACTIVE</span>}
                   </div>
-                  {pkg.isPopular && <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded">POPULAR</span>}
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setActivePackage(pkg); setShowPackageModal(true); }} 
+                      className="text-gray-500 hover:text-white p-1" 
+                      aria-label="Edit Package"
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleDeletePackage(pkg.id); }} 
+                      className="text-gray-500 hover:text-red-400 p-1" 
+                      aria-label="Delete Package"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
