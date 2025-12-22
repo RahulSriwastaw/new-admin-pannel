@@ -254,35 +254,46 @@ export const api = {
         headers: getAuthHeaders(),
         body: JSON.stringify(pkg)
       });
-      if (res.ok) return await res.json();
-      throw new Error("Failed");
-    } catch (e) {
-      throw e;
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'Failed to create package' }));
+        throw new Error(error.error || error.message || 'Failed to create package');
+      }
+      return await res.json();
+    } catch (e: any) {
+      throw new Error(e.message || 'Failed to create package');
     }
   },
 
   updatePointsPackage: async (id: string, updates: Partial<PointsPackage>) => {
     try {
-      await fetch(`${API_BASE_URL}/admin/finance/packages/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/finance/packages/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(updates)
       });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'Failed to update package' }));
+        throw new Error(error.error || error.message || 'Failed to update package');
+      }
       return true;
-    } catch (e) {
-      throw e;
+    } catch (e: any) {
+      throw new Error(e.message || 'Failed to update package');
     }
   },
 
   deletePointsPackage: async (id: string) => {
     try {
-      await fetch(`${API_BASE_URL}/admin/finance/packages/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/finance/packages/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders()
       });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'Failed to delete package' }));
+        throw new Error(error.error || error.message || 'Failed to delete package');
+      }
       return true;
-    } catch (e) {
-      throw e;
+    } catch (e: any) {
+      throw new Error(e.message || 'Failed to delete package');
     }
   },
 

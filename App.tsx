@@ -1122,11 +1122,17 @@ export default function App() {
       type: 'danger',
       confirmText: 'Delete',
       onConfirm: async () => {
-        await api.deletePointsPackage(id);
-        setPointsPackages(prev => prev.filter(p => p.id !== id));
-        setShowPackageModal(false);
-        addLog(`Package deleted.`, LogLevel.WARN, "AdminPanel");
-        closeConfirmModal();
+        try {
+          await api.deletePointsPackage(id);
+          setPointsPackages(prev => prev.filter(p => p.id !== id));
+          setShowPackageModal(false);
+          addLog(`Package deleted.`, LogLevel.WARN, "AdminPanel");
+          closeConfirmModal();
+        } catch (error: any) {
+          console.error('Failed to delete package:', error);
+          addLog(`Failed to delete package: ${error.message || 'Unknown error'}`, LogLevel.ERROR, "AdminPanel");
+          closeConfirmModal();
+        }
       }
     });
   };
