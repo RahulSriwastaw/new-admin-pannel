@@ -1159,7 +1159,22 @@ export default function App() {
         setPaymentGateways(prev => [...prev, created]);
         addLog(`Gateway '${created.name}' created.`, LogLevel.SUCCESS, "AdminPanel");
       } else {
-        const updated = await api.updateGatewayConfig(activeGateway.id, activeGateway);
+        // Only send secretKey if it was actually changed (not empty)
+        const updateData: Partial<PaymentGatewayConfig> = {
+          name: activeGateway.name,
+          provider: activeGateway.provider,
+          publicKey: activeGateway.publicKey,
+          isActive: activeGateway.isActive,
+          isTestMode: activeGateway.isTestMode
+        };
+        
+        // Only include secretKey if it's not empty (user actually entered/changed it)
+        if (activeGateway.secretKey && activeGateway.secretKey.trim() !== '') {
+          updateData.secretKey = activeGateway.secretKey;
+        }
+        // If secretKey is empty, don't send it - backend will preserve existing
+        
+        const updated = await api.updateGatewayConfig(activeGateway.id, updateData);
         setPaymentGateways(prev => prev.map(g => g.id === activeGateway.id ? updated : g));
         addLog(`Gateway '${activeGateway.name}' configuration saved.`, LogLevel.SUCCESS, "AdminPanel");
       }
