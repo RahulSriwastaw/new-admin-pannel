@@ -1550,17 +1550,31 @@ export default function App() {
       const matchesSearch = title.includes(q) || prompt.includes(q);
       // Safe category check
       const matchesCategory = templateCategoryFilter === 'All' || t.category?.trim() === templateCategoryFilter;
-      const matchesStatus = templateFilterStatus === 'all' || t.status === templateFilterStatus;
+      
+      // Status filter - handle both old status field and new approvalStatus field
+      let matchesStatus = true;
+      if (templateFilterStatus !== 'all') {
+        if (templateFilterStatus === 'pending' || templateFilterStatus === 'approved' || templateFilterStatus === 'rejected') {
+          // Approval status filter
+          matchesStatus = t.approvalStatus === templateFilterStatus;
+        } else {
+          // Old status filter (active, draft, paused)
+          matchesStatus = t.status === templateFilterStatus;
+        }
+      }
       const matchesPremium = templateFilterPremium === 'all'
         ? true
         : (templateFilterPremium === 'premium' ? t.isPremium : !t.isPremium);
       // Template type filter (Official/Creator)
       // Check multiple fields: type, source, isOfficial, and creatorId
+      const isOfficialTemplate = t.type === 'Official' || t.source === 'admin' || t.isOfficial === true || !t.creatorId || t.creatorId === 'Creator' || t.creatorId === null || String(t.creatorId) === 'Creator';
+      const isCreatorTemplate = !isOfficialTemplate && (t.type === 'Creator' || t.source === 'creator' || (t.creatorId && String(t.creatorId) !== 'Creator' && t.creatorId !== null));
+      
       const matchesType = templateFilterType === 'all' 
         ? true 
         : (templateFilterType === 'official' 
-          ? (t.type === 'Official' || t.source === 'admin' || t.isOfficial === true || !t.creatorId || t.creatorId === 'Creator' || t.creatorId === null)
-          : (t.type === 'Creator' || t.source === 'creator' || (t.creatorId && t.creatorId !== 'Creator' && t.creatorId !== null && !t.isOfficial)));
+          ? isOfficialTemplate
+          : isCreatorTemplate); // Only show Creator templates when Creator filter is selected
 
       return matchesSearch && matchesCategory && matchesStatus && matchesPremium && matchesType;
     });
@@ -1661,13 +1675,19 @@ export default function App() {
               <select
                 value={templateFilterStatus}
                 onChange={(e) => setTemplateFilterStatus(e.target.value)}
-                className="bg-gray-950 border border-gray-700 text-gray-300 text-sm rounded-lg px-3 py-2 focus:outline-none max-w-[120px]"
+                className="bg-gray-950 border border-gray-700 text-gray-300 text-sm rounded-lg px-3 py-2 focus:outline-none max-w-[150px]"
               >
                 <option value="all">Any Status</option>
                 <option value="active">Active</option>
                 <option value="draft">Draft</option>
-                <option value="pending">Pending</option>
-                <option value="rejected">Rejected</option>
+                {/* Approval Status Filters - Show for Creator templates */}
+                {(templateFilterType === 'creator' || templateFilterType === 'all') && (
+                  <>
+                    <option value="pending">🟡 Pending Review</option>
+                    <option value="approved">🟢 Approved</option>
+                    <option value="rejected">🔴 Rejected</option>
+                  </>
+                )}
               </select>
 
               <select
@@ -1699,6 +1719,64 @@ export default function App() {
               </button>
             </div>
           </div>
+
+          {/* Approval Status Tabs for Creator Templates */}
+          {templateFilterType === 'creator' && (
+            <div className="flex gap-2 border-t border-gray-800 pt-3">
+              <button
+                onClick={() => setTemplateFilterStatus('all')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  templateFilterStatus === 'all' 
+                    ? 'bg-indigo-600 text-white' 
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                All Creator Templates
+              </button>
+              <button
+                onClick={() => setTemplateFilterStatus('pending')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                  templateFilterStatus === 'pending' 
+                    ? 'bg-orange-600 text-white' 
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                <Clock size={16} />
+                Pending Review ({templates.filter(t => {
+                  const isCreator = !(t.type === 'Official' || t.source === 'admin' || t.isOfficial === true || !t.creatorId || t.creatorId === 'Creator' || t.creatorId === null || String(t.creatorId) === 'Creator');
+                  return isCreator && t.approvalStatus === 'pending';
+                }).length})
+              </button>
+              <button
+                onClick={() => setTemplateFilterStatus('approved')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                  templateFilterStatus === 'approved' 
+                    ? 'bg-green-600 text-white' 
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                <CheckCircle size={16} />
+                Approved ({templates.filter(t => {
+                  const isCreator = !(t.type === 'Official' || t.source === 'admin' || t.isOfficial === true || !t.creatorId || t.creatorId === 'Creator' || t.creatorId === null || String(t.creatorId) === 'Creator');
+                  return isCreator && t.approvalStatus === 'approved';
+                }).length})
+              </button>
+              <button
+                onClick={() => setTemplateFilterStatus('rejected')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                  templateFilterStatus === 'rejected' 
+                    ? 'bg-red-600 text-white' 
+                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                }`}
+              >
+                <XCircle size={16} />
+                Rejected ({templates.filter(t => {
+                  const isCreator = !(t.type === 'Official' || t.source === 'admin' || t.isOfficial === true || !t.creatorId || t.creatorId === 'Creator' || t.creatorId === null || String(t.creatorId) === 'Creator');
+                  return isCreator && t.approvalStatus === 'rejected';
+                }).length})
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Bulk Action Bar Templates */}
