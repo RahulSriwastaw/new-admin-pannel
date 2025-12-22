@@ -1158,6 +1158,27 @@ export default function App() {
     }
   };
 
+  const handleDeleteGateway = async (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Payment Gateway',
+      message: "Are you sure you want to delete this payment gateway? This cannot be undone and will affect payment processing.",
+      type: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await api.deletePaymentGateway(id);
+          setPaymentGateways(prev => prev.filter(g => g.id !== id));
+          addLog(`Payment gateway deleted.`, LogLevel.WARN, "AdminPanel");
+          closeConfirmModal();
+        } catch (error: any) {
+          addLog(`Failed to delete gateway: ${error.message}`, LogLevel.ERROR, "AdminPanel");
+          closeConfirmModal();
+        }
+      }
+    });
+  };
+
   const handleToggleGatewayActive = async (gateway: PaymentGatewayConfig) => {
     const next = !gateway.isActive;
     const ok = await api.toggleGatewayActive(gateway.id, next);
@@ -2550,8 +2571,11 @@ export default function App() {
                     <button onClick={() => handleTestGateway(gw)} className="text-gray-500 hover:text-white" aria-label="Test Connection">
                       <Activity size={14} />
                     </button>
-                    <button onClick={() => { setActiveGateway(gw); setShowGatewayModal(true); }} className="text-gray-500 hover:text-white" aria-label="Configure">
-                      <Settings size={14} />
+                    <button onClick={() => { setActiveGateway(gw); setShowGatewayModal(true); }} className="text-gray-500 hover:text-white" aria-label="Edit">
+                      <Edit2 size={14} />
+                    </button>
+                    <button onClick={() => handleDeleteGateway(gw.id)} className="text-gray-500 hover:text-red-400" aria-label="Delete">
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
@@ -2643,6 +2667,11 @@ export default function App() {
               <button onClick={() => handleTestGateway(activeGateway)} disabled={isTestingGateway} className="px-4 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-sm flex items-center gap-2">
                 {isTestingGateway ? <RefreshCw className="animate-spin" size={14} /> : <Activity size={14} />} Test
               </button>
+              {!activeGateway.id.startsWith('new') && (
+                <button onClick={() => { setShowGatewayModal(false); handleDeleteGateway(activeGateway.id); }} className="px-3 bg-red-900/50 hover:bg-red-900 text-red-400 rounded text-sm flex items-center gap-1">
+                  <Trash2 size={14} /> Delete
+                </button>
+              )}
               <button onClick={() => setShowGatewayModal(false)} className="px-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-sm">Cancel</button>
             </div>
           </div>

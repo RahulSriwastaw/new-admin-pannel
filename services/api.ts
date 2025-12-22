@@ -340,6 +340,18 @@ export const api = {
       return false;
     }
   },
+  deletePaymentGateway: async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/finance/gateways/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error('Failed to delete gateway');
+      return true;
+    } catch (e) {
+      throw e;
+    }
+  },
 
   // Finance Config
   getFinanceConfig: () => fetchWithFallback<FinanceConfig>('/admin/finance/config', {} as any),
