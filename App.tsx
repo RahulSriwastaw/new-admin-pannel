@@ -1099,8 +1099,8 @@ export default function App() {
   };
 
   const handleSavePackage = async () => {
-    if (!activePackage) return;
-    if (activePackage.id.startsWith('new')) {
+    if (!activePackage || !activePackage.id) return;
+    if (String(activePackage.id).startsWith('new')) {
       const { id, ...pkgData } = activePackage;
       const newPkg = await api.addPointsPackage(pkgData);
       setPointsPackages(prev => [...prev, newPkg]);
@@ -2546,15 +2546,19 @@ export default function App() {
                     <button 
                       onClick={(e) => { 
                         e.stopPropagation(); 
+                        if (!pkg.id) {
+                          console.error('Package ID is missing');
+                          return;
+                        }
                         setActivePackage({
-                          id: pkg.id,
-                          name: pkg.name || '',
-                          price: pkg.price || 0,
-                          points: pkg.points || 0,
-                          bonusPoints: pkg.bonusPoints || 0,
-                          isPopular: pkg.isPopular || false,
-                          isActive: pkg.isActive !== undefined ? pkg.isActive : true,
-                          tag: pkg.tag || ''
+                          id: String(pkg.id),
+                          name: String(pkg.name || ''),
+                          price: Number(pkg.price || 0),
+                          points: Number(pkg.points || 0),
+                          bonusPoints: Number(pkg.bonusPoints || 0),
+                          isPopular: Boolean(pkg.isPopular || false),
+                          isActive: pkg.isActive !== undefined ? Boolean(pkg.isActive) : true,
+                          tag: String(pkg.tag || '')
                         } as PointsPackage); 
                         setShowPackageModal(true); 
                       }} 
@@ -2618,10 +2622,10 @@ export default function App() {
       </div>
 
       {/* Package Modal */}
-      {showPackageModal && activePackage && (
+      {showPackageModal && activePackage && activePackage.id && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-sm w-full">
-            <h3 className="text-lg font-bold text-white mb-4">{activePackage.id.startsWith('new') ? 'New Package' : 'Edit Package'}</h3>
+            <h3 className="text-lg font-bold text-white mb-4">{String(activePackage.id).startsWith('new') ? 'New Package' : 'Edit Package'}</h3>
             <div className="space-y-3">
               <input type="text" placeholder="Name" value={activePackage.name || ''} onChange={e => setActivePackage({ ...activePackage, name: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
               <div className="grid grid-cols-2 gap-3">
@@ -2639,8 +2643,8 @@ export default function App() {
             </div>
             <div className="flex gap-2 mt-6">
               <button onClick={handleSavePackage} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded text-sm font-medium">Save</button>
-              {!activePackage.id.startsWith('new') && <button onClick={() => handleDeletePackage(activePackage.id)} className="px-3 bg-red-900/50 hover:bg-red-900 text-red-400 rounded text-sm"><Trash2 size={16} /></button>}
-              <button onClick={() => setShowPackageModal(false)} className="px-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-sm">Cancel</button>
+              {activePackage.id && !String(activePackage.id).startsWith('new') && <button onClick={() => handleDeletePackage(activePackage.id)} className="px-3 bg-red-900/50 hover:bg-red-900 text-red-400 rounded text-sm"><Trash2 size={16} /></button>}
+              <button onClick={() => { setShowPackageModal(false); setActivePackage(null); }} className="px-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-sm">Cancel</button>
             </div>
           </div>
         </div>
