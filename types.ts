@@ -127,10 +127,27 @@ export interface Template {
   state: string;
   ageGroup: string;
 
-  status: 'active' | 'draft';
+  status: 'active' | 'draft' | 'paused';
   useCount: number;
   isPremium: boolean;
-  source: 'manual' | 'bulk' | 'airtable';
+  source: 'manual' | 'bulk' | 'airtable' | 'admin' | 'creator';
+  
+  // Template Type & Source
+  type?: 'Official' | 'Creator';
+  isOfficial?: boolean;
+  creatorId?: string;
+  
+  // Approval Workflow
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+  rejectionReason?: string;
+  approvedAt?: string;
+  rejectedAt?: string;
+  submittedAt?: string;
+  approvedBy?: string;
+  
+  // Display & Features
+  isFeatured?: boolean;
+  isPaused?: boolean;
 }
 
 export interface AirtableConfig {
