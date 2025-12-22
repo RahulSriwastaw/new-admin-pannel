@@ -262,6 +262,10 @@ export default function App() {
   const [templateViewMode, setTemplateViewMode] = useState<'grid' | 'list'>('grid');
   const [templateFilterStatus, setTemplateFilterStatus] = useState<string>('all');
   const [templateFilterPremium, setTemplateFilterPremium] = useState<string>('all');
+  const [templateFilterType, setTemplateFilterType] = useState<string>('all'); // all, official, creator
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedTemplateForReject, setSelectedTemplateForReject] = useState<Template | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   useEffect(() => {
     return () => {
@@ -1438,6 +1442,48 @@ export default function App() {
     });
   };
 
+  const handleApproveTemplate = async (id: string) => {
+    try {
+      await api.approveTemplate(id);
+      setTemplates(prev => prev.map(t => 
+        t.id === id 
+          ? { ...t, approvalStatus: 'approved' as const, isPaused: false, status: 'active' as const }
+          : t
+      ));
+      addLog(`Template approved successfully.`, LogLevel.SUCCESS, 'AdminPanel');
+    } catch (error: any) {
+      addLog(`Failed to approve template: ${error.message}`, LogLevel.ERROR, 'AdminPanel');
+      alert(`Failed to approve template: ${error.message}`);
+    }
+  };
+
+  const handleRejectTemplate = (template: Template) => {
+    setSelectedTemplateForReject(template);
+    setShowRejectModal(true);
+  };
+
+  const confirmRejectTemplate = async () => {
+    if (!selectedTemplateForReject || !rejectionReason.trim()) {
+      alert('Please provide a rejection reason');
+      return;
+    }
+    try {
+      await api.rejectTemplate(selectedTemplateForReject.id, rejectionReason);
+      setTemplates(prev => prev.map(t => 
+        t.id === selectedTemplateForReject.id 
+          ? { ...t, approvalStatus: 'rejected' as const, rejectionReason: rejectionReason, isPaused: true }
+          : t
+      ));
+      addLog(`Template rejected: ${rejectionReason}`, LogLevel.WARN, 'AdminPanel');
+      setShowRejectModal(false);
+      setSelectedTemplateForReject(null);
+      setRejectionReason('');
+    } catch (error: any) {
+      addLog(`Failed to reject template: ${error.message}`, LogLevel.ERROR, 'AdminPanel');
+      alert(`Failed to reject template: ${error.message}`);
+    }
+  };
+
   const handleBulkUpload = async () => {
     if (!bulkFile) return;
     const reader = new FileReader();
@@ -1478,6 +1524,12 @@ export default function App() {
     const activeTemplates = templates.filter(t => t.approvalStatus === 'approved' && !t.isPaused).length;
     const premiumTemplates = templates.filter(t => t.isPremium).length;
     const draftTemplates = templates.filter(t => t.status === 'draft').length;
+    
+    // Separate Creator and Official stats
+    const officialTemplates = templates.filter(t => t.type === 'Official' || t.source === 'admin').length;
+    const creatorTemplates = templates.filter(t => t.type === 'Creator' || t.source === 'creator').length;
+    const pendingTemplates = templates.filter(t => t.approvalStatus === 'pending').length;
+    const rejectedTemplates = templates.filter(t => t.approvalStatus === 'rejected').length;
 
     const filteredTemplates = templates.filter(t => {
       const title = (t.title || '').toLowerCase();
@@ -1490,8 +1542,14 @@ export default function App() {
       const matchesPremium = templateFilterPremium === 'all'
         ? true
         : (templateFilterPremium === 'premium' ? t.isPremium : !t.isPremium);
+      // Template type filter (Official/Creator)
+      const matchesType = templateFilterType === 'all' 
+        ? true 
+        : (templateFilterType === 'official' 
+          ? (t.type === 'Official' || t.source === 'admin')
+          : (t.type === 'Creator' || t.source === 'creator'));
 
-      return matchesSearch && matchesCategory && matchesStatus && matchesPremium;
+      return matchesSearch && matchesCategory && matchesStatus && matchesPremium && matchesType;
     });
 
     const paginatedTemplates = filteredTemplates.slice((templatePage - 1) * itemsPerPage, templatePage * itemsPerPage);
@@ -1509,11 +1567,13 @@ export default function App() {
       <div className="space-y-6 animate-in fade-in duration-500">
 
         {/* Template Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <StatCard title="Total Templates" value={totalTemplates} icon={LayoutTemplate} color="blue" />
           <StatCard title="Active Templates" value={activeTemplates} icon={CheckCircle} color="green" trend={activeTemplates > 0 ? "Live" : ""} trendUp={true} />
-          <StatCard title="Drafts" value={draftTemplates} icon={FileText} color="orange" />
-          <StatCard title="Premium Templates" value={premiumTemplates} icon={Star} color="purple" />
+          <StatCard title="⭐ Official" value={officialTemplates} icon={Star} color="yellow" />
+          <StatCard title="👤 Creator" value={creatorTemplates} icon={UserIcon} color="indigo" />
+          <StatCard title="🟡 Pending Review" value={pendingTemplates} icon={Clock} color="orange" />
+          <StatCard title="🔴 Rejected" value={rejectedTemplates} icon={XCircle} color="red" />
         </div>
 
         <div className="flex flex-col gap-4 bg-gray-900 p-4 rounded-xl border border-gray-800">
@@ -1576,13 +1636,25 @@ export default function App() {
               </select>
 
               <select
+                value={templateFilterType}
+                onChange={(e) => setTemplateFilterType(e.target.value)}
+                className="bg-gray-950 border border-gray-700 text-gray-300 text-sm rounded-lg px-3 py-2 focus:outline-none max-w-[120px]"
+              >
+                <option value="all">All Templates</option>
+                <option value="official">⭐ Official</option>
+                <option value="creator">👤 Creator</option>
+              </select>
+
+              <select
                 value={templateFilterStatus}
                 onChange={(e) => setTemplateFilterStatus(e.target.value)}
-                className="bg-gray-950 border border-gray-700 text-gray-300 text-sm rounded-lg px-3 py-2 focus:outline-none max-w-[100px]"
+                className="bg-gray-950 border border-gray-700 text-gray-300 text-sm rounded-lg px-3 py-2 focus:outline-none max-w-[120px]"
               >
                 <option value="all">Any Status</option>
                 <option value="active">Active</option>
                 <option value="draft">Draft</option>
+                <option value="pending">Pending</option>
+                <option value="rejected">Rejected</option>
               </select>
 
               <select
@@ -1662,6 +1734,17 @@ export default function App() {
 
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-80 pointer-events-none"></div>
                   <div className="absolute top-2 right-2 flex gap-1 pointer-events-none">
+                    {/* Template Type Badge */}
+                    {(template.type === 'Official' || template.source === 'admin') && (
+                      <span className="px-2 py-0.5 bg-yellow-500/90 text-black text-[10px] font-bold rounded uppercase flex items-center gap-1 shadow-lg">
+                        <Star size={10} fill="black" /> OFFICIAL
+                      </span>
+                    )}
+                    {(template.type === 'Creator' || template.source === 'creator') && (
+                      <span className="px-2 py-0.5 bg-indigo-500/90 text-white text-[10px] font-bold rounded uppercase flex items-center gap-1 shadow-lg">
+                        👤 CREATOR
+                      </span>
+                    )}
                     {template.isPremium && <span className="px-2 py-0.5 bg-yellow-500/90 text-black text-[10px] font-bold rounded uppercase flex items-center gap-1 shadow-lg"><Star size={10} fill="black" /> Premium</span>}
                     {/* Status badge - show approval status, not just status field */}
                     {template.approvalStatus === 'pending' && (
@@ -1697,28 +1780,53 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="p-3 grid grid-cols-3 gap-2">
-                  <button
-                    onClick={() => handleDuplicateTemplate(template)}
-                    className="flex items-center justify-center gap-1.5 py-1.5 bg-gray-800 hover:bg-gray-700 rounded text-xs text-gray-300"
-                    title="Duplicate Template"
-                  >
-                    <Copy size={12} />
-                  </button>
-                  <button
-                    onClick={() => handleEditTemplate(template)}
-                    className="flex items-center justify-center gap-1.5 py-1.5 bg-gray-800 hover:bg-gray-700 rounded text-xs text-gray-300"
-                    title="Edit Template"
-                  >
-                    <Edit2 size={12} /> Edit
-                  </button>
-                  <button
-                    onClick={() => handleDeleteTemplate(template.id)}
-                    className="flex items-center justify-center gap-1.5 py-1.5 bg-red-900/20 hover:bg-red-900/40 text-red-400 rounded text-xs"
-                    title="Delete"
-                  >
-                    <Trash2 size={12} />
-                  </button>
+                <div className={`p-3 grid gap-2 ${(template.type === 'Creator' || template.source === 'creator') && template.approvalStatus === 'pending' ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                  {/* Review Actions for Pending Creator Templates */}
+                  {(template.type === 'Creator' || template.source === 'creator') && template.approvalStatus === 'pending' && (
+                    <>
+                      <button
+                        onClick={() => handleApproveTemplate(template.id)}
+                        className="flex items-center justify-center gap-1.5 py-1.5 bg-green-600 hover:bg-green-500 rounded text-xs text-white font-medium"
+                        title="Approve Template"
+                      >
+                        <CheckCircle size={12} /> Approve
+                      </button>
+                      <button
+                        onClick={() => handleRejectTemplate(template)}
+                        className="flex items-center justify-center gap-1.5 py-1.5 bg-red-600 hover:bg-red-500 rounded text-xs text-white font-medium"
+                        title="Reject Template"
+                      >
+                        <XCircle size={12} /> Reject
+                      </button>
+                    </>
+                  )}
+                  
+                  {/* Regular Actions */}
+                  {(!(template.type === 'Creator' || template.source === 'creator') || template.approvalStatus !== 'pending') && (
+                    <>
+                      <button
+                        onClick={() => handleDuplicateTemplate(template)}
+                        className="flex items-center justify-center gap-1.5 py-1.5 bg-gray-800 hover:bg-gray-700 rounded text-xs text-gray-300"
+                        title="Duplicate Template"
+                      >
+                        <Copy size={12} />
+                      </button>
+                      <button
+                        onClick={() => handleEditTemplate(template)}
+                        className="flex items-center justify-center gap-1.5 py-1.5 bg-gray-800 hover:bg-gray-700 rounded text-xs text-gray-300"
+                        title="Edit Template"
+                      >
+                        <Edit2 size={12} /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTemplate(template.id)}
+                        className="flex items-center justify-center gap-1.5 py-1.5 bg-red-900/20 hover:bg-red-900/40 text-red-400 rounded text-xs"
+                        title="Delete"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
@@ -1764,7 +1872,20 @@ export default function App() {
                     <td className="px-4 py-3 flex items-center gap-3">
                       <img src={template.imageUrl} alt={template.title} className="w-10 h-10 object-cover rounded-lg border border-gray-700" />
                       <div>
-                        <div className="font-bold text-white">{template.title}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="font-bold text-white">{template.title}</div>
+                          {/* Template Type Badge */}
+                          {(template.type === 'Official' || template.source === 'admin') && (
+                            <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded flex items-center gap-1">
+                              <Star size={8} fill="currentColor" /> OFFICIAL
+                            </span>
+                          )}
+                          {(template.type === 'Creator' || template.source === 'creator') && (
+                            <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded flex items-center gap-1">
+                              👤 CREATOR
+                            </span>
+                          )}
+                        </div>
                         {template.isPremium && <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded flex items-center gap-1 w-fit mt-0.5"><Star size={8} fill="currentColor" /> Premium</span>}
                       </div>
                     </td>
@@ -1803,15 +1924,40 @@ export default function App() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-2">
-                        <button onClick={() => handleDuplicateTemplate(template)} className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white" title="Duplicate">
-                          <Copy size={16} />
-                        </button>
-                        <button onClick={() => handleEditTemplate(template)} className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-indigo-400" title="Edit">
-                          <Edit2 size={16} />
-                        </button>
-                        <button onClick={() => handleDeleteTemplate(template.id)} className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-red-400" title="Delete">
-                          <Trash2 size={16} />
-                        </button>
+                        {/* Review Actions for Pending Creator Templates */}
+                        {(template.type === 'Creator' || template.source === 'creator') && template.approvalStatus === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handleApproveTemplate(template.id)}
+                              className="p-1.5 bg-green-600 hover:bg-green-500 rounded text-white" 
+                              title="Approve Template"
+                            >
+                              <CheckCircle size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleRejectTemplate(template)}
+                              className="p-1.5 bg-red-600 hover:bg-red-500 rounded text-white" 
+                              title="Reject Template"
+                            >
+                              <XCircle size={14} />
+                            </button>
+                          </>
+                        )}
+                        
+                        {/* Regular Actions */}
+                        {(!(template.type === 'Creator' || template.source === 'creator') || template.approvalStatus !== 'pending') && (
+                          <>
+                            <button onClick={() => handleDuplicateTemplate(template)} className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-white" title="Duplicate">
+                              <Copy size={16} />
+                            </button>
+                            <button onClick={() => handleEditTemplate(template)} className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-indigo-400" title="Edit">
+                              <Edit2 size={16} />
+                            </button>
+                            <button onClick={() => handleDeleteTemplate(template.id)} className="p-1.5 hover:bg-gray-700 rounded text-gray-400 hover:text-red-400" title="Delete">
+                              <Trash2 size={16} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -4933,6 +5079,54 @@ export default function App() {
               </button>
               <button
                 onClick={closeConfirmModal}
+                className="px-5 bg-gray-800 hover:bg-gray-700 text-gray-300 py-2.5 rounded-lg font-medium transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rejection Modal */}
+      {showRejectModal && selectedTemplateForReject && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-full bg-red-900/30 text-red-500 flex items-center justify-center">
+                <XCircle size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-white">Reject Template</h3>
+                <p className="text-gray-400 text-sm">Template: {selectedTemplateForReject.title}</p>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Rejection Reason <span className="text-red-400">*</span>
+              </label>
+              <textarea
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="Please provide a detailed reason for rejection. This will be shown to the creator."
+                className="w-full bg-gray-950 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 min-h-[120px] resize-none"
+                rows={4}
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={confirmRejectTemplate}
+                disabled={!rejectionReason.trim()}
+                className="flex-1 py-2.5 bg-red-600 hover:bg-red-500 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed rounded-lg font-bold text-white transition-colors"
+              >
+                Reject Template
+              </button>
+              <button
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setSelectedTemplateForReject(null);
+                  setRejectionReason('');
+                }}
                 className="px-5 bg-gray-800 hover:bg-gray-700 text-gray-300 py-2.5 rounded-lg font-medium transition-colors"
               >
                 Cancel

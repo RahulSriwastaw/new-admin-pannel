@@ -556,6 +556,39 @@ export const api = {
     }
   },
 
+  approveTemplate: async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/templates/${id}/approve`, {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || 'Failed to approve template');
+      }
+      return await res.json();
+    } catch (e) {
+      throw e;
+    }
+  },
+
+  rejectTemplate: async (id: string, reason: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/templates/${id}/reject`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ reason })
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || 'Failed to reject template');
+      }
+      return await res.json();
+    } catch (e) {
+      throw e;
+    }
+  },
+
   deleteTemplate: async (id: string) => {
     try {
       await fetch(`${API_BASE_URL}/admin/templates/${id}`, {
