@@ -630,14 +630,29 @@ export const api = {
 
   addCategory: async (category: Omit<Category, 'id'>) => {
     try {
+      console.log('📡 API addCategory called');
+      console.log('📤 URL:', `${API_BASE_URL}/admin/categories`);
+      console.log('📤 Data:', category);
+
       const res = await fetch(`${API_BASE_URL}/admin/categories`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify(category)
       });
-      if (res.ok) return await res.json();
-      throw new Error("Failed");
+
+      console.log('📡 Status:', res.status, res.statusText);
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('❌ Error response:', errorText);
+        throw new Error(`API Error ${res.status}: ${errorText}`);
+      }
+
+      const data = await res.json();
+      console.log('✅ Response:', data);
+      return data.category || data;
     } catch (e) {
+      console.error('❌ addCategory failed:', e);
       throw e;
     }
   },
