@@ -255,6 +255,7 @@ export default function App() {
   const [newSubCategoryInput, setNewSubCategoryInput] = useState('');
   const [isEditingCategory, setIsEditingCategory] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
   const [templateFile, setTemplateFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
@@ -1195,6 +1196,9 @@ export default function App() {
   };
 
   const handleSaveCategory = async () => {
+    if (isSavingCategory) return;
+    setIsSavingCategory(true);
+
     console.log('🔵 handleSaveCategory called');
     console.log('📝 Category data:', newCategory);
 
@@ -1232,11 +1236,14 @@ export default function App() {
 
       // Refresh categories from backend
       const updatedCategories = await api.getCategories();
+      console.log('🔄 Refreshed categories');
       setCategories(updatedCategories);
     } catch (error: any) {
       console.error('❌ Error:', error);
       addLog(error?.message || 'Failed to save category', LogLevel.ERROR, 'Backend');
       alert(`❌ Error: ${error?.message || 'Failed to save'}`);
+    } finally {
+      setIsSavingCategory(false);
     }
   };
 
@@ -2002,8 +2009,9 @@ export default function App() {
                     <button onClick={handleAddSubCategory} disabled={!newSubCategoryInput} className="p-2 bg-gray-800 hover:bg-gray-700 rounded text-gray-300"><Plus size={16} /></button>
                   </div>
                 </div>
-                <button onClick={handleSaveCategory} disabled={!newCategory.name} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-medium h-[38px]">
-                  {isEditingCategory ? 'Update' : 'Create'}
+                <button onClick={handleSaveCategory} disabled={!newCategory.name || isSavingCategory} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-medium h-[38px] disabled:opacity-50">
+                  {isSavingCategory ? 'Saving...' : (isEditingCategory ? 'Update' : 'Create')}
+
                 </button>
                 {isEditingCategory && (
                   <button
