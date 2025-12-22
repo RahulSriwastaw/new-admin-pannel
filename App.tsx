@@ -1115,6 +1115,13 @@ export default function App() {
   };
 
   const handleDeletePackage = async (id: string) => {
+    if (!id || id === 'undefined' || id === 'null' || id === '') {
+      console.error('Invalid package ID for deletion:', id);
+      addLog(`Cannot delete package: Invalid ID`, LogLevel.ERROR, "AdminPanel");
+      return;
+    }
+    const packageId = String(id);
+    console.log('Deleting package with ID:', packageId);
     setConfirmModal({
       isOpen: true,
       title: 'Delete Package',
@@ -1123,10 +1130,16 @@ export default function App() {
       confirmText: 'Delete',
       onConfirm: async () => {
         try {
-          await api.deletePointsPackage(id);
-          setPointsPackages(prev => prev.filter(p => p.id !== id));
+          console.log('Confirming deletion for package ID:', packageId);
+          await api.deletePointsPackage(packageId);
+          setPointsPackages(prev => {
+            const filtered = prev.filter(p => String(p.id) !== packageId);
+            console.log('Packages after deletion:', filtered.length, 'remaining out of', prev.length);
+            return filtered;
+          });
           setShowPackageModal(false);
-          addLog(`Package deleted.`, LogLevel.WARN, "AdminPanel");
+          setActivePackage(null);
+          addLog(`Package deleted successfully.`, LogLevel.SUCCESS, "AdminPanel");
           closeConfirmModal();
         } catch (error: any) {
           console.error('Failed to delete package:', error);
@@ -2580,9 +2593,19 @@ export default function App() {
                       <Edit2 size={14} />
                     </button>
                     <button 
-                      onClick={(e) => { e.stopPropagation(); handleDeletePackage(pkg.id); }} 
+                      onClick={(e) => { 
+                        e.preventDefault();
+                        e.stopPropagation(); 
+                        console.log('Delete button clicked for package:', pkg);
+                        if (!pkg || !pkg.id) {
+                          console.error('Package or Package ID is missing for delete', pkg);
+                          return;
+                        }
+                        handleDeletePackage(String(pkg.id)); 
+                      }} 
                       className="text-gray-500 hover:text-red-400 p-1" 
                       aria-label="Delete Package"
+                      type="button"
                     >
                       <Trash2 size={14} />
                     </button>

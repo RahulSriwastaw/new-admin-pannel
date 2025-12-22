@@ -245,7 +245,7 @@ export const api = {
   getTransactions: () => fetchWithFallback<Transaction[]>('/admin/finance/transactions', [] as any),
 
   // Points Packages
-  getPointsPackages: () => fetchWithFallback<PointsPackage[]>('/packages', [] as any),
+  getPointsPackages: () => fetchWithFallback<PointsPackage[]>('/admin/finance/packages', [] as any),
 
   addPointsPackage: async (pkg: Omit<PointsPackage, 'id'>) => {
     try {
