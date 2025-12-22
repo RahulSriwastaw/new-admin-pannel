@@ -1195,6 +1195,9 @@ export default function App() {
   };
 
   const handleSaveCategory = async () => {
+    console.log('🔵 handleSaveCategory called');
+    console.log('📝 Category data:', newCategory);
+
     try {
       if (!newCategory.name.trim()) {
         alert('Category name is required');
@@ -1217,9 +1220,12 @@ export default function App() {
         addLog(`Category '${newCategory.name}' updated.`, LogLevel.SUCCESS, 'AdminPanel');
       } else {
         // CREATE new category
+        console.log('➕ Creating category:', newCategory);
         const created = await api.addCategory(newCategory);
+        console.log('✅ Created:', created);
         setCategories(prev => [...prev, created]);
         addLog(`Category '${created.name}' added.`, LogLevel.SUCCESS, 'AdminPanel');
+        alert(`✅ Category created: ${created.name}`);
       }
 
       handleCloseCategoryModal();
@@ -1228,8 +1234,9 @@ export default function App() {
       const updatedCategories = await api.getCategories();
       setCategories(updatedCategories);
     } catch (error: any) {
-      console.error('Error saving category:', error);
+      console.error('❌ Error:', error);
       addLog(error?.message || 'Failed to save category', LogLevel.ERROR, 'Backend');
+      alert(`❌ Error: ${error?.message || 'Failed to save'}`);
     }
   };
 
