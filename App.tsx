@@ -2544,7 +2544,20 @@ export default function App() {
                   </div>
                   <div className="flex items-center gap-2">
                     <button 
-                      onClick={(e) => { e.stopPropagation(); setActivePackage(pkg); setShowPackageModal(true); }} 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setActivePackage({
+                          id: pkg.id,
+                          name: pkg.name || '',
+                          price: pkg.price || 0,
+                          points: pkg.points || 0,
+                          bonusPoints: pkg.bonusPoints || 0,
+                          isPopular: pkg.isPopular || false,
+                          isActive: pkg.isActive !== undefined ? pkg.isActive : true,
+                          tag: pkg.tag || ''
+                        } as PointsPackage); 
+                        setShowPackageModal(true); 
+                      }} 
                       className="text-gray-500 hover:text-white p-1" 
                       aria-label="Edit Package"
                     >
@@ -2610,17 +2623,18 @@ export default function App() {
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-sm w-full">
             <h3 className="text-lg font-bold text-white mb-4">{activePackage.id.startsWith('new') ? 'New Package' : 'Edit Package'}</h3>
             <div className="space-y-3">
-              <input type="text" placeholder="Name" value={activePackage.name} onChange={e => setActivePackage({ ...activePackage, name: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
+              <input type="text" placeholder="Name" value={activePackage.name || ''} onChange={e => setActivePackage({ ...activePackage, name: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
               <div className="grid grid-cols-2 gap-3">
-                <input type="number" placeholder="Price" value={activePackage.price} onChange={e => setActivePackage({ ...activePackage, price: parseFloat(e.target.value) })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
-                <input type="number" placeholder="Points" value={activePackage.points} onChange={e => setActivePackage({ ...activePackage, points: parseFloat(e.target.value) })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
+                <input type="number" placeholder="Price" value={activePackage.price || 0} onChange={e => setActivePackage({ ...activePackage, price: parseFloat(e.target.value) || 0 })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
+                <input type="number" placeholder="Points" value={activePackage.points || 0} onChange={e => setActivePackage({ ...activePackage, points: parseFloat(e.target.value) || 0 })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
               </div>
+              <input type="number" placeholder="Bonus Points (optional)" value={activePackage.bonusPoints || 0} onChange={e => setActivePackage({ ...activePackage, bonusPoints: parseFloat(e.target.value) || 0 })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
               <input type="text" placeholder="Tag (e.g. Best Value)" value={activePackage.tag || ''} onChange={e => setActivePackage({ ...activePackage, tag: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
               <label className="flex items-center gap-2 text-sm text-gray-300">
-                <input type="checkbox" checked={activePackage.isPopular} onChange={e => setActivePackage({ ...activePackage, isPopular: e.target.checked })} /> Mark as Popular
+                <input type="checkbox" checked={activePackage.isPopular || false} onChange={e => setActivePackage({ ...activePackage, isPopular: e.target.checked })} /> Mark as Popular
               </label>
               <label className="flex items-center gap-2 text-sm text-gray-300">
-                <input type="checkbox" checked={activePackage.isActive} onChange={e => setActivePackage({ ...activePackage, isActive: e.target.checked })} /> Active
+                <input type="checkbox" checked={activePackage.isActive !== undefined ? activePackage.isActive : true} onChange={e => setActivePackage({ ...activePackage, isActive: e.target.checked })} /> Active
               </label>
             </div>
             <div className="flex gap-2 mt-6">
