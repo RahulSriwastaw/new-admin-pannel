@@ -253,6 +253,8 @@ export default function App() {
   });
   const [newCategory, setNewCategory] = useState({ name: '', subCategories: [] as string[] });
   const [newSubCategoryInput, setNewSubCategoryInput] = useState('');
+  const [isEditingCategory, setIsEditingCategory] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [templateFile, setTemplateFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
@@ -1193,11 +1195,60 @@ export default function App() {
   };
 
   const handleSaveCategory = async () => {
-    if (!newCategory.name) return;
-    const created = await api.addCategory(newCategory);
-    setCategories(prev => [...prev, created]);
+    try {
+      if (!newCategory.name.trim()) {
+        alert('Category name is required');
+        return;
+      }
+
+      if (isEditingCategory && editingCategoryId) {
+        // UPDATE existing category
+        await api.updateCategory(editingCategoryId, {
+          name: newCategory.name,
+          subCategories: newCategory.subCategories
+        });
+
+        setCategories(prev => prev.map(cat =>
+          cat.id === editingCategoryId
+            ? { ...cat, name: newCategory.name, subCategories: newCategory.subCategories }
+            : cat
+        ));
+
+        addLog(`Category '${newCategory.name}' updated.`, LogLevel.SUCCESS, 'AdminPanel');
+      } else {
+        // CREATE new category
+        const created = await api.addCategory(newCategory);
+        setCategories(prev => [...prev, created]);
+        addLog(`Category '${created.name}' added.`, LogLevel.SUCCESS, 'AdminPanel');
+      }
+
+      handleCloseCategoryModal();
+
+      // Refresh categories from backend
+      const updatedCategories = await api.getCategories();
+      setCategories(updatedCategories);
+    } catch (error: any) {
+      console.error('Error saving category:', error);
+      addLog(error?.message || 'Failed to save category', LogLevel.ERROR, 'Backend');
+    }
+  };
+
+  const handleEditCategory = (category: Category) => {
+    setIsEditingCategory(true);
+    setEditingCategoryId(category.id);
+    setNewCategory({
+      name: category.name,
+      subCategories: [...category.subCategories]
+    });
+    setShowCategoryModal(true);
+  };
+
+  const handleCloseCategoryModal = () => {
+    setShowCategoryModal(false);
+    setIsEditingCategory(false);
+    setEditingCategoryId(null);
     setNewCategory({ name: '', subCategories: [] });
-    addLog(`Category ${created.name} added.`, LogLevel.SUCCESS, 'AdminPanel');
+    setNewSubCategoryInput('');
   };
 
   const handleAddSubCategory = () => {
@@ -1908,17 +1959,21 @@ export default function App() {
                 <div>
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
                     <FolderTree size={20} className="text-indigo-400" />
-                    Manage Categories
+                    {isEditingCategory ? 'Edit Category' : 'Manage Categories'}
                   </h3>
-                  <p className="text-sm text-gray-400">Add, edit, or remove categories and sub-categories.</p>
+                  <p className="text-sm text-gray-400">
+                    {isEditingCategory ? 'Update category name and sub-categories' : 'Add, edit, or remove categories and sub-categories.'}
+                  </p>
                 </div>
-                <button onClick={() => setShowCategoryModal(false)} className="text-gray-500 hover:text-white"><X size={20} /></button>
+                <button onClick={handleCloseCategoryModal} className="text-gray-500 hover:text-white"><X size={20} /></button>
               </div>
 
               {/* Add New Category Form */}
               <div className="bg-gray-950 p-4 rounded-lg border border-gray-800 mb-6 flex gap-3 items-end">
                 <div className="flex-1">
-                  <label className="text-xs text-gray-500 uppercase block mb-1">New Category Name</label>
+                  <label className="text-xs text-gray-500 uppercase block mb-1">
+                    {isEditingCategory ? 'Category Name' : 'New Category Name'}
+                  </label>
                   <input
                     type="text"
                     value={newCategory.name}
@@ -1941,8 +1996,16 @@ export default function App() {
                   </div>
                 </div>
                 <button onClick={handleSaveCategory} disabled={!newCategory.name} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-medium h-[38px]">
-                  Create
+                  {isEditingCategory ? 'Update' : 'Create'}
                 </button>
+                {isEditingCategory && (
+                  <button
+                    onClick={handleCloseCategoryModal}
+                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm font-medium h-[38px]"
+                  >
+                    Cancel
+                  </button>
+                )}
               </div>
 
               {/* Staged Sub-categories */}
@@ -1957,25 +2020,30 @@ export default function App() {
                 </div>
               )}
 
-              {/* Existing Categories List */}
-              <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-                {categories.map(cat => (
-                  <div key={cat.id} className="bg-gray-950 border border-gray-800 rounded-lg p-4 group">
-                    <div className="flex justify-between items-center mb-3">
-                      <h4 className="font-bold text-white flex items-center gap-2"><FolderPlus size={16} className="text-gray-500" /> {cat.name}</h4>
-                      <button onClick={() => handleDeleteCategory(cat.id)} className="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16} /></button>
+              {/* Existing Categories List - Hide when editing */}
+              {!isEditingCategory && (
+                <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                  {categories.map(cat => (
+                    <div key={cat.id} className="bg-gray-950 border border-gray-800 rounded-lg p-4 group">
+                      <div className="flex justify-between items-center mb-3">
+                        <h4 className="font-bold text-white flex items-center gap-2"><FolderPlus size={16} className="text-gray-500" /> {cat.name}</h4>
+                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => handleEditCategory(cat)} className="text-gray-600 hover:text-indigo-400" title="Edit Category"><Edit2 size={16} /></button>
+                          <button onClick={() => handleDeleteCategory(cat.id)} className="text-gray-600 hover:text-red-400" title="Delete Category"><Trash2 size={16} /></button>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {cat.subCategories.map((sub, idx) => (
+                          <span key={idx} className="text-xs bg-gray-800 text-gray-300 px-2 py-1 rounded border border-gray-700">
+                            {sub}
+                          </span>
+                        ))}
+                        {cat.subCategories.length === 0 && <span className="text-xs text-gray-600 italic">No sub-categories</span>}
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {cat.subCategories.map((sub, idx) => (
-                        <span key={idx} className="text-xs bg-gray-800 text-gray-300 px-2 py-1 rounded border border-gray-700">
-                          {sub}
-                        </span>
-                      ))}
-                      {cat.subCategories.length === 0 && <span className="text-xs text-gray-600 italic">No sub-categories</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -3722,16 +3790,16 @@ export default function App() {
                   <label className="text-xs text-gray-500 uppercase block mb-1">
                     {newModel.provider === 'Replicate' ? 'Replicate Model ID' : 'Google Model ID (Optional)'}
                   </label>
-                  <input 
-                    type="text" 
-                    value={(newModel as any).modelId || ''} 
-                    onChange={e => setNewModel({ ...newModel, modelId: e.target.value } as any)} 
-                    className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" 
-                    placeholder={newModel.provider === 'Replicate' ? "owner/model_name:version" : "gemini-2.5-flash-image"} 
+                  <input
+                    type="text"
+                    value={(newModel as any).modelId || ''}
+                    onChange={e => setNewModel({ ...newModel, modelId: e.target.value } as any)}
+                    className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                    placeholder={newModel.provider === 'Replicate' ? "owner/model_name:version" : "gemini-2.5-flash-image"}
                   />
                   <p className="text-[10px] text-gray-500 mt-1">
-                    {newModel.provider === 'Replicate' 
-                      ? "Example: stability-ai/sdxl:39ed52f2..." 
+                    {newModel.provider === 'Replicate'
+                      ? "Example: stability-ai/sdxl:39ed52f2..."
                       : "Defaults to gemini-2.5-flash-image (Nano Banana). Supports gemini-3.0-pro-image."}
                   </p>
                 </div>
