@@ -306,23 +306,31 @@ export const api = {
         headers: getAuthHeaders(),
         body: JSON.stringify(config)
       });
-      if (res.ok) return await res.json();
-      throw new Error("Failed");
-    } catch (e) {
-      throw e;
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'Failed to create gateway' }));
+        throw new Error(error.error || error.message || 'Failed to create gateway');
+      }
+      return await res.json();
+    } catch (e: any) {
+      throw new Error(e.message || 'Failed to create gateway');
     }
   },
 
   updateGatewayConfig: async (id: string, config: Partial<PaymentGatewayConfig>) => {
     try {
-      await fetch(`${API_BASE_URL}/admin/finance/gateways/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/admin/finance/gateways/${id}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(config)
       });
-      return true;
-    } catch (e) {
-      throw e;
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'Failed to update gateway' }));
+        throw new Error(error.error || error.message || 'Failed to update gateway');
+      }
+      const updated = await res.json();
+      return updated;
+    } catch (e: any) {
+      throw new Error(e.message || 'Failed to update gateway');
     }
   },
 

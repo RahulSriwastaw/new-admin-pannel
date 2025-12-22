@@ -1152,18 +1152,23 @@ export default function App() {
 
   const handleSaveGateway = async () => {
     if (!activeGateway) return;
-    if (String(activeGateway.id).startsWith('new')) {
-      const { id, ...gwData } = activeGateway;
-      const created = await api.createPaymentGateway(gwData);
-      setPaymentGateways(prev => [...prev, created]);
-      addLog(`Gateway '${created.name}' created.`, LogLevel.SUCCESS, "AdminPanel");
-    } else {
-      await api.updateGatewayConfig(activeGateway.id, activeGateway);
-      setPaymentGateways(prev => prev.map(g => g.id === activeGateway.id ? activeGateway : g));
-      addLog(`Gateway '${activeGateway.name}' configuration saved.`, LogLevel.SUCCESS, "AdminPanel");
+    try {
+      if (String(activeGateway.id).startsWith('new')) {
+        const { id, ...gwData } = activeGateway;
+        const created = await api.createPaymentGateway(gwData);
+        setPaymentGateways(prev => [...prev, created]);
+        addLog(`Gateway '${created.name}' created.`, LogLevel.SUCCESS, "AdminPanel");
+      } else {
+        const updated = await api.updateGatewayConfig(activeGateway.id, activeGateway);
+        setPaymentGateways(prev => prev.map(g => g.id === activeGateway.id ? updated : g));
+        addLog(`Gateway '${activeGateway.name}' configuration saved.`, LogLevel.SUCCESS, "AdminPanel");
+      }
+      setShowGatewayModal(false);
+      setActiveGateway(null);
+    } catch (error: any) {
+      console.error('Failed to save gateway:', error);
+      addLog(`Failed to save gateway: ${error.message || 'Unknown error'}`, LogLevel.ERROR, "AdminPanel");
     }
-    setShowGatewayModal(false);
-    setActiveGateway(null);
   };
 
   const handleTestGateway = async (gateway: PaymentGatewayConfig) => {
