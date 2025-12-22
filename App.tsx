@@ -2545,12 +2545,14 @@ export default function App() {
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={(e) => { 
+                        e.preventDefault();
                         e.stopPropagation(); 
-                        if (!pkg.id) {
-                          console.error('Package ID is missing');
+                        console.log('Edit button clicked for package:', pkg);
+                        if (!pkg || !pkg.id) {
+                          console.error('Package or Package ID is missing', pkg);
                           return;
                         }
-                        setActivePackage({
+                        const packageData: PointsPackage = {
                           id: String(pkg.id),
                           name: String(pkg.name || ''),
                           price: Number(pkg.price || 0),
@@ -2559,11 +2561,15 @@ export default function App() {
                           isPopular: Boolean(pkg.isPopular || false),
                           isActive: pkg.isActive !== undefined ? Boolean(pkg.isActive) : true,
                           tag: String(pkg.tag || '')
-                        } as PointsPackage); 
-                        setShowPackageModal(true); 
+                        };
+                        console.log('Setting active package:', packageData);
+                        setActivePackage(packageData);
+                        console.log('Opening modal');
+                        setShowPackageModal(true);
                       }} 
                       className="text-gray-500 hover:text-white p-1" 
                       aria-label="Edit Package"
+                      type="button"
                     >
                       <Edit2 size={14} />
                     </button>
@@ -2622,7 +2628,7 @@ export default function App() {
       </div>
 
       {/* Package Modal */}
-      {showPackageModal && activePackage && activePackage.id && (
+      {showPackageModal && activePackage && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-sm w-full">
             <h3 className="text-lg font-bold text-white mb-4">{String(activePackage.id).startsWith('new') ? 'New Package' : 'Edit Package'}</h3>
