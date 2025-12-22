@@ -174,9 +174,7 @@ export interface PaymentGatewayConfig {
   provider: 'Razorpay' | 'Stripe' | 'PayPal' | 'PhonePe';
   isActive: boolean;
   isTestMode: boolean;
-  publicKey: string;
-  secretKey: string;
-  webhookSecret?: string;
+  // Credentials (publicKey, secretKey) are stored in environment variables, not in database
 }
 
 export interface FinanceConfig {

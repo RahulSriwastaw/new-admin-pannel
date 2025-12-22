@@ -20,7 +20,7 @@ import {
   X, Check, Ban, FileText, Globe, Plus, Save, Calendar, ArrowRightLeft, ArrowUp, ArrowDown, ArrowUpDown,
   BrainCircuit, UserCheck, UserX, AlertTriangle, HelpCircle, Key, Trash2, Edit2, LayoutTemplate,
   UploadCloud, Link as LinkIcon, Download, Copy, Image as ImageIcon, Wallet, Zap, ToggleRight, ToggleLeft, Shield, ShieldAlert, Send, BellRing, Smartphone, Mail, Filter, DollarSign, Clock, Sparkles, LayoutDashboard, UserPlus, Camera,
-  MoreHorizontal, User as UserIcon, LayoutList, Grid, Instagram, Twitter, Youtube, Briefcase, TrendingUp, CheckSquare, XSquare, Eye, Award, ChevronLeft, ChevronRight, FileDown, Layers, Star, Grid3X3, FolderTree, FolderPlus, LogOut, BellOff, Heart, XCircle
+  MoreHorizontal, User as UserIcon, LayoutList, Grid, Instagram, Twitter, Youtube, Briefcase, TrendingUp, CheckSquare, XSquare, Eye, Award, ChevronLeft, ChevronRight, FileDown, Layers, Star, Grid3X3, FolderTree, FolderPlus, LogOut, BellOff, Heart, XCircle, Info
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -2727,14 +2727,18 @@ export default function App() {
                   </select>
                 </div>
               </div>
-              <div>
-                <label className="text-xs text-gray-500 uppercase block mb-1">Public Key</label>
-                <input type="text" value={activeGateway.publicKey} onChange={e => setActiveGateway({ ...activeGateway, publicKey: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white font-mono text-xs" />
+              
+              {/* Environment Variable Notice */}
+              <div className="bg-blue-950/30 border border-blue-800/50 rounded p-3">
+                <div className="flex items-start gap-2">
+                  <Info size={16} className="text-blue-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-blue-300">
+                    <p className="font-semibold mb-1">Credentials Configuration</p>
+                    <p>Payment gateway credentials are configured in environment variables. Contact administrator to update credentials in Render dashboard.</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="text-xs text-gray-500 uppercase block mb-1">Secret Key</label>
-                <input type="password" value={activeGateway.secretKey} onChange={e => setActiveGateway({ ...activeGateway, secretKey: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white font-mono text-xs" />
-              </div>
+
               <div className="flex items-center justify-between bg-gray-950 p-3 rounded border border-gray-800">
                 <span className="text-sm text-gray-300">Test Mode</span>
                 <button
