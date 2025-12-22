@@ -1474,7 +1474,8 @@ export default function App() {
   const renderTemplates = () => {
     // Stats calculation
     const totalTemplates = templates.length;
-    const activeTemplates = templates.filter(t => t.status === 'active').length;
+    // CRITICAL: Active templates = approved + not paused (LIVE templates only)
+    const activeTemplates = templates.filter(t => t.approvalStatus === 'approved' && !t.isPaused).length;
     const premiumTemplates = templates.filter(t => t.isPremium).length;
     const draftTemplates = templates.filter(t => t.status === 'draft').length;
 
@@ -1662,8 +1663,27 @@ export default function App() {
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-80 pointer-events-none"></div>
                   <div className="absolute top-2 right-2 flex gap-1 pointer-events-none">
                     {template.isPremium && <span className="px-2 py-0.5 bg-yellow-500/90 text-black text-[10px] font-bold rounded uppercase flex items-center gap-1 shadow-lg"><Star size={10} fill="black" /> Premium</span>}
-                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded uppercase shadow-lg ${template.status === 'active' ? 'bg-green-500/90 text-white' : 'bg-gray-500/90 text-gray-200'}`}>
-                      {template.status}
+                    {/* Status badge - show approval status, not just status field */}
+                    {template.approvalStatus === 'pending' && (
+                      <span className="px-2 py-0.5 text-[10px] font-bold rounded uppercase shadow-lg bg-orange-500/90 text-white">
+                        PENDING
+                      </span>
+                    )}
+                    {template.approvalStatus === 'approved' && !template.isPaused && (
+                      <span className="px-2 py-0.5 text-[10px] font-bold rounded uppercase shadow-lg bg-green-500/90 text-white">
+                        LIVE
+                      </span>
+                    )}
+                    {template.approvalStatus === 'approved' && template.isPaused && (
+                      <span className="px-2 py-0.5 text-[10px] font-bold rounded uppercase shadow-lg bg-gray-500/90 text-gray-200">
+                        PAUSED
+                      </span>
+                    )}
+                    {template.approvalStatus === 'rejected' && (
+                      <span className="px-2 py-0.5 text-[10px] font-bold rounded uppercase shadow-lg bg-red-500/90 text-white">
+                        REJECTED
+                      </span>
+                    )}
                     </span>
                   </div>
                   <div className="absolute bottom-0 left-0 p-4 w-full pointer-events-none">
@@ -1760,8 +1780,27 @@ export default function App() {
                       {template.useCount} uses
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${template.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'}`}>
-                        {template.status}
+                      {/* Status badge - show approval status */}
+                      {template.approvalStatus === 'pending' && (
+                        <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-orange-500/20 text-orange-400">
+                          PENDING
+                        </span>
+                      )}
+                      {template.approvalStatus === 'approved' && !template.isPaused && (
+                        <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-green-500/20 text-green-400">
+                          LIVE
+                        </span>
+                      )}
+                      {template.approvalStatus === 'approved' && template.isPaused && (
+                        <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-gray-700 text-gray-400">
+                          PAUSED
+                        </span>
+                      )}
+                      {template.approvalStatus === 'rejected' && (
+                        <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-red-500/20 text-red-400">
+                          REJECTED
+                        </span>
+                      )}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
