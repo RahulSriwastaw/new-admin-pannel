@@ -1,0 +1,65 @@
+// QUICK FIX FOR DUPLICATE API CALLS
+// Copy paste these specific changes into App.tsx
+
+// ============================================================
+// CHANGE 1: Line 1198 - Add duplicate call prevention
+// ============================================================
+
+// FIND this (around line 1198):
+/*
+  const handleSaveCategory = async () => {
+    console.log('🔵 handleSaveCategory called');
+    console.log('📝 Category data:', newCategory);
+    
+    try {
+*/
+
+// REPLACE with:
+/*
+  const handleSaveCategory = async () => {
+    if (isSavingCategory) {
+      console.log('⚠️ Already saving, ignoring duplicate click');
+      return;
+    }
+    
+    console.log('🔵 handleSaveCategory called');
+    console.log('📝 Category data:', newCategory);
+    
+    setIsSavingCategory(true);
+    
+    try {
+*/
+
+// ============================================================
+// CHANGE 2: Line 2009 - Disable button while saving
+// ============================================================
+
+// FIND this (around line 2009):
+/*
+<button onClick={handleSaveCategory} disabled={!newCategory.name} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-medium h-[38px]">
+  {isEditingCategory ? 'Update' : 'Create'}
+</button>
+*/
+
+// REPLACE with:
+/*
+<button 
+  onClick={handleSaveCategory} 
+  disabled={!newCategory.name || isSavingCategory} 
+  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-medium h-[38px] disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  {isSavingCategory ? 'Saving...' : (isEditingCategory ? 'Update' : 'Create')}
+</button>
+*/
+
+// ============================================================
+// THAT'S IT!
+// ============================================================
+
+/*
+This will:
+1. Prevent duplicate API calls when button is clicked multiple times
+2. Show "Saving..." text while creating
+3. Disable button during API call
+4. Re-enable button after API completes (success or error)
+*/
