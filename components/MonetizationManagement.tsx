@@ -572,7 +572,21 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
     startTime: popup?.startTime ? new Date(popup.startTime).toISOString().slice(0, 16) : '',
     endTime: popup?.endTime ? new Date(popup.endTime).toISOString().slice(0, 16) : '',
     isEnabled: popup?.isEnabled !== false,
-    // Text Content Management
+    // Template-Based System
+    templateId: popup?.templateId || 'CENTER_MODAL',
+    templateData: popup?.templateData || {
+      leftImageUrl: popup?.image || '',
+      leftOverlayText: '',
+      tags: [],
+      mainHeading: '',
+      subHeading: '',
+      description: '',
+      features: [],
+      ctaText: popup?.ctaText || 'Get Discount Now',
+      ctaAction: 'apply_offer',
+      ctaUrl: ''
+    },
+    // Text Content Management (for legacy templates)
     textContent: popup?.textContent || {
       brandText: '',
       showBrandText: false,
