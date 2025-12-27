@@ -486,14 +486,17 @@ export function MonetizationManagement() {
             try {
               if (editingItem?._id) {
                 await api.updatePopup(editingItem._id, popupData);
+                alert('✅ Popup updated successfully!');
               } else {
                 await api.createPopup(popupData);
+                alert('✅ Popup created successfully!');
               }
               setShowPopupModal(false);
               setEditingItem(null);
               loadData();
             } catch (error: any) {
-              alert(`Error: ${error.message}`);
+              // Error is handled in modal, but re-throw to prevent modal close
+              throw error;
             }
           }}
         />
@@ -858,46 +861,126 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
             Enabled
           </label>
 
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 text-sm text-red-400">
+              {error}
+            </div>
+          )}
+
           <div className="flex gap-2 pt-4">
             <button
               onClick={async () => {
                 try {
-                  setIsUploading(true);
-                  let finalImageUrl = formData.image;
+                  setError(null);
+                  setIsSaving(true);
 
-                  // If a file is selected, upload it first
-                  if (imageFile) {
-                    finalImageUrl = await api.uploadImage(imageFile);
-                  }
-
-                  if (!finalImageUrl) {
-                    alert('Please upload an image or provide a valid URL.');
-                    setIsUploading(false);
+                  // Validate required fields
+                  if (!formData.title || !formData.description) {
+                    setError('Title and description are required');
+                    setIsSaving(false);
                     return;
                   }
 
-                  await onSave({
-                    ...formData,
-                    image: finalImageUrl,
-                    startTime: formData.startTime ? new Date(formData.startTime).toISOString() : '',
-                    endTime: formData.endTime ? new Date(formData.endTime).toISOString() : ''
-                  });
-                } catch (error: any) {
-                  alert(`Upload failed: ${error.message}`);
+                  if (!formData.startTime || !formData.endTime) {
+                    setError('Start time and end time are required');
+                    setIsSaving(false);
+                    return;
+                  }
+
+                  // Validate date range
+                  const startDate = new Date(formData.startTime);
+                  const endDate = new Date(formData.endTime);
+                  if (startDate >= endDate) {
+                    setError('Start time must be before end time');
+                    setIsSaving(false);
+                    return;
+                  }
+
+                  // Prepare payload - only send defined fields, remove empty strings
+                  let finalImageUrl = formData.image;
+
+                  // Handle image upload if new file selected
+                  if (imageFile) {
+                    setIsUploading(true);
+                    try {
+                      const uploadRes = await api.uploadImage(imageFile);
+                      finalImageUrl = uploadRes.url;
+                    } catch (uploadError: any) {
+                      setError(`Image upload failed: ${uploadError.message}`);
+                      setIsUploading(false);
+                      setIsSaving(false);
+                      return;
+                    }
+                    setIsUploading(false);
+                  }
+
+                  // Build payload - only include fields that are defined
+                  const payload: any = {
+                    title: formData.title,
+                    description: formData.description,
+                    ctaText: formData.ctaText,
+                    ctaAction: formData.ctaAction,
+                    popupType: formData.popupType,
+                    targetUsers: formData.targetUsers,
+                    frequency: formData.frequency,
+                    priority: Number(formData.priority) || 0,
+                    isEnabled: formData.isEnabled,
+                    startTime: new Date(formData.startTime).toISOString(),
+                    endTime: new Date(formData.endTime).toISOString()
+                  };
+
+                  // Only include image if it's provided (new upload or existing URL)
+                  // In edit mode, if no new image and no URL, keep existing image
+                  if (finalImageUrl) {
+                    payload.image = finalImageUrl;
+                  } else if (!isEditMode) {
+                    // Only require image for new popups
+                    setError('Please upload an image or provide a valid URL');
+                    setIsSaving(false);
+                    return;
+                  }
+
+                  // Include optional fields only if they have values
+                  if (formData.ctaUrl) {
+                    payload.ctaUrl = formData.ctaUrl;
+                  }
+
+                  if (formData.frequency === 'once_per_X_hours') {
+                    payload.frequencyHours = Number(formData.frequencyHours) || 24;
+                  }
+
+                  // Call onSave with payload
+                  await onSave(payload);
+                  
+                  // Success - modal will close from parent
+                } catch (err: any) {
+                  console.error('Error saving popup:', err);
+                  setError(err.message || 'Failed to save popup');
                 } finally {
+                  setIsSaving(false);
                   setIsUploading(false);
                 }
               }}
-              disabled={isUploading}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 disabled:cursor-not-allowed text-white py-2 rounded-lg font-medium"
+              disabled={isSaving || isUploading}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              <Save className="inline mr-2" size={16} />
-              {isUploading ? 'Uploading...' : 'Save'}
+              {isSaving || isUploading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  {isUploading ? 'Uploading...' : 'Saving...'}
+                </>
+              ) : (
+                <>
+                  <Save className="inline" size={16} />
+                  {isEditMode ? 'Update Popup' : 'Create Popup'}
+                </>
+              )}
             </button>
             <button
               onClick={onClose}
-              disabled={isUploading}
-              className="px-4 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-300 py-2 rounded-lg font-medium"
+              disabled={isSaving || isUploading}
+              className="px-4 bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
