@@ -4,6 +4,7 @@ import { Terminal } from './components/Terminal';
 import { ConnectionVisualizer } from './components/ConnectionVisualizer';
 import { StatCard } from './components/StatCard';
 import CreatorProfileModal from './components/CreatorProfileModal';
+import { MonetizationManagement } from './components/MonetizationManagement';
 import {
   INITIAL_REPOS,
   BACKEND_URL,
