@@ -573,6 +573,44 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(popup?.image || null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const isEditMode = !!popup?._id;
+
+  // Fetch popup data when in edit mode
+  useEffect(() => {
+    const fetchPopupData = async () => {
+      if (isEditMode && popup?._id) {
+        try {
+          const response = await api.getPopup(popup._id);
+          if (response.success && response.popup) {
+            const popupData = response.popup;
+            setFormData({
+              title: popupData.title || '',
+              description: popupData.description || '',
+              image: popupData.image || '',
+              ctaText: popupData.ctaText || 'Get Started',
+              ctaAction: popupData.ctaAction || 'buy_pack',
+              ctaUrl: popupData.ctaUrl || '',
+              popupType: popupData.popupType || 'center_modal',
+              targetUsers: popupData.targetUsers || 'all',
+              frequency: popupData.frequency || 'once_per_day',
+              frequencyHours: popupData.frequencyHours || 24,
+              priority: popupData.priority || 0,
+              startTime: popupData.startTime ? new Date(popupData.startTime).toISOString().slice(0, 16) : '',
+              endTime: popupData.endTime ? new Date(popupData.endTime).toISOString().slice(0, 16) : '',
+              isEnabled: popupData.isEnabled !== false
+            });
+            setImagePreview(popupData.image || null);
+          }
+        } catch (err: any) {
+          console.error('Error fetching popup:', err);
+          setError(err.message || 'Failed to load popup data');
+        }
+      }
+    };
+    fetchPopupData();
+  }, [isEditMode, popup?._id]);
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">

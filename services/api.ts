@@ -942,6 +942,16 @@ export const api = {
   // Monetization APIs
   // Popups
   getPopups: () => fetchWithFallback('/admin/monetization/popups', [] as any),
+  getPopup: async (id: string) => {
+    const res = await fetch(`${API_BASE_URL}/admin/monetization/popups/${id}`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ message: 'Failed to fetch popup' }));
+      throw new Error(errorData.message || errorData.error || 'Failed to fetch popup');
+    }
+    return await res.json();
+  },
   createPopup: async (popup: any) => {
     const res = await fetch(`${API_BASE_URL}/admin/monetization/popups`, {
       method: 'POST',
@@ -960,7 +970,10 @@ export const api = {
       headers: getAuthHeaders(),
       body: JSON.stringify(popup)
     });
-    if (!res.ok) throw new Error('Failed to update popup');
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ message: 'Failed to update popup' }));
+      throw new Error(errorData.message || errorData.error || 'Failed to update popup');
+    }
     return await res.json();
   },
   deletePopup: async (id: string) => {
