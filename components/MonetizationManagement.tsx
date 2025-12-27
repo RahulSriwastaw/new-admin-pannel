@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Plus, Edit2, Trash2, X, Save, Calendar, Target, Bell, Tag, Percent, DollarSign, Gift, Clock, Upload } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, Calendar, Target, Bell, Tag, Percent, DollarSign, Gift, Clock, Upload, GripVertical, Eye, EyeOff, MoveUp, MoveDown, Info } from 'lucide-react';
 
 interface Popup {
   _id: string;
@@ -915,11 +915,20 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                     setIsUploading(false);
                   }
 
+                  // Auto-generate validity text if enabled
+                  let validityText = formData.textContent.validityText;
+                  if (formData.textContent.autoGenerateValidity && formData.endTime) {
+                    const endDate = new Date(formData.endTime);
+                    const day = endDate.getDate();
+                    const month = endDate.toLocaleString('en-US', { month: 'short' });
+                    validityText = `Limited-time offer — ends ${day}${getOrdinalSuffix(day)} ${month}`;
+                  }
+
                   // Build payload - only include fields that are defined
                   const payload: any = {
-                    title: formData.title,
-                    description: formData.description,
-                    ctaText: formData.ctaText,
+                    title: formData.textContent.mainTitle || formData.title, // Fallback for backward compatibility
+                    description: formData.textContent.description || formData.description,
+                    ctaText: formData.textContent.ctaText || formData.ctaText,
                     ctaAction: formData.ctaAction,
                     popupType: formData.popupType,
                     targetUsers: formData.targetUsers,
@@ -927,7 +936,11 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                     priority: Number(formData.priority) || 0,
                     isEnabled: formData.isEnabled,
                     startTime: new Date(formData.startTime).toISOString(),
-                    endTime: new Date(formData.endTime).toISOString()
+                    endTime: new Date(formData.endTime).toISOString(),
+                    textContent: {
+                      ...formData.textContent,
+                      validityText: validityText
+                    }
                   };
 
                   // Only include image if it's provided (new upload or existing URL)
@@ -987,6 +1000,137 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Helper function for ordinal suffix
+function getOrdinalSuffix(day: number): string {
+  if (day > 3 && day < 21) return 'th';
+  switch (day % 10) {
+    case 1: return 'st';
+    case 2: return 'nd';
+    case 3: return 'rd';
+    default: return 'th';
+  }
+}
+
+// Popup Preview Component
+function PopupPreview({ textContent, popupType }: { textContent: any; popupType: string }) {
+  const getTagColorClass = (color: string) => {
+    const colors: Record<string, string> = {
+      red: 'bg-red-100 text-red-700',
+      orange: 'bg-orange-100 text-orange-700',
+      green: 'bg-green-100 text-green-700',
+      blue: 'bg-blue-100 text-blue-700',
+      yellow: 'bg-yellow-100 text-yellow-700',
+      purple: 'bg-purple-100 text-purple-700'
+    };
+    return colors[color] || colors.red;
+  };
+
+  const getBadgeClass = (badge: string) => {
+    const badges: Record<string, string> = {
+      unlimited: 'bg-green-100 text-green-700',
+      pro: 'bg-blue-100 text-blue-700',
+      premium: 'bg-purple-100 text-purple-700'
+    };
+    return badges[badge] || 'bg-gray-100 text-gray-700';
+  };
+
+  return (
+    <div className="bg-white rounded-lg p-6">
+      {/* Brand Text */}
+      {textContent.showBrandText && textContent.brandText && (
+        <div className="text-xs font-semibold text-gray-500 mb-2">{textContent.brandText}</div>
+      )}
+
+      {/* Tags */}
+      {textContent.tags && textContent.tags.filter((t: any) => t.isEnabled && t.text).length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {textContent.tags
+            .filter((t: any) => t.isEnabled && t.text)
+            .map((tag: any, idx: number) => (
+              <span
+                key={idx}
+                className={`inline-flex items-center gap-1.5 px-2 py-1 text-xs font-semibold rounded-full ${getTagColorClass(tag.color)}`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-current opacity-60"></span>
+                {tag.text}
+              </span>
+            ))}
+        </div>
+      )}
+
+      {/* Main Title */}
+      {textContent.mainTitle && (
+        <h2 className="text-3xl font-bold mb-2 text-gray-900">
+          {textContent.mainTitle}
+        </h2>
+      )}
+
+      {/* Sub Title */}
+      {textContent.subTitle && (
+        <p className="text-xl font-bold mb-2 text-gray-800">{textContent.subTitle}</p>
+      )}
+
+      {/* Description */}
+      {textContent.description && (
+        <p className="text-gray-600 mb-4 leading-relaxed">{textContent.description}</p>
+      )}
+
+      {/* Validity Text */}
+      {textContent.validityText && (
+        <div className="flex items-center gap-2 text-sm text-gray-700 mb-3">
+          <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          <span>{textContent.validityText}</span>
+        </div>
+      )}
+
+      {/* Features List */}
+      {textContent.features && textContent.features.filter((f: any) => f.isEnabled && f.text).length > 0 && (
+        <div className="space-y-2 mb-4">
+          {textContent.features
+            .filter((f: any) => f.isEnabled && f.text)
+            .map((feature: any, idx: number) => (
+              <div key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                <svg className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span className="flex-1">{feature.text}</span>
+                {feature.badge && (
+                  <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getBadgeClass(feature.badge)}`}>
+                    {feature.badge === 'custom' ? feature.badgeText : feature.badge}
+                  </span>
+                )}
+                {feature.tooltip && (
+                  <button className="w-4 h-4 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 text-xs" title={feature.tooltip}>
+                    <Info size={12} />
+                  </button>
+                )}
+              </div>
+            ))}
+        </div>
+      )}
+
+      {/* CTA Button */}
+      {textContent.ctaText && (
+        <div>
+          <button className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white py-3 rounded-xl font-bold">
+            {textContent.ctaText}
+          </button>
+          {textContent.ctaSubText && (
+            <p className="text-xs text-gray-500 text-center mt-2">{textContent.ctaSubText}</p>
+          )}
+        </div>
+      )}
+
+      {/* Coupon Text */}
+      {textContent.showCoupon && textContent.couponText && (
+        <p className="text-sm text-gray-600 text-center mt-3">{textContent.couponText}</p>
+      )}
     </div>
   );
 }
