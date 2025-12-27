@@ -60,15 +60,44 @@ interface PromoCode {
   totalRevenue: number;
 }
 
+interface TopBanner {
+  _id: string;
+  titleText: string;
+  highlightTags?: string[];
+  backgroundStyle?: 'solid' | 'gradient' | 'pattern';
+  backgroundColor?: string;
+  gradientColors?: { from: string; to: string };
+  textColor?: string;
+  iconLeft?: string;
+  iconRight?: string;
+  ctaText: string;
+  ctaAction: string;
+  ctaUrl?: string;
+  countdownEnabled?: boolean;
+  countdownEndDate?: string;
+  startAt: string;
+  endAt: string;
+  priority: number;
+  allowedUserSegments?: string[];
+  allowDismiss?: boolean;
+  deviceTargeting?: string[];
+  status: string;
+  views: number;
+  clicks: number;
+  dismissals: number;
+}
+
 export function MonetizationManagement() {
-  const [activeSection, setActiveSection] = useState<'popups' | 'offers' | 'promo-codes'>('popups');
+  const [activeSection, setActiveSection] = useState<'popups' | 'offers' | 'promo-codes' | 'top-banners'>('popups');
   const [popups, setPopups] = useState<Popup[]>([]);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+  const [topBanners, setTopBanners] = useState<TopBanner[]>([]);
   const [loading, setLoading] = useState(false);
   const [showPopupModal, setShowPopupModal] = useState(false);
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showPromoModal, setShowPromoModal] = useState(false);
+  const [showBannerModal, setShowBannerModal] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
 
   useEffect(() => {
@@ -87,6 +116,9 @@ export function MonetizationManagement() {
       } else if (activeSection === 'promo-codes') {
         const data = await api.getPromoCodes();
         setPromoCodes(data.promoCodes || []);
+      } else if (activeSection === 'top-banners') {
+        const data = await api.getTopBanners();
+        setTopBanners(data.banners || []);
       }
     } catch (error: any) {
       console.error('Error loading data:', error);
@@ -96,7 +128,7 @@ export function MonetizationManagement() {
     }
   };
 
-  const handleDelete = async (id: string, type: 'popup' | 'offer' | 'promo-code') => {
+  const handleDelete = async (id: string, type: 'popup' | 'offer' | 'promo-code' | 'top-banner') => {
     if (!confirm('Are you sure you want to delete this item?')) return;
     try {
       if (type === 'popup') {
@@ -105,6 +137,8 @@ export function MonetizationManagement() {
         await api.deleteOffer(id);
       } else if (type === 'promo-code') {
         await api.deletePromoCode(id);
+      } else if (type === 'top-banner') {
+        await api.deleteTopBanner(id);
       }
       loadData();
     } catch (error: any) {
@@ -351,6 +385,82 @@ export function MonetizationManagement() {
                       </button>
                       <button
                         onClick={() => handleDelete(promo._id, 'promo-code')}
+                        className="p-2 text-gray-400 hover:text-red-400"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Top Banners Section */}
+      {activeSection === 'top-banners' && (
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold">Top Promotional Banners</h3>
+            <button
+              onClick={() => {
+                setEditingItem(null);
+                setShowBannerModal(true);
+              }}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg flex items-center gap-2"
+            >
+              <Plus size={16} /> Create Banner
+            </button>
+          </div>
+
+          {loading ? (
+            <div className="text-center py-8 text-gray-400">Loading...</div>
+          ) : topBanners.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">No banners created yet</div>
+          ) : (
+            <div className="grid gap-4">
+              {topBanners.map((banner) => (
+                <div key={banner._id} className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="font-bold text-white">{banner.titleText}</h4>
+                        <span className={`text-xs px-2 py-0.5 rounded ${banner.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-400'}`}>
+                          {banner.status === 'active' ? 'Active' : 'Inactive'}
+                        </span>
+                        <span className="text-xs px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-400">
+                          Priority: {banner.priority}
+                        </span>
+                      </div>
+                      {banner.highlightTags && banner.highlightTags.length > 0 && (
+                        <div className="flex gap-1 mb-2">
+                          {banner.highlightTags.map((tag, idx) => (
+                            <span key={idx} className="text-xs px-2 py-0.5 bg-red-500/20 text-red-400 rounded">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex gap-4 text-xs text-gray-500">
+                        <span>Views: {banner.views}</span>
+                        <span>Clicks: {banner.clicks}</span>
+                        <span>Dismissals: {banner.dismissals}</span>
+                        <span>CTR: {banner.views > 0 ? ((banner.clicks / banner.views) * 100).toFixed(1) : 0}%</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setEditingItem(banner);
+                          setShowBannerModal(true);
+                        }}
+                        className="p-2 text-gray-400 hover:text-indigo-400"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(banner._id, 'top-banner')}
                         className="p-2 text-gray-400 hover:text-red-400"
                       >
                         <Trash2 size={16} />

@@ -1028,6 +1028,38 @@ export const api = {
     });
     if (!res.ok) throw new Error('Failed to delete promo code');
     return await res.json();
+  },
+
+  // Top Banners
+  getTopBanners: () => fetchWithFallback('/admin/banners/top/banners', [] as any),
+  createTopBanner: async (banner: any) => {
+    const res = await fetch(`${API_BASE_URL}/admin/banners/top/banners`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(banner)
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ message: 'Failed to create banner' }));
+      throw new Error(errorData.message || errorData.error || 'Failed to create banner');
+    }
+    return await res.json();
+  },
+  updateTopBanner: async (id: string, banner: any) => {
+    const res = await fetch(`${API_BASE_URL}/admin/banners/top/banners/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(banner)
+    });
+    if (!res.ok) throw new Error('Failed to update banner');
+    return await res.json();
+  },
+  deleteTopBanner: async (id: string) => {
+    const res = await fetch(`${API_BASE_URL}/admin/banners/top/banners/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to delete banner');
+    return await res.json();
   }
 };
 
