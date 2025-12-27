@@ -948,7 +948,10 @@ export const api = {
       headers: getAuthHeaders(),
       body: JSON.stringify(popup)
     });
-    if (!res.ok) throw new Error('Failed to create popup');
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ message: 'Failed to create popup' }));
+      throw new Error(errorData.message || errorData.error || 'Failed to create popup');
+    }
     return await res.json();
   },
   updatePopup: async (id: string, popup: any) => {
