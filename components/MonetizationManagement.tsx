@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Plus, Edit2, Trash2, X, Save, Calendar, Target, Bell, Tag, Percent, DollarSign, Gift, Clock } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, Calendar, Target, Bell, Tag, Percent, DollarSign, Gift, Clock, Upload } from 'lucide-react';
 
 interface Popup {
   _id: string;
@@ -460,6 +460,9 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
     endTime: popup?.endTime ? new Date(popup.endTime).toISOString().slice(0, 16) : '',
     isEnabled: popup?.isEnabled !== false
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(popup?.image || null);
+  const [isUploading, setIsUploading] = useState(false);
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -493,14 +496,78 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
           </div>
 
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Image URL (Cloudinary)</label>
-            <input
-              type="text"
-              value={formData.image}
-              onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-              className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
-              placeholder="https://res.cloudinary.com/..."
-            />
+            <label className="block text-sm text-gray-300 mb-1">Image</label>
+            
+            {/* Image Preview */}
+            {(imagePreview || imageFile) && (
+              <div className="mb-3 relative">
+                <img
+                  src={imagePreview || (imageFile ? URL.createObjectURL(imageFile) : '')}
+                  alt="Preview"
+                  className="w-full h-48 object-cover rounded-lg border border-gray-700"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImageFile(null);
+                    setImagePreview(null);
+                    setFormData({ ...formData, image: '' });
+                  }}
+                  className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-1.5"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+
+            {/* File Upload */}
+            <div className="space-y-2">
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-700 border-dashed rounded-lg cursor-pointer bg-gray-950 hover:bg-gray-900 transition-colors">
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <Upload size={24} className="text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-400">
+                    {imageFile ? imageFile.name : 'Click to upload image'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP (Max 5MB)</p>
+                </div>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      if (file.size > 5 * 1024 * 1024) {
+                        alert('File size must be less than 5MB');
+                        return;
+                      }
+                      setImageFile(file);
+                      setImagePreview(URL.createObjectURL(file));
+                      setFormData({ ...formData, image: '' }); // Clear URL if file selected
+                    }
+                  }}
+                />
+              </label>
+            </div>
+
+            {/* Or URL Input */}
+            <div className="mt-3">
+              <p className="text-xs text-gray-500 mb-1 text-center">OR</p>
+              <input
+                type="text"
+                value={formData.image}
+                onChange={(e) => {
+                  setFormData({ ...formData, image: e.target.value });
+                  if (e.target.value) {
+                    setImageFile(null);
+                    setImagePreview(e.target.value);
+                  }
+                }}
+                className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                placeholder="Enter Cloudinary URL..."
+                disabled={!!imageFile}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -645,19 +712,44 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
 
           <div className="flex gap-2 pt-4">
             <button
-              onClick={() => onSave({
-                ...formData,
-                startTime: new Date(formData.startTime),
-                endTime: new Date(formData.endTime)
-              })}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg font-medium"
+              onClick={async () => {
+                try {
+                  setIsUploading(true);
+                  let finalImageUrl = formData.image;
+
+                  // If a file is selected, upload it first
+                  if (imageFile) {
+                    finalImageUrl = await api.uploadImage(imageFile);
+                  }
+
+                  if (!finalImageUrl) {
+                    alert('Please upload an image or provide a valid URL.');
+                    setIsUploading(false);
+                    return;
+                  }
+
+                  await onSave({
+                    ...formData,
+                    image: finalImageUrl,
+                    startTime: new Date(formData.startTime),
+                    endTime: new Date(formData.endTime)
+                  });
+                } catch (error: any) {
+                  alert(`Upload failed: ${error.message}`);
+                } finally {
+                  setIsUploading(false);
+                }
+              }}
+              disabled={isUploading}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 disabled:cursor-not-allowed text-white py-2 rounded-lg font-medium"
             >
               <Save className="inline mr-2" size={16} />
-              Save
+              {isUploading ? 'Uploading...' : 'Save'}
             </button>
             <button
               onClick={onClose}
-              className="px-4 bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 rounded-lg font-medium"
+              disabled={isUploading}
+              className="px-4 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-300 py-2 rounded-lg font-medium"
             >
               Cancel
             </button>
