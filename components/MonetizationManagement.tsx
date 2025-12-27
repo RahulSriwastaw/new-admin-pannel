@@ -602,7 +602,24 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
               priority: popupData.priority || 0,
               startTime: popupData.startTime ? new Date(popupData.startTime).toISOString().slice(0, 16) : '',
               endTime: popupData.endTime ? new Date(popupData.endTime).toISOString().slice(0, 16) : '',
-              isEnabled: popupData.isEnabled !== false
+              isEnabled: popupData.isEnabled !== false,
+              textContent: popupData.textContent || {
+                brandText: '',
+                showBrandText: false,
+                tags: [],
+                mainTitle: popupData.title || '',
+                subTitle: '',
+                autoUppercase: true,
+                description: popupData.description || '',
+                maxDescriptionLength: 200,
+                validityText: '',
+                autoGenerateValidity: false,
+                features: [],
+                ctaText: popupData.ctaText || 'Get Started',
+                ctaSubText: '',
+                couponText: '',
+                showCoupon: false
+              }
             });
             setImagePreview(popupData.image || null);
           }
