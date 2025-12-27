@@ -1020,6 +1020,35 @@ export default function App() {
     });
   };
 
+  const handleDeleteUser = (user: User) => {
+    // Prevent deleting super admin
+    if (user.role === 'super_admin') {
+      addLog('Cannot delete super admin user', LogLevel.ERROR, "AdminPanel");
+      alert('Cannot delete super admin user');
+      return;
+    }
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete User',
+      message: `Are you sure you want to PERMANENTLY DELETE ${user.name} (${user.email})? This action cannot be undone. All user data including generations, templates, and transactions will be deleted.`,
+      type: 'danger',
+      confirmText: 'Yes, Delete User',
+      onConfirm: async () => {
+        try {
+          await api.deleteUser(user.id);
+          setUsers(prev => prev.filter(u => u.id !== user.id));
+          addLog(`User ${user.name} (${user.email}) was permanently deleted.`, LogLevel.ERROR, "AdminPanel");
+          closeConfirmModal();
+        } catch (err: any) {
+          console.error('Delete User Error:', err);
+          addLog(`Failed to delete user: ${err.message}`, LogLevel.ERROR, "System");
+          alert(`Delete Failed: ${err.message}`);
+        }
+      }
+    });
+  };
+
   const handleCreateUser = async () => {
     if (!newUser.name || !newUser.email || !newUser.password) {
       alert("Please fill all required fields");
@@ -3020,6 +3049,14 @@ export default function App() {
                     </button>
                     <button onClick={() => handleEditUser(user)} className="p-2 text-gray-400 hover:text-indigo-400 hover:bg-gray-800 rounded transition-colors" title="Edit Details">
                       <Edit2 size={18} />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteUser(user)} 
+                      className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded transition-colors" 
+                      title="Delete User"
+                      disabled={user.role === 'super_admin'}
+                    >
+                      <Trash2 size={18} />
                     </button>
                   </div>
                 </td>

@@ -157,6 +157,20 @@ export const api = {
     }
   },
 
+  deleteUser: async (userId: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      if (res.ok) return await res.json();
+      const error = await res.json().catch(() => ({ error: 'Failed to delete user' }));
+      throw new Error(error.error || error.message || 'Failed to delete user');
+    } catch (e) {
+      throw e;
+    }
+  },
+
   bulkUpdateUsers: async (userIds: string[], updates: Partial<User>) => {
     try {
       const res = await fetch(`${API_BASE_URL}/admin/users/bulk`, {
