@@ -92,7 +92,7 @@ export default function App() {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.CONNECTING);
   const [isFixing, setIsFixing] = useState(false);
   const [metrics, setMetrics] = useState<SystemMetrics>({ cpu: 0, memory: 0, requests: 0, latency: 0, activeUsers: 0, revenue: 0 });
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'creators' | 'templates' | 'finance' | 'ai-config' | 'ads' | 'withdrawals' | 'notifications' | 'settings' | 'profile'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'creators' | 'templates' | 'finance' | 'ai-config' | 'ads' | 'withdrawals' | 'notifications' | 'settings' | 'profile' | 'monetization'>('dashboard');
 
   // Data State
   const [users, setUsers] = useState<User[]>([]);
@@ -5335,6 +5335,7 @@ export default function App() {
         {activeTab === 'ai-config' && renderAIConfig()}
         {activeTab === 'ads' && renderAdsManagement()}
         {activeTab === 'withdrawals' && renderWithdrawals()}
+        {activeTab === 'monetization' && <MonetizationManagement />}
         {activeTab === 'notifications' && renderNotifications()}
         {activeTab === 'settings' && renderSettings()}
         {activeTab === 'profile' && renderProfile()}

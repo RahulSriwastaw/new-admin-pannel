@@ -937,6 +937,94 @@ export const api = {
     }
 
     return await res.json();
+  },
+
+  // Monetization APIs
+  // Popups
+  getPopups: () => fetchWithFallback('/admin/monetization/popups', [] as any),
+  createPopup: async (popup: any) => {
+    const res = await fetch(`${API_BASE_URL}/admin/monetization/popups`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(popup)
+    });
+    if (!res.ok) throw new Error('Failed to create popup');
+    return await res.json();
+  },
+  updatePopup: async (id: string, popup: any) => {
+    const res = await fetch(`${API_BASE_URL}/admin/monetization/popups/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(popup)
+    });
+    if (!res.ok) throw new Error('Failed to update popup');
+    return await res.json();
+  },
+  deletePopup: async (id: string) => {
+    const res = await fetch(`${API_BASE_URL}/admin/monetization/popups/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to delete popup');
+    return await res.json();
+  },
+
+  // Offers
+  getOffers: () => fetchWithFallback('/admin/monetization/offers', [] as any),
+  createOffer: async (offer: any) => {
+    const res = await fetch(`${API_BASE_URL}/admin/monetization/offers`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(offer)
+    });
+    if (!res.ok) throw new Error('Failed to create offer');
+    return await res.json();
+  },
+  updateOffer: async (id: string, offer: any) => {
+    const res = await fetch(`${API_BASE_URL}/admin/monetization/offers/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(offer)
+    });
+    if (!res.ok) throw new Error('Failed to update offer');
+    return await res.json();
+  },
+  deleteOffer: async (id: string) => {
+    const res = await fetch(`${API_BASE_URL}/admin/monetization/offers/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to delete offer');
+    return await res.json();
+  },
+
+  // Promo Codes
+  getPromoCodes: () => fetchWithFallback('/admin/monetization/promo-codes', [] as any),
+  createPromoCode: async (promoCode: any) => {
+    const res = await fetch(`${API_BASE_URL}/admin/monetization/promo-codes`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(promoCode)
+    });
+    if (!res.ok) throw new Error('Failed to create promo code');
+    return await res.json();
+  },
+  updatePromoCode: async (id: string, promoCode: any) => {
+    const res = await fetch(`${API_BASE_URL}/admin/monetization/promo-codes/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(promoCode)
+    });
+    if (!res.ok) throw new Error('Failed to update promo code');
+    return await res.json();
+  },
+  deletePromoCode: async (id: string) => {
+    const res = await fetch(`${API_BASE_URL}/admin/monetization/promo-codes/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error('Failed to delete promo code');
+    return await res.json();
   }
 };
 
