@@ -673,27 +673,269 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
         </div>
 
         <div className="space-y-4">
+          {/* Template Selector */}
           <div>
-            <label className="block text-sm text-gray-300 mb-1">Title *</label>
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            <label className="block text-sm text-gray-300 mb-1">Popup Template *</label>
+            <select
+              value={formData.templateId || 'CENTER_MODAL'}
+              onChange={(e) => setFormData({
+                ...formData,
+                templateId: e.target.value
+              })}
               className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
-              required
-            />
+            >
+              <option value="OFFER_SPLIT_IMAGE_RIGHT_CONTENT">Offer Split (Image Left, Content Right)</option>
+              <option value="CENTER_MODAL">Center Modal (Legacy)</option>
+              <option value="FULL_SCREEN">Full Screen (Legacy)</option>
+              <option value="BOTTOM_SHEET">Bottom Sheet (Legacy)</option>
+              <option value="TOAST">Toast (Legacy)</option>
+              <option value="EXIT_INTENT">Exit Intent (Legacy)</option>
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              {formData.templateId === 'OFFER_SPLIT_IMAGE_RIGHT_CONTENT' 
+                ? 'Premium offer popup with fixed layout - image on left, structured content on right'
+                : 'Legacy template - uses old textContent system'}
+            </p>
           </div>
 
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">Description *</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
-              rows={3}
-              required
-            />
-          </div>
+          {/* OFFER_SPLIT_IMAGE_RIGHT_CONTENT Template Fields */}
+          {formData.templateId === 'OFFER_SPLIT_IMAGE_RIGHT_CONTENT' ? (
+            <div className="space-y-4 bg-gray-950/50 p-4 rounded-lg border border-gray-700">
+              <h5 className="text-sm font-semibold text-white mb-3">Template: Offer Split Layout</h5>
+              
+              {/* Left Image Section */}
+              <div className="mb-4">
+                <label className="block text-sm text-gray-300 mb-1">Left Banner Image *</label>
+                {(formData.templateData?.leftImageUrl || imagePreview) && (
+                  <div className="mb-3 relative">
+                    <img
+                      src={formData.templateData?.leftImageUrl || imagePreview || ''}
+                      alt="Banner Preview"
+                      className="w-full h-48 object-cover rounded-lg border border-gray-700"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageFile(null);
+                        setImagePreview(null);
+                        setFormData({
+                          ...formData,
+                          templateData: {
+                            ...formData.templateData,
+                            leftImageUrl: ''
+                          }
+                        });
+                      }}
+                      className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-1.5"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                )}
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-700 border-dashed rounded-lg cursor-pointer bg-gray-900 hover:bg-gray-800 transition-colors">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload size={24} className="text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-400">
+                      {imageFile ? imageFile.name : 'Click to upload banner image'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP (Max 5MB)</p>
+                  </div>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.size > 5 * 1024 * 1024) {
+                          alert('File size must be less than 5MB');
+                          return;
+                        }
+                        setImageFile(file);
+                        setImagePreview(URL.createObjectURL(file));
+                      }
+                    }}
+                  />
+                </label>
+                <div className="mt-3">
+                  <input
+                    type="text"
+                    value={formData.templateData?.leftImageUrl || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      templateData: {
+                        ...formData.templateData,
+                        leftImageUrl: e.target.value
+                      }
+                    })}
+                    className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                    placeholder="Or enter Cloudinary URL..."
+                    disabled={!!imageFile}
+                  />
+                </div>
+                <div className="mt-2">
+                  <label className="block text-xs text-gray-400 mb-1">Overlay Text (Optional)</label>
+                  <input
+                    type="text"
+                    value={formData.templateData?.leftOverlayText || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      templateData: {
+                        ...formData.templateData,
+                        leftOverlayText: e.target.value
+                      }
+                    })}
+                    className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                    placeholder="e.g. 81% OFF"
+                    maxLength={20}
+                  />
+                </div>
+              </div>
+
+              {/* Main Heading */}
+              <div className="mb-4">
+                <label className="block text-sm text-gray-300 mb-1">Main Heading *</label>
+                <input
+                  type="text"
+                  value={formData.templateData?.mainHeading || ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    templateData: {
+                      ...formData.templateData,
+                      mainHeading: e.target.value.toUpperCase()
+                    }
+                  })}
+                  className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm font-bold"
+                  placeholder="CHRISTMAS SEASON"
+                  maxLength={40}
+                  required
+                />
+              </div>
+
+              {/* Sub Heading */}
+              <div className="mb-4">
+                <label className="block text-sm text-gray-300 mb-1">Sub Heading *</label>
+                <input
+                  type="text"
+                  value={formData.templateData?.subHeading || ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    templateData: {
+                      ...formData.templateData,
+                      subHeading: e.target.value.toUpperCase()
+                    }
+                  })}
+                  className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm font-bold"
+                  placeholder="UP TO 81% OFF"
+                  maxLength={40}
+                  required
+                />
+              </div>
+
+              {/* Description */}
+              <div className="mb-4">
+                <label className="block text-sm text-gray-300 mb-1">Description (1-2 lines) *</label>
+                <textarea
+                  value={formData.templateData?.description || ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    templateData: {
+                      ...formData.templateData,
+                      description: e.target.value
+                    }
+                  })}
+                  className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                  rows={2}
+                  placeholder="Save up to 81% + Free Unlimited Bundle Generations on Ultimate & Creator Plans"
+                  maxLength={150}
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {(formData.templateData?.description || '').length} / 150 characters
+                </p>
+              </div>
+
+              {/* CTA */}
+              <div className="mb-4">
+                <label className="block text-sm text-gray-300 mb-1">CTA Button Text *</label>
+                <input
+                  type="text"
+                  value={formData.templateData?.ctaText || 'Get Discount Now'}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    templateData: {
+                      ...formData.templateData,
+                      ctaText: e.target.value
+                    }
+                  })}
+                  className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                  placeholder="Get Discount Now"
+                  required
+                />
+                <div className="mt-2">
+                  <label className="block text-xs text-gray-400 mb-1">CTA Action</label>
+                  <select
+                    value={formData.templateData?.ctaAction || 'apply_offer'}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      templateData: {
+                        ...formData.templateData,
+                        ctaAction: e.target.value
+                      }
+                    })}
+                    className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                  >
+                    <option value="apply_offer">Apply Offer</option>
+                    <option value="buy_plan">Buy Plan</option>
+                    <option value="watch_ad">Watch Ad</option>
+                    <option value="custom_url">Custom URL</option>
+                  </select>
+                </div>
+                {formData.templateData?.ctaAction === 'custom_url' && (
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      value={formData.templateData?.ctaUrl || ''}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        templateData: {
+                          ...formData.templateData,
+                          ctaUrl: e.target.value
+                        }
+                      })}
+                      className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                      placeholder="https://..."
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Legacy Fields */}
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">Title *</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">Description *</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                  rows={3}
+                  required
+                />
+              </div>
+            </>
+          )}
 
           <div>
             <label className="block text-sm text-gray-300 mb-1">Image</label>
@@ -772,7 +1014,7 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-300 mb-1">Popup Type</label>
+              <label className="block text-sm text-gray-300 mb-1">Popup Type (Legacy)</label>
               <select
                 value={formData.popupType}
                 onChange={(e) => setFormData({ ...formData, popupType: e.target.value })}
@@ -784,6 +1026,7 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                 <option value="toast">Toast</option>
                 <option value="exit_intent">Exit Intent</option>
               </select>
+              <p className="text-xs text-gray-500 mt-1">Used for legacy templates only</p>
             </div>
 
             <div>
