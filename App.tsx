@@ -5270,6 +5270,12 @@ export default function App() {
             </button>
           )}
 
+          {canPerformAction('manage_finance') && (
+            <button onClick={() => setActiveTab('monetization')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'monetization' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'}`}>
+              <Gift size={18} /> Monetization
+            </button>
+          )}
+
           {canPerformAction('manage_ai') && (
             <button onClick={() => setActiveTab('ai-config')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'ai-config' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'}`}>
               <Bot size={18} /> AI Config
