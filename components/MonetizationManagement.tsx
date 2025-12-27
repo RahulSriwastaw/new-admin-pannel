@@ -571,7 +571,25 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
     priority: popup?.priority || 0,
     startTime: popup?.startTime ? new Date(popup.startTime).toISOString().slice(0, 16) : '',
     endTime: popup?.endTime ? new Date(popup.endTime).toISOString().slice(0, 16) : '',
-    isEnabled: popup?.isEnabled !== false
+    isEnabled: popup?.isEnabled !== false,
+    // Text Content Management
+    textContent: popup?.textContent || {
+      brandText: '',
+      showBrandText: false,
+      tags: [],
+      mainTitle: popup?.title || '',
+      subTitle: '',
+      autoUppercase: true,
+      description: popup?.description || '',
+      maxDescriptionLength: 200,
+      validityText: '',
+      autoGenerateValidity: false,
+      features: [],
+      ctaText: popup?.ctaText || 'Get Started',
+      ctaSubText: '',
+      couponText: '',
+      showCoupon: false
+    }
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(popup?.image || null);
