@@ -171,6 +171,29 @@ export const api = {
     }
   },
 
+  bulkDeleteUsers: async (userIds: string[]) => {
+    try {
+      // Delete users one by one (backend doesn't have bulk delete endpoint)
+      const results = await Promise.allSettled(
+        userIds.map(userId => api.deleteUser(userId))
+      );
+      
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      
+      if (failed > 0) {
+        const errors = results
+          .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+          .map(r => r.reason?.message || 'Unknown error');
+        throw new Error(`Failed to delete ${failed} user(s). ${errors.join(', ')}`);
+      }
+      
+      return { success: true, deleted: successful };
+    } catch (e) {
+      throw e;
+    }
+  },
+
   bulkUpdateUsers: async (userIds: string[], updates: Partial<User>) => {
     try {
       const res = await fetch(`${API_BASE_URL}/admin/users/bulk`, {

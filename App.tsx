@@ -1049,6 +1049,48 @@ export default function App() {
     });
   };
 
+  const handleBulkDelete = () => {
+    if (!selectedUserIds.length) return;
+
+    // Filter out super admins
+    const usersToDelete = users.filter(u => selectedUserIds.includes(u.id) && u.role !== 'super_admin');
+    const superAdmins = users.filter(u => selectedUserIds.includes(u.id) && u.role === 'super_admin');
+    
+    if (superAdmins.length > 0) {
+      alert(`Cannot delete ${superAdmins.length} super admin user(s). They have been excluded from deletion.`);
+    }
+
+    if (usersToDelete.length === 0) {
+      alert('No users can be deleted. All selected users are super admins.');
+      return;
+    }
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'Bulk Delete Users',
+      message: `Are you sure you want to PERMANENTLY DELETE ${usersToDelete.length} user(s)? This action cannot be undone. All user data including generations, templates, and transactions will be deleted.${superAdmins.length > 0 ? `\n\nNote: ${superAdmins.length} super admin(s) will be excluded.` : ''}`,
+      type: 'danger',
+      confirmText: `Yes, Delete ${usersToDelete.length} User(s)`,
+      onConfirm: async () => {
+        try {
+          const userIdsToDelete = usersToDelete.map(u => u.id);
+          await api.bulkDeleteUsers(userIdsToDelete);
+          
+          // Remove deleted users from list
+          setUsers(prev => prev.filter(u => !userIdsToDelete.includes(u.id)));
+          setSelectedUserIds([]);
+          
+          addLog(`Bulk deleted ${userIdsToDelete.length} user(s).`, LogLevel.ERROR, "AdminPanel");
+          closeConfirmModal();
+        } catch (err: any) {
+          console.error('Bulk Delete Error:', err);
+          addLog(`Bulk delete failed: ${err.message}`, LogLevel.ERROR, "System");
+          alert(`Bulk Delete Failed: ${err.message}`);
+        }
+      }
+    });
+  };
+
   const handleCreateUser = async () => {
     if (!newUser.name || !newUser.email || !newUser.password) {
       alert("Please fill all required fields");
@@ -2948,6 +2990,10 @@ export default function App() {
             </button>
             <button onClick={() => handleBulkAction('role', 'creator')} className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-medium rounded-lg transition-colors">
               Make Creator
+            </button>
+            <div className="h-6 w-px bg-indigo-500/30 mx-2"></div>
+            <button onClick={() => handleBulkDelete()} className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors">
+              <Trash2 size={14} /> Delete Selected
             </button>
             <button onClick={() => setSelectedUserIds([])} className="ml-4 text-xs text-gray-400 hover:text-white underline">
               Clear Selection
