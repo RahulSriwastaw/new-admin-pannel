@@ -731,8 +731,8 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                   await onSave({
                     ...formData,
                     image: finalImageUrl,
-                    startTime: new Date(formData.startTime),
-                    endTime: new Date(formData.endTime)
+                    startTime: formData.startTime ? new Date(formData.startTime).toISOString() : '',
+                    endTime: formData.endTime ? new Date(formData.endTime).toISOString() : ''
                   });
                 } catch (error: any) {
                   alert(`Upload failed: ${error.message}`);
