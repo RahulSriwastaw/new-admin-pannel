@@ -703,7 +703,6 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
             });
             
             // Set unified image source based on template mode
-            const fetchedTemplateId = popupData.templateId || 'CENTER_MODAL';
             const isTemplateMode = fetchedTemplateId === 'OFFER_SPLIT_IMAGE_RIGHT_CONTENT';
             const imageUrl = isTemplateMode 
               ? (popupData.templateData?.leftImageUrl || popupData.image || null)
