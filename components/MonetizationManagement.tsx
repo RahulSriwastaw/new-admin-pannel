@@ -576,7 +576,7 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
     description: popup?.description || '',
     image: popup?.image || '',
     ctaText: popup?.ctaText || 'Get Started',
-    ctaAction: popup?.ctaAction || 'buy_pack',
+    ctaAction: popup?.ctaAction || 'apply_offer',
     ctaUrl: popup?.ctaUrl || '',
     popupType: popup?.popupType || 'center_modal',
     targetUsers: popup?.targetUsers || 'all',
@@ -1197,14 +1197,14 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
               onChange={(e) => setFormData({ ...formData, ctaAction: e.target.value })}
               className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
             >
-              <option value="buy_pack">Buy Pack</option>
-              <option value="watch_ad">Watch Ad</option>
               <option value="apply_offer">Apply Offer</option>
-              <option value="custom_url">Custom URL</option>
+              <option value="buy_plan">Buy Plan</option>
+              <option value="open_payment">Open Payment</option>
+              <option value="redirect">Redirect URL</option>
             </select>
           </div>
 
-          {formData.ctaAction === 'custom_url' && (
+          {formData.ctaAction === 'redirect' && (
             <div>
               <label className="block text-sm text-gray-300 mb-1">Custom URL</label>
               <input
