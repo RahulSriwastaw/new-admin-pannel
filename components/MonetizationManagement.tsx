@@ -21,6 +21,20 @@ interface Popup {
   impressions: number;
   clicks: number;
   closes: number;
+  templateId?: string;
+  templateData?: {
+    leftImageUrl?: string;
+    leftOverlayText?: string;
+    tags?: any[];
+    mainHeading?: string;
+    subHeading?: string;
+    description?: string;
+    features?: any[];
+    ctaText?: string;
+    ctaAction?: string;
+    ctaUrl?: string;
+  };
+  textContent?: any;
 }
 
 interface Offer {
