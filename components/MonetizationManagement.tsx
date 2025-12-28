@@ -1298,7 +1298,8 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                     payload.title = formData.templateData.mainHeading;
                     payload.description = formData.templateData.description;
                     payload.ctaText = formData.templateData.ctaText;
-                    payload.image = finalImageUrl;
+                    // ONLY templateImage field - NEVER send both image and templateImage
+                    payload.templateImage = finalImageUrl; // Can be null
                     payload.ctaAction = formData.templateData.ctaAction;
                     payload.ctaUrl = formData.templateData?.ctaUrl;
                   } else {
@@ -1308,9 +1309,8 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                     payload.ctaText = formData.textContent.ctaText || formData.ctaText;
                     payload.ctaAction = formData.ctaAction;
                     payload.ctaUrl = formData.ctaUrl;
-                    if (finalImageUrl) {
-                      payload.image = finalImageUrl;
-                    }
+                    // ONLY image field - NEVER send both image and templateImage
+                    payload.image = finalImageUrl; // Can be null
                     payload.textContent = {
                       ...formData.textContent,
                       validityText: validityText
