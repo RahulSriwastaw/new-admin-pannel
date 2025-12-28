@@ -4215,6 +4215,7 @@ export default function App() {
                   <option value="Google">Google</option>
                   <option value="Stability">Stability</option>
                   <option value="MiniMax">MiniMax</option>
+                  <option value="Replicate">Replicate</option>
                 </select>
               </div>
               <div>
