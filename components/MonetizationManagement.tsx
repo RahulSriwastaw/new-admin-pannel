@@ -1096,23 +1096,8 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
             </div>
           )}
 
+          {/* Common Fields (for all templates) */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-gray-300 mb-1">Popup Type (Legacy)</label>
-              <select
-                value={formData.popupType}
-                onChange={(e) => setFormData({ ...formData, popupType: e.target.value })}
-                className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
-              >
-                <option value="full_screen">Full Screen</option>
-                <option value="center_modal">Center Modal</option>
-                <option value="bottom_sheet">Bottom Sheet</option>
-                <option value="toast">Toast</option>
-                <option value="exit_intent">Exit Intent</option>
-              </select>
-              <p className="text-xs text-gray-500 mt-1">Used for legacy templates only</p>
-            </div>
-
             <div>
               <label className="block text-sm text-gray-300 mb-1">Target Users</label>
               <select
@@ -1126,9 +1111,7 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                 <option value="inactive">Inactive</option>
               </select>
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-gray-300 mb-1">Frequency</label>
               <select
@@ -1142,28 +1125,28 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                 <option value="once_per_X_hours">Once Per X Hours</option>
               </select>
             </div>
+          </div>
 
-            {formData.frequency === 'once_per_X_hours' && (
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Hours</label>
-                <input
-                  type="number"
-                  value={formData.frequencyHours}
-                  onChange={(e) => setFormData({ ...formData, frequencyHours: parseInt(e.target.value) || 24 })}
-                  className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
-                />
-              </div>
-            )}
-
+          {formData.frequency === 'once_per_X_hours' && (
             <div>
-              <label className="block text-sm text-gray-300 mb-1">Priority (Lower = Higher Priority)</label>
+              <label className="block text-sm text-gray-300 mb-1">Hours</label>
               <input
                 type="number"
-                value={formData.priority}
-                onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) || 0 })}
+                value={formData.frequencyHours}
+                onChange={(e) => setFormData({ ...formData, frequencyHours: parseInt(e.target.value) || 24 })}
                 className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
               />
             </div>
+          )}
+
+          <div>
+            <label className="block text-sm text-gray-300 mb-1">Priority (Lower = Higher Priority)</label>
+            <input
+              type="number"
+              value={formData.priority}
+              onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) || 0 })}
+              className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -1190,42 +1173,63 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">CTA Action</label>
-            <select
-              value={formData.ctaAction}
-              onChange={(e) => setFormData({ ...formData, ctaAction: e.target.value })}
-              className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
-            >
-              <option value="apply_offer">Apply Offer</option>
-              <option value="buy_plan">Buy Plan</option>
-              <option value="open_payment">Open Payment</option>
-              <option value="redirect">Redirect URL</option>
-            </select>
-          </div>
+          {/* Legacy CTA Fields - ONLY for legacy templates */}
+          {formData.templateId !== 'OFFER_SPLIT_IMAGE_RIGHT_CONTENT' && (
+            <>
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">Popup Type (Legacy)</label>
+                <select
+                  value={formData.popupType}
+                  onChange={(e) => setFormData({ ...formData, popupType: e.target.value })}
+                  className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                >
+                  <option value="full_screen">Full Screen</option>
+                  <option value="center_modal">Center Modal</option>
+                  <option value="bottom_sheet">Bottom Sheet</option>
+                  <option value="toast">Toast</option>
+                  <option value="exit_intent">Exit Intent</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Used for legacy templates only</p>
+              </div>
 
-          {formData.ctaAction === 'redirect' && (
-            <div>
-              <label className="block text-sm text-gray-300 mb-1">Custom URL</label>
-              <input
-                type="text"
-                value={formData.ctaUrl}
-                onChange={(e) => setFormData({ ...formData, ctaUrl: e.target.value })}
-                className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
-                placeholder="https://..."
-              />
-            </div>
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">CTA Action</label>
+                <select
+                  value={formData.ctaAction}
+                  onChange={(e) => setFormData({ ...formData, ctaAction: e.target.value })}
+                  className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                >
+                  <option value="apply_offer">Apply Offer</option>
+                  <option value="buy_plan">Buy Plan</option>
+                  <option value="open_payment">Open Payment</option>
+                  <option value="redirect">Redirect URL</option>
+                </select>
+              </div>
+
+              {formData.ctaAction === 'redirect' && (
+                <div>
+                  <label className="block text-sm text-gray-300 mb-1">Custom URL</label>
+                  <input
+                    type="text"
+                    value={formData.ctaUrl}
+                    onChange={(e) => setFormData({ ...formData, ctaUrl: e.target.value })}
+                    className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                    placeholder="https://..."
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">CTA Text</label>
+                <input
+                  type="text"
+                  value={formData.ctaText}
+                  onChange={(e) => setFormData({ ...formData, ctaText: e.target.value })}
+                  className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                />
+              </div>
+            </>
           )}
-
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">CTA Text</label>
-            <input
-              type="text"
-              value={formData.ctaText}
-              onChange={(e) => setFormData({ ...formData, ctaText: e.target.value })}
-              className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
-            />
-          </div>
 
           <label className="flex items-center gap-2 text-sm text-gray-300">
             <input
