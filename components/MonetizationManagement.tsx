@@ -709,10 +709,22 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
             <label className="block text-sm text-gray-300 mb-1">Popup Template *</label>
             <select
               value={formData.templateId || 'CENTER_MODAL'}
-              onChange={(e) => setFormData({
-                ...formData,
-                templateId: e.target.value
-              })}
+              onChange={(e) => {
+                const newTemplateId = e.target.value;
+                const isTemplateMode = newTemplateId === 'OFFER_SPLIT_IMAGE_RIGHT_CONTENT';
+                
+                // DESTROY previous image state when template changes
+                setImageSource({
+                  mode: isTemplateMode ? 'template' : 'generic',
+                  url: null, // Clear image on template change
+                  file: null
+                });
+                
+                setFormData({
+                  ...formData,
+                  templateId: newTemplateId
+                });
+              }}
               className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
             >
               <option value="OFFER_SPLIT_IMAGE_RIGHT_CONTENT">Offer Split (Image Left, Content Right)</option>
@@ -971,80 +983,91 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
             </>
           )}
 
-          <div>
-            <label className="block text-sm text-gray-300 mb-1">Image</label>
-            
-            {/* Image Preview */}
-            {(imagePreview || imageFile) && (
-              <div className="mb-3 relative">
-                <img
-                  src={imagePreview || (imageFile ? URL.createObjectURL(imageFile) : '')}
-                  alt="Preview"
-                  className="w-full h-48 object-cover rounded-lg border border-gray-700"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setImageFile(null);
-                    setImagePreview(null);
-                    setFormData({ ...formData, image: '' });
-                  }}
-                  className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-1.5"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            )}
-
-            {/* File Upload */}
-            <div className="space-y-2">
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-700 border-dashed rounded-lg cursor-pointer bg-gray-950 hover:bg-gray-900 transition-colors">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <Upload size={24} className="text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-400">
-                    {imageFile ? imageFile.name : 'Click to upload image'}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP (Max 5MB)</p>
+          {/* Generic Popup Image Section - ONLY for legacy templates */}
+          {formData.templateId !== 'OFFER_SPLIT_IMAGE_RIGHT_CONTENT' && (
+            <div>
+              <label className="block text-sm text-gray-300 mb-1">Popup Image</label>
+              
+              {/* Image Preview */}
+              {imagePreview && (
+                <div className="mb-3 relative">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-full h-48 object-cover rounded-lg border border-gray-700"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // REAL REMOVE - set to null
+                      setImageSource({
+                        mode: 'generic',
+                        url: null,
+                        file: null
+                      });
+                    }}
+                    className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-1.5"
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      if (file.size > 5 * 1024 * 1024) {
-                        alert('File size must be less than 5MB');
-                        return;
-                      }
-                      setImageFile(file);
-                      setImagePreview(URL.createObjectURL(file));
-                      setFormData({ ...formData, image: '' }); // Clear URL if file selected
-                    }
-                  }}
-                />
-              </label>
-            </div>
+              )}
 
-            {/* Or URL Input */}
-            <div className="mt-3">
-              <p className="text-xs text-gray-500 mb-1 text-center">OR</p>
-              <input
-                type="text"
-                value={formData.image}
-                onChange={(e) => {
-                  setFormData({ ...formData, image: e.target.value });
-                  if (e.target.value) {
-                    setImageFile(null);
-                    setImagePreview(e.target.value);
-                  }
-                }}
-                className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
-                placeholder="Enter Cloudinary URL..."
-                disabled={!!imageFile}
-              />
+              {/* File Upload */}
+              <div className="space-y-2">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-700 border-dashed rounded-lg cursor-pointer bg-gray-950 hover:bg-gray-900 transition-colors">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload size={24} className="text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-400">
+                      {imageSource.file ? imageSource.file.name : 'Click to upload image'}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP (Max 5MB)</p>
+                  </div>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.size > 5 * 1024 * 1024) {
+                          alert('File size must be less than 5MB');
+                          return;
+                        }
+                        // Set file, clear URL
+                        setImageSource({
+                          mode: 'generic',
+                          url: null,
+                          file: file
+                        });
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+
+              {/* Or URL Input */}
+              <div className="mt-3">
+                <p className="text-xs text-gray-500 mb-1 text-center">OR</p>
+                <input
+                  type="text"
+                  value={imageSource.url || ''}
+                  onChange={(e) => {
+                    const url = e.target.value;
+                    // Set URL, clear file
+                    setImageSource({
+                      mode: 'generic',
+                      url: url || null,
+                      file: null
+                    });
+                  }}
+                  className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                  placeholder="Enter Cloudinary URL..."
+                  disabled={!!imageSource.file}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div>
