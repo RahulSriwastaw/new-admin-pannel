@@ -1355,8 +1355,10 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                     payload.templateImage = finalImageUrl; // Can be null
                     payload.ctaAction = formData.templateData.ctaAction;
                     payload.ctaUrl = formData.templateData?.ctaUrl;
+                    // DO NOT include popupType for template popups
                   } else {
-                    // Legacy template - use textContent
+                    // Legacy template - use textContent and legacy fields
+                    payload.popupType = formData.popupType;
                     payload.title = formData.textContent.mainTitle || formData.title;
                     payload.description = formData.textContent.description || formData.description;
                     payload.ctaText = formData.textContent.ctaText || formData.ctaText;
