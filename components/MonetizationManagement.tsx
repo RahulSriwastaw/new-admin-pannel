@@ -1205,7 +1205,10 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                   }
 
                   // Prepare payload - only send defined fields, remove empty strings
-                  let finalImageUrl = formData.image;
+                  // For template-based popup, check templateData.leftImageUrl first
+                  let finalImageUrl = formData.templateId === 'OFFER_SPLIT_IMAGE_RIGHT_CONTENT' 
+                    ? (formData.templateData?.leftImageUrl || formData.image)
+                    : formData.image;
 
                   // Handle image upload if new file selected
                   if (imageFile) {
