@@ -1309,10 +1309,17 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                   if (imageSource.file) {
                     setIsUploading(true);
                     try {
+                      console.log('📤 Uploading image file:', imageSource.file.name, imageSource.file.size);
                       const uploadRes = await api.uploadImage(imageSource.file);
-                      finalImageUrl = uploadRes.url;
+                      // API returns the URL string directly, not an object
+                      finalImageUrl = typeof uploadRes === 'string' ? uploadRes : (uploadRes?.url || uploadRes);
+                      console.log('✅ Image uploaded successfully:', finalImageUrl);
+                      if (!finalImageUrl) {
+                        throw new Error('Upload succeeded but no URL returned');
+                      }
                     } catch (uploadError: any) {
-                      setError(`Image upload failed: ${uploadError.message}`);
+                      console.error('❌ Image upload failed:', uploadError);
+                      setError(`Image upload failed: ${uploadError.message || 'Unknown error'}`);
                       setIsUploading(false);
                       setIsSaving(false);
                       return;
@@ -1321,6 +1328,7 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                   } else {
                     // Use existing URL from imageSource
                     finalImageUrl = imageSource.url;
+                    console.log('📋 Using existing image URL:', finalImageUrl);
                   }
 
                   // Auto-generate validity text if enabled
