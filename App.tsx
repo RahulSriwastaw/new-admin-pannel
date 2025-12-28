@@ -4234,7 +4234,7 @@ export default function App() {
               <div className="mt-3">
                 <label className="text-xs text-gray-500 uppercase block mb-1">Replicate Model</label>
                 <select
-                  value={t.modelIdentifier || (t.key === 'remove-bg' ? 'lucataco/remove-bg' : '')}
+                  value={t.modelIdentifier || (t.key === 'remove-bg' ? 'lucataco/remove-bg:95fcc2a26d3899cd6c2691c900465aaeff466285a65c14638cc5f36f34befaf1' : '')}
                   onChange={(e) => setToolsConfig(prev => ({ id: prev.id, tools: prev.tools.map((x, i) => i === idx ? { ...x, modelIdentifier: e.target.value } : x) }))}
                   className="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2 text-white text-sm"
                 >
