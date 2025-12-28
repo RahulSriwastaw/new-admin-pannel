@@ -673,7 +673,18 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                 showCoupon: false
               }
             });
-            setImagePreview(popupData.image || null);
+            
+            // Set unified image source based on template mode
+            const fetchedTemplateId = popupData.templateId || 'CENTER_MODAL';
+            const isTemplateMode = fetchedTemplateId === 'OFFER_SPLIT_IMAGE_RIGHT_CONTENT';
+            const imageUrl = isTemplateMode 
+              ? (popupData.templateData?.leftImageUrl || popupData.image || null)
+              : (popupData.image || null);
+            setImageSource({
+              mode: isTemplateMode ? 'template' : 'generic',
+              url: imageUrl,
+              file: null
+            });
           }
         } catch (err: any) {
           console.error('Error fetching popup:', err);
