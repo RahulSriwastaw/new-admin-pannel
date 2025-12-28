@@ -672,16 +672,16 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
               isEnabled: popupData.isEnabled !== false,
               templateId: fetchedTemplateId,
               templateData: popupData.templateData || {
-                leftImageUrl: popupData.image || '',
-                leftOverlayText: '',
-                tags: [],
-                mainHeading: '',
-                subHeading: '',
-                description: '',
-                features: [],
-                ctaText: popupData.ctaText || 'Get Discount Now',
-                ctaAction: 'apply_offer',
-                ctaUrl: ''
+                leftImageUrl: popupData.templateData?.leftImageUrl || popupData.image || '',
+                leftOverlayText: popupData.templateData?.leftOverlayText || '',
+                tags: popupData.templateData?.tags || [],
+                mainHeading: popupData.templateData?.mainHeading || '',
+                subHeading: popupData.templateData?.subHeading || '',
+                description: popupData.templateData?.description || '',
+                features: popupData.templateData?.features || [],
+                ctaText: popupData.templateData?.ctaText || popupData.ctaText || 'Get Discount Now',
+                ctaAction: popupData.templateData?.ctaAction || 'apply_offer',
+                ctaUrl: popupData.templateData?.ctaUrl || ''
               },
               textContent: popupData.textContent || {
                 brandText: '',
