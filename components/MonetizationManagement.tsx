@@ -605,12 +605,32 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
       showCoupon: false
     }
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(popup?.image || null);
+  // Unified image state - SINGLE SOURCE OF TRUTH
+  const [imageSource, setImageSource] = useState<{
+    mode: 'template' | 'generic';
+    url: string | null;
+    file: File | null;
+  }>(() => {
+    // Initialize based on template and existing data
+    const initialMode = popup?.templateId === 'OFFER_SPLIT_IMAGE_RIGHT_CONTENT' ? 'template' : 'generic';
+    const initialUrl = initialMode === 'template' 
+      ? (popup?.templateData?.leftImageUrl || popup?.image || null)
+      : (popup?.image || null);
+    return {
+      mode: initialMode,
+      url: initialUrl,
+      file: null
+    };
+  });
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isEditMode = !!popup?._id;
+
+  // Computed preview URL
+  const imagePreview = imageSource.file 
+    ? URL.createObjectURL(imageSource.file) 
+    : imageSource.url;
 
   // Fetch popup data when in edit mode
   useEffect(() => {
@@ -1221,17 +1241,13 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                     return;
                   }
 
-                  // Prepare payload - only send defined fields, remove empty strings
-                  // For template-based popup, check templateData.leftImageUrl first
-                  let finalImageUrl = formData.templateId === 'OFFER_SPLIT_IMAGE_RIGHT_CONTENT' 
-                    ? (formData.templateData?.leftImageUrl || formData.image)
-                    : formData.image;
-
                   // Handle image upload if new file selected
-                  if (imageFile) {
+                  let finalImageUrl: string | null = null;
+                  
+                  if (imageSource.file) {
                     setIsUploading(true);
                     try {
-                      const uploadRes = await api.uploadImage(imageFile);
+                      const uploadRes = await api.uploadImage(imageSource.file);
                       finalImageUrl = uploadRes.url;
                     } catch (uploadError: any) {
                       setError(`Image upload failed: ${uploadError.message}`);
@@ -1240,6 +1256,9 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                       return;
                     }
                     setIsUploading(false);
+                  } else {
+                    // Use existing URL from imageSource
+                    finalImageUrl = imageSource.url;
                   }
 
                   // Auto-generate validity text if enabled
