@@ -960,8 +960,8 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                   >
                     <option value="apply_offer">Apply Offer</option>
                     <option value="buy_plan">Buy Plan</option>
-                    <option value="watch_ad">Watch Ad</option>
-                    <option value="custom_url">Custom URL</option>
+                    <option value="open_payment">Open Payment</option>
+                    <option value="redirect">Redirect URL</option>
                   </select>
                 </div>
                 {formData.templateData?.ctaAction === 'custom_url' && (
