@@ -1325,7 +1325,6 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                   // Build payload - only include fields that are defined
                   const payload: any = {
                     templateId: formData.templateId,
-                    popupType: formData.popupType,
                     targetUsers: formData.targetUsers,
                     frequency: formData.frequency,
                     priority: Number(formData.priority) || 0,
