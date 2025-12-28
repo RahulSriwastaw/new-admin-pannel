@@ -1236,32 +1236,51 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
 
                   // Build payload - only include fields that are defined
                   const payload: any = {
-                    title: formData.textContent.mainTitle || formData.title, // Fallback for backward compatibility
-                    description: formData.textContent.description || formData.description,
-                    ctaText: formData.textContent.ctaText || formData.ctaText,
-                    ctaAction: formData.ctaAction,
+                    templateId: formData.templateId,
                     popupType: formData.popupType,
                     targetUsers: formData.targetUsers,
                     frequency: formData.frequency,
                     priority: Number(formData.priority) || 0,
                     isEnabled: formData.isEnabled,
                     startTime: new Date(formData.startTime).toISOString(),
-                    endTime: new Date(formData.endTime).toISOString(),
-                    textContent: {
-                      ...formData.textContent,
-                      validityText: validityText
-                    }
+                    endTime: new Date(formData.endTime).toISOString()
                   };
 
-                  // Only include image if it's provided (new upload or existing URL)
-                  // In edit mode, if no new image and no URL, keep existing image
-                  if (finalImageUrl) {
+                  // For OFFER_SPLIT_IMAGE_RIGHT_CONTENT template
+                  if (formData.templateId === 'OFFER_SPLIT_IMAGE_RIGHT_CONTENT') {
+                    payload.templateData = {
+                      leftImageUrl: finalImageUrl,
+                      leftOverlayText: formData.templateData?.leftOverlayText || '',
+                      tags: (formData.templateData?.tags || []).filter((t: any) => t.text && t.isEnabled),
+                      mainHeading: formData.templateData.mainHeading,
+                      subHeading: formData.templateData.subHeading,
+                      description: formData.templateData.description,
+                      features: (formData.templateData?.features || []).filter((f: any) => f.text && f.isEnabled),
+                      ctaText: formData.templateData.ctaText || 'Get Discount Now',
+                      ctaAction: formData.templateData.ctaAction || 'apply_offer',
+                      ctaUrl: formData.templateData?.ctaUrl || ''
+                    };
+                    // Also set legacy fields for backward compatibility
+                    payload.title = formData.templateData.mainHeading;
+                    payload.description = formData.templateData.description;
+                    payload.ctaText = formData.templateData.ctaText;
                     payload.image = finalImageUrl;
-                  } else if (!isEditMode) {
-                    // Only require image for new popups
-                    setError('Please upload an image or provide a valid URL');
-                    setIsSaving(false);
-                    return;
+                    payload.ctaAction = formData.templateData.ctaAction;
+                    payload.ctaUrl = formData.templateData?.ctaUrl;
+                  } else {
+                    // Legacy template - use textContent
+                    payload.title = formData.textContent.mainTitle || formData.title;
+                    payload.description = formData.textContent.description || formData.description;
+                    payload.ctaText = formData.textContent.ctaText || formData.ctaText;
+                    payload.ctaAction = formData.ctaAction;
+                    payload.ctaUrl = formData.ctaUrl;
+                    if (finalImageUrl) {
+                      payload.image = finalImageUrl;
+                    }
+                    payload.textContent = {
+                      ...formData.textContent,
+                      validityText: validityText
+                    };
                   }
 
                   // Include optional fields only if they have values
