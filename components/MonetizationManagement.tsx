@@ -1167,11 +1167,26 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                   setError(null);
                   setIsSaving(true);
 
-                  // Validate required fields
-                  if (!formData.title || !formData.description) {
-                    setError('Title and description are required');
-                    setIsSaving(false);
-                    return;
+                  // Validate required fields based on template
+                  if (formData.templateId === 'OFFER_SPLIT_IMAGE_RIGHT_CONTENT') {
+                    // Template-based validation
+                    if (!formData.templateData?.mainHeading || !formData.templateData?.subHeading || !formData.templateData?.description) {
+                      setError('Main heading, sub heading, and description are required for this template');
+                      setIsSaving(false);
+                      return;
+                    }
+                    if (!formData.templateData?.leftImageUrl && !imageFile) {
+                      setError('Banner image is required for this template');
+                      setIsSaving(false);
+                      return;
+                    }
+                  } else {
+                    // Legacy validation
+                    if (!formData.title || !formData.description) {
+                      setError('Title and description are required');
+                      setIsSaving(false);
+                      return;
+                    }
                   }
 
                   if (!formData.startTime || !formData.endTime) {
