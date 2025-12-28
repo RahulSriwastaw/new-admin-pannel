@@ -22,6 +22,7 @@ interface Popup {
   clicks: number;
   closes: number;
   templateId?: string;
+  promoCode?: string; // Promo code to auto-apply when user clicks CTA
   templateData?: {
     leftImageUrl?: string;
     leftOverlayText?: string;
@@ -586,6 +587,7 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
     startTime: popup?.startTime ? new Date(popup.startTime).toISOString().slice(0, 16) : '',
     endTime: popup?.endTime ? new Date(popup.endTime).toISOString().slice(0, 16) : '',
     isEnabled: popup?.isEnabled !== false,
+    promoCode: popup?.promoCode || '', // Promo code to auto-apply
     // Template-Based System
     templateId: popup?.templateId || 'CENTER_MODAL',
     templateData: popup?.templateData || {
@@ -670,6 +672,7 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
               startTime: popupData.startTime ? new Date(popupData.startTime).toISOString().slice(0, 16) : '',
               endTime: popupData.endTime ? new Date(popupData.endTime).toISOString().slice(0, 16) : '',
               isEnabled: popupData.isEnabled !== false,
+              promoCode: popupData.promoCode || '', // Initialize promo code from fetched data
               templateId: fetchedTemplateId,
               templateData: popupData.templateData || {
                 leftImageUrl: popupData.templateData?.leftImageUrl || popupData.image || '',
@@ -1183,6 +1186,25 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
             </div>
           </div>
 
+          {/* Promo Code Field (for apply_offer action) */}
+          {(formData.ctaAction === 'apply_offer' || formData.templateData?.ctaAction === 'apply_offer') && (
+            <div>
+              <label className="block text-sm text-gray-300 mb-1">
+                Promo Code <span className="text-gray-500">(Optional - Auto-apply when user clicks CTA)</span>
+              </label>
+              <input
+                type="text"
+                value={formData.promoCode}
+                onChange={(e) => setFormData({ ...formData, promoCode: e.target.value.toUpperCase().trim() })}
+                className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                placeholder="e.g., SALE30, NEWUSER10"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Enter the promo code that will be automatically applied when user clicks "Get Discount Now" button
+              </p>
+            </div>
+          )}
+
           {/* Legacy CTA Fields - ONLY for legacy templates */}
           {formData.templateId !== 'OFFER_SPLIT_IMAGE_RIGHT_CONTENT' && (
             <>
@@ -1350,6 +1372,11 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                     startTime: new Date(formData.startTime).toISOString(),
                     endTime: new Date(formData.endTime).toISOString()
                   };
+
+                  // Add promo code if provided
+                  if (formData.promoCode && formData.promoCode.trim()) {
+                    payload.promoCode = formData.promoCode.toUpperCase().trim();
+                  }
 
                   // For OFFER_SPLIT_IMAGE_RIGHT_CONTENT template
                   if (formData.templateId === 'OFFER_SPLIT_IMAGE_RIGHT_CONTENT') {
