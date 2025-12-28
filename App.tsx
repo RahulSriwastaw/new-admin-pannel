@@ -4235,15 +4235,32 @@ export default function App() {
                 <div>
                   <label className="text-xs text-gray-500 uppercase block mb-1">REPLICATE MODEL ID</label>
                   {t.key === 'remove-bg' ? (
-                    <select
-                      value={t.modelIdentifier || 'lucataco/remove-bg:95fcc2a26d3899cd6c2691c900465aaeff466285a65c14638cc5f36f34befaf1'}
-                      onChange={(e) => setToolsConfig(prev => ({ id: prev.id, tools: prev.tools.map((x, i) => i === idx ? { ...x, modelIdentifier: e.target.value } : x) }))}
-                      className="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2 text-white text-sm"
-                    >
-                      <option value="lucataco/remove-bg:95fcc2a26d3899cd6c2691c900465aaeff466285a65c14638cc5f36f34befaf1">lucataco/remove-bg:95fcc2a26d3899cd6c2691c900465aaeff466285a65c14638cc5f36f34befaf1</option>
-                      <option value="lucataco/remove-bg">lucataco/remove-bg</option>
-                      <option value="cjwbw/rembg">cjwbw/rembg</option>
-                    </select>
+                    <>
+                      <div className="flex gap-2 mb-2">
+                        <select
+                          value={t.modelIdentifier || 'lucataco/remove-bg:95fcc2a26d3899cd6c2691c900465aaeff466285a65c14638cc5f36f34befaf1'}
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              setToolsConfig(prev => ({ id: prev.id, tools: prev.tools.map((x, i) => i === idx ? { ...x, modelIdentifier: e.target.value } : x) }));
+                            }
+                          }}
+                          className="flex-1 bg-gray-950 border border-gray-800 rounded px-3 py-2 text-white text-sm"
+                        >
+                          <option value="">Select from list...</option>
+                          <option value="lucataco/remove-bg:95fcc2a26d3899cd6c2691c900465aaeff466285a65c14638cc5f36f34befaf1">lucataco/remove-bg (Recommended - with version)</option>
+                          <option value="lucataco/remove-bg">lucataco/remove-bg (without version)</option>
+                          <option value="cjwbw/rembg">cjwbw/rembg</option>
+                        </select>
+                        <span className="text-xs text-gray-500 flex items-center px-2">OR</span>
+                      </div>
+                      <input
+                        type="text"
+                        value={t.modelIdentifier || ''}
+                        onChange={(e) => setToolsConfig(prev => ({ id: prev.id, tools: prev.tools.map((x, i) => i === idx ? { ...x, modelIdentifier: e.target.value } : x) }))}
+                        className="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2 text-white text-sm"
+                        placeholder="owner/model_name:version (e.g. lucataco/remove-bg:95fcc2a26d3899cd6c2691c900465aaeff466285a65c14638cc5f36f34befaf1)"
+                      />
+                    </>
                   ) : (
                     <input
                       type="text"
