@@ -964,7 +964,7 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                     <option value="redirect">Redirect URL</option>
                   </select>
                 </div>
-                {formData.templateData?.ctaAction === 'custom_url' && (
+                {formData.templateData?.ctaAction === 'redirect' && (
                   <div className="mt-2">
                     <input
                       type="text"
