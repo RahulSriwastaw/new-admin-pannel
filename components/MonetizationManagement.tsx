@@ -1845,7 +1845,12 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                       mainHeading: formData.templateData.mainHeading,
                       subHeading: formData.templateData.subHeading,
                       description: formData.templateData.description,
-                      features: featuresList,
+                      features: featuresList.map((f: any) => ({
+                        text: f.text,
+                        badgeType: f.badgeType || 'unlimited', // Ensure badgeType is always present
+                        isEnabled: f.isEnabled !== false,
+                        order: f.order || 0
+                      })),
                       ctaText: formData.templateData.ctaText || 'Get Discount Now',
                       ctaAction: formData.templateData.ctaAction || 'apply_offer',
                       ctaUrl: formData.templateData?.ctaUrl || ''
