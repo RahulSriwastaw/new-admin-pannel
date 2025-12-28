@@ -654,6 +654,7 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
           const response = await api.getPopup(popup._id);
           if (response.success && response.popup) {
             const popupData = response.popup;
+            const fetchedTemplateId = popupData.templateId || 'CENTER_MODAL';
             setFormData({
               title: popupData.title || '',
               description: popupData.description || '',
@@ -669,6 +670,19 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
               startTime: popupData.startTime ? new Date(popupData.startTime).toISOString().slice(0, 16) : '',
               endTime: popupData.endTime ? new Date(popupData.endTime).toISOString().slice(0, 16) : '',
               isEnabled: popupData.isEnabled !== false,
+              templateId: fetchedTemplateId,
+              templateData: popupData.templateData || {
+                leftImageUrl: popupData.image || '',
+                leftOverlayText: '',
+                tags: [],
+                mainHeading: '',
+                subHeading: '',
+                description: '',
+                features: [],
+                ctaText: popupData.ctaText || 'Get Discount Now',
+                ctaAction: 'apply_offer',
+                ctaUrl: ''
+              },
               textContent: popupData.textContent || {
                 brandText: '',
                 showBrandText: false,
