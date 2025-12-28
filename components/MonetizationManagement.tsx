@@ -704,9 +704,19 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
             
             // Set unified image source based on template mode
             const isTemplateMode = fetchedTemplateId === 'OFFER_SPLIT_IMAGE_RIGHT_CONTENT';
+            // For template mode, prioritize templateData.leftImageUrl, fallback to image
+            // For legacy mode, use image field
             const imageUrl = isTemplateMode 
               ? (popupData.templateData?.leftImageUrl || popupData.image || null)
               : (popupData.image || null);
+            
+            console.log('Setting imageSource in edit mode:', {
+              isTemplateMode,
+              templateDataLeftImageUrl: popupData.templateData?.leftImageUrl,
+              popupImage: popupData.image,
+              finalImageUrl: imageUrl
+            });
+            
             setImageSource({
               mode: isTemplateMode ? 'template' : 'generic',
               url: imageUrl,
