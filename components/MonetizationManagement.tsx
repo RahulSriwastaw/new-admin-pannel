@@ -26,6 +26,13 @@ interface Popup {
   templateData?: {
     leftImageUrl?: string;
     leftOverlayText?: string;
+    leftBrandText?: string;
+    leftMainText?: string;
+    leftDescription?: string;
+    leftPromoCode?: string;
+    leftUrgencyText?: string;
+    leftCtaText?: string;
+    leftBackgroundColor?: string;
     tags?: any[];
     mainHeading?: string;
     subHeading?: string;
@@ -595,6 +602,13 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
     templateData: popup?.templateData || {
       leftImageUrl: popup?.image || '',
       leftOverlayText: '',
+      leftBrandText: '',
+      leftMainText: '',
+      leftDescription: '',
+      leftPromoCode: '',
+      leftUrgencyText: '',
+      leftCtaText: '',
+      leftBackgroundColor: '#FFA500',
       tags: [],
       mainHeading: '',
       subHeading: '',
@@ -681,6 +695,13 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
               templateData: popupData.templateData || {
                 leftImageUrl: popupData.templateData?.leftImageUrl || popupData.image || '',
                 leftOverlayText: popupData.templateData?.leftOverlayText || '',
+                leftBrandText: popupData.templateData?.leftBrandText || '',
+                leftMainText: popupData.templateData?.leftMainText || '',
+                leftDescription: popupData.templateData?.leftDescription || '',
+                leftPromoCode: popupData.templateData?.leftPromoCode || '',
+                leftUrgencyText: popupData.templateData?.leftUrgencyText || '',
+                leftCtaText: popupData.templateData?.leftCtaText || '',
+                leftBackgroundColor: popupData.templateData?.leftBackgroundColor || '#FFA500',
                 tags: popupData.templateData?.tags || [],
                 mainHeading: popupData.templateData?.mainHeading || '',
                 subHeading: popupData.templateData?.subHeading || '',
@@ -792,9 +813,45 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
             <div className="space-y-4 bg-gray-950/50 p-4 rounded-lg border border-gray-700">
               <h5 className="text-sm font-semibold text-white mb-3">Template: Offer Split Layout</h5>
               
-              {/* Template Banner Image Section - ONLY for template-based popups */}
-              <div className="mb-4">
-                <label className="block text-sm text-gray-300 mb-1">Template Banner Image *</label>
+              {/* Left Side Content Section */}
+              <div className="mb-4 space-y-4 bg-orange-950/30 p-4 rounded-lg border border-orange-800/30">
+                <h5 className="text-sm font-semibold text-orange-300 mb-3">Left Side Content (Image + Text)</h5>
+                
+                {/* Background Color */}
+                <div>
+                  <label className="block text-xs text-gray-400 mb-1">Background Color</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={formData.templateData?.leftBackgroundColor || '#FFA500'}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        templateData: {
+                          ...formData.templateData,
+                          leftBackgroundColor: e.target.value
+                        }
+                      })}
+                      className="w-16 h-10 rounded border border-gray-700"
+                    />
+                    <input
+                      type="text"
+                      value={formData.templateData?.leftBackgroundColor || '#FFA500'}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        templateData: {
+                          ...formData.templateData,
+                          leftBackgroundColor: e.target.value
+                        }
+                      })}
+                      className="flex-1 bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                      placeholder="#FFA500"
+                    />
+                  </div>
+                </div>
+
+                {/* Template Banner Image Section - ONLY for template-based popups */}
+                <div>
+                  <label className="block text-sm text-gray-300 mb-1">Background Image (Optional)</label>
                 {imagePreview && (
                   <div className="mb-3 relative">
                     <img
@@ -865,22 +922,134 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                     disabled={!!imageSource.file}
                   />
                 </div>
-                <div className="mt-2">
-                  <label className="block text-xs text-gray-400 mb-1">Overlay Text (Optional)</label>
-                  <input
-                    type="text"
-                    value={formData.templateData?.leftOverlayText || ''}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      templateData: {
-                        ...formData.templateData,
-                        leftOverlayText: e.target.value
-                      }
-                    })}
-                    className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
-                    placeholder="e.g. 81% OFF"
-                    maxLength={20}
-                  />
+                  <div className="mt-2">
+                    <label className="block text-xs text-gray-400 mb-1">Overlay Text (Optional)</label>
+                    <input
+                      type="text"
+                      value={formData.templateData?.leftOverlayText || ''}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        templateData: {
+                          ...formData.templateData,
+                          leftOverlayText: e.target.value
+                        }
+                      })}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                      placeholder="e.g. 81% OFF"
+                      maxLength={20}
+                    />
+                  </div>
+                </div>
+
+                {/* Left Side Text Content */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Brand Text (e.g., BORCELLE STORE)</label>
+                    <input
+                      type="text"
+                      value={formData.templateData?.leftBrandText || ''}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        templateData: {
+                          ...formData.templateData,
+                          leftBrandText: e.target.value.toUpperCase()
+                        }
+                      })}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                      placeholder="BORCELLE STORE"
+                      maxLength={30}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Main Text (e.g., SPECIAL OFFER)</label>
+                    <input
+                      type="text"
+                      value={formData.templateData?.leftMainText || ''}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        templateData: {
+                          ...formData.templateData,
+                          leftMainText: e.target.value.toUpperCase()
+                        }
+                      })}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm font-bold"
+                      placeholder="SPECIAL OFFER"
+                      maxLength={30}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Description</label>
+                    <textarea
+                      value={formData.templateData?.leftDescription || ''}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        templateData: {
+                          ...formData.templateData,
+                          leftDescription: e.target.value
+                        }
+                      })}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                      rows={2}
+                      placeholder="Enjoy up to 30% OFF everything in-store!"
+                      maxLength={100}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Promo Code Text</label>
+                    <input
+                      type="text"
+                      value={formData.templateData?.leftPromoCode || ''}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        templateData: {
+                          ...formData.templateData,
+                          leftPromoCode: e.target.value
+                        }
+                      })}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                      placeholder="Code : SALE30"
+                      maxLength={30}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Urgency Text</label>
+                    <input
+                      type="text"
+                      value={formData.templateData?.leftUrgencyText || ''}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        templateData: {
+                          ...formData.templateData,
+                          leftUrgencyText: e.target.value
+                        }
+                      })}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm italic"
+                      placeholder="Hurry, this deal won't last long!"
+                      maxLength={50}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">Left CTA Button Text</label>
+                    <input
+                      type="text"
+                      value={formData.templateData?.leftCtaText || ''}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        templateData: {
+                          ...formData.templateData,
+                          leftCtaText: e.target.value.toUpperCase()
+                        }
+                      })}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm font-semibold"
+                      placeholder="SHOP NOW"
+                      maxLength={20}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1655,6 +1824,13 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                     payload.templateData = {
                       leftImageUrl: finalImageUrl,
                       leftOverlayText: formData.templateData?.leftOverlayText || '',
+                      leftBrandText: formData.templateData?.leftBrandText || '',
+                      leftMainText: formData.templateData?.leftMainText || '',
+                      leftDescription: formData.templateData?.leftDescription || '',
+                      leftPromoCode: formData.templateData?.leftPromoCode || '',
+                      leftUrgencyText: formData.templateData?.leftUrgencyText || '',
+                      leftCtaText: formData.templateData?.leftCtaText || '',
+                      leftBackgroundColor: formData.templateData?.leftBackgroundColor || '#FFA500',
                       tags: (formData.templateData?.tags || []).filter((t: any) => t.text && t.isEnabled),
                       mainHeading: formData.templateData.mainHeading,
                       subHeading: formData.templateData.subHeading,
