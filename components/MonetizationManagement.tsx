@@ -985,7 +985,7 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
             </div>
           ) : (
             <>
-              {/* Legacy Fields */}
+              {/* Legacy Fields - ONLY for legacy templates */}
               <div>
                 <label className="block text-sm text-gray-300 mb-1">Title *</label>
                 <input
