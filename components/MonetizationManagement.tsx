@@ -1365,15 +1365,21 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                       ctaAction: formData.templateData.ctaAction || 'apply_offer',
                       ctaUrl: formData.templateData?.ctaUrl || ''
                     };
-                    // Also set legacy fields for backward compatibility
+                    // Also set legacy fields for backward compatibility (but NOT image fields)
                     payload.title = formData.templateData.mainHeading;
                     payload.description = formData.templateData.description;
                     payload.ctaText = formData.templateData.ctaText;
-                    // ONLY templateImage field - NEVER send both image and templateImage
-                    payload.templateImage = finalImageUrl; // Can be null
+                    // DO NOT send templateImage - only templateData.leftImageUrl should be sent
+                    // Backend will handle templateData.leftImageUrl correctly
                     payload.ctaAction = formData.templateData.ctaAction;
                     payload.ctaUrl = formData.templateData?.ctaUrl;
                     // DO NOT include popupType for template popups
+                    console.log('📤 Payload for OFFER_SPLIT template:', {
+                      templateDataLeftImageUrl: payload.templateData.leftImageUrl,
+                      hasTemplateImage: 'templateImage' in payload,
+                      hasImage: 'image' in payload,
+                      hasImageInTemplateData: !!payload.templateData.leftImageUrl
+                    });
                   } else {
                     // Legacy template - use textContent and legacy fields
                     payload.popupType = formData.popupType;
