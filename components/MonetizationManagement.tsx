@@ -737,25 +737,21 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
               {/* Template Banner Image Section - ONLY for template-based popups */}
               <div className="mb-4">
                 <label className="block text-sm text-gray-300 mb-1">Template Banner Image *</label>
-                {(formData.templateData?.leftImageUrl || imagePreview) && (
+                {imagePreview && (
                   <div className="mb-3 relative">
                     <img
-                      src={formData.templateData?.leftImageUrl || imagePreview || ''}
+                      src={imagePreview}
                       alt="Banner Preview"
                       className="w-full h-48 object-cover rounded-lg border border-gray-700"
                     />
                     <button
                       type="button"
                       onClick={() => {
-                        setImageFile(null);
-                        setImagePreview(null);
-                        setFormData({
-                          ...formData,
-                          templateData: {
-                            ...formData.templateData,
-                            leftImageUrl: '' // Clear template image
-                          },
-                          image: '' // Also clear legacy image field
+                        // REAL REMOVE - set to null
+                        setImageSource({
+                          mode: 'template',
+                          url: null,
+                          file: null
                         });
                       }}
                       className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-1.5"
@@ -768,7 +764,7 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <Upload size={24} className="text-gray-400 mb-2" />
                     <p className="text-sm text-gray-400">
-                      {imageFile ? imageFile.name : 'Click to upload banner image'}
+                      {imageSource.file ? imageSource.file.name : 'Click to upload banner image'}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP (Max 5MB)</p>
                   </div>
@@ -783,15 +779,11 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                           alert('File size must be less than 5MB');
                           return;
                         }
-                        setImageFile(file);
-                        setImagePreview(URL.createObjectURL(file));
-                        // Clear URL input when file is selected
-                        setFormData({
-                          ...formData,
-                          templateData: {
-                            ...formData.templateData,
-                            leftImageUrl: ''
-                          }
+                        // Set file, clear URL
+                        setImageSource({
+                          mode: 'template',
+                          url: null,
+                          file: file
                         });
                       }
                     }}
@@ -800,25 +792,19 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                 <div className="mt-3">
                   <input
                     type="text"
-                    value={formData.templateData?.leftImageUrl || ''}
+                    value={imageSource.url || ''}
                     onChange={(e) => {
                       const url = e.target.value;
-                      setFormData({
-                        ...formData,
-                        templateData: {
-                          ...formData.templateData,
-                          leftImageUrl: url
-                        }
+                      // Set URL, clear file
+                      setImageSource({
+                        mode: 'template',
+                        url: url || null,
+                        file: null
                       });
-                      // Clear file when URL is entered
-                      if (url) {
-                        setImageFile(null);
-                        setImagePreview(url);
-                      }
                     }}
                     className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
                     placeholder="Or enter Cloudinary URL..."
-                    disabled={!!imageFile}
+                    disabled={!!imageSource.file}
                   />
                 </div>
                 <div className="mt-2">
@@ -1223,7 +1209,8 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                       setIsSaving(false);
                       return;
                     }
-                    if (!formData.templateData?.leftImageUrl && !imageFile) {
+                    // Check if image exists (file or URL)
+                    if (!imageSource.file && !imageSource.url) {
                       setError('Banner image is required for this template');
                       setIsSaving(false);
                       return;
@@ -1329,6 +1316,15 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                       validityText: validityText
                     };
                   }
+
+                  // DEBUG: Log final payload to confirm only one image field
+                  console.log('FINAL IMAGE PAYLOAD', {
+                    hasImage: 'image' in payload,
+                    hasTemplateImage: 'templateImage' in payload,
+                    imageValue: payload.image,
+                    templateImageValue: payload.templateImage,
+                    templateDataLeftImageUrl: payload.templateData?.leftImageUrl
+                  });
 
                   // Include optional fields only if they have values
                   if (formData.ctaUrl) {
