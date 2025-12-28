@@ -1813,9 +1813,20 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                   let featuresList = (formData.templateData?.features || []).filter((f: any) => f.text && f.isEnabled);
                   if (templateValidityText) {
                     featuresList = [
-                      { text: templateValidityText, badgeType: '', isEnabled: true, order: -1 },
-                      ...featuresList.map((f: any, idx: number) => ({ ...f, order: idx }))
+                      { text: templateValidityText, badgeType: 'unlimited', isEnabled: true, order: -1 },
+                      ...featuresList.map((f: any, idx: number) => ({ 
+                        ...f, 
+                        order: idx,
+                        badgeType: f.badgeType || 'unlimited' // Ensure badgeType is always set
+                      }))
                     ];
+                  } else {
+                    // Ensure all features have badgeType
+                    featuresList = featuresList.map((f: any, idx: number) => ({ 
+                      ...f, 
+                      order: idx,
+                      badgeType: f.badgeType || 'unlimited' // Default to unlimited if not set
+                    }));
                   }
 
                   // For OFFER_SPLIT_IMAGE_RIGHT_CONTENT template
