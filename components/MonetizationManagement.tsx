@@ -30,6 +30,8 @@ interface Popup {
     mainHeading?: string;
     subHeading?: string;
     description?: string;
+    validityText?: string;
+    autoGenerateValidity?: boolean;
     features?: any[];
     ctaText?: string;
     ctaAction?: string;
@@ -597,6 +599,8 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
       mainHeading: '',
       subHeading: '',
       description: '',
+      validityText: '',
+      autoGenerateValidity: false,
       features: [],
       ctaText: popup?.ctaText || 'Get Discount Now',
       ctaAction: 'apply_offer',
@@ -681,6 +685,8 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                 mainHeading: popupData.templateData?.mainHeading || '',
                 subHeading: popupData.templateData?.subHeading || '',
                 description: popupData.templateData?.description || '',
+                validityText: popupData.templateData?.validityText || '',
+                autoGenerateValidity: popupData.templateData?.autoGenerateValidity || false,
                 features: popupData.templateData?.features || [],
                 ctaText: popupData.templateData?.ctaText || popupData.ctaText || 'Get Discount Now',
                 ctaAction: popupData.templateData?.ctaAction || 'apply_offer',
@@ -939,6 +945,254 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                 <p className="text-xs text-gray-500 mt-1">
                   {(formData.templateData?.description || '').length} / 150 characters
                 </p>
+              </div>
+
+              {/* Validity Text (Limited-time offer) */}
+              <div className="mb-4">
+                <label className="block text-sm text-gray-300 mb-1">Validity Text (Optional)</label>
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={formData.templateData?.validityText || ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      templateData: {
+                        ...formData.templateData,
+                        validityText: e.target.value
+                      }
+                    })}
+                    className="flex-1 bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                    placeholder="Limited-time offer — ends 28th Dec"
+                  />
+                  <label className="flex items-center gap-2 text-xs text-gray-400 whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={formData.templateData?.autoGenerateValidity || false}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        templateData: {
+                          ...formData.templateData,
+                          autoGenerateValidity: e.target.checked
+                        }
+                      })}
+                      className="rounded"
+                    />
+                    Auto-generate from End Time
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500">This will appear as the first item in the features list</p>
+              </div>
+
+              {/* Tags Section (Top Badges like "Limited offer", "Holiday sale") */}
+              <div className="mb-4">
+                <label className="block text-sm text-gray-300 mb-2">Top Tags/Badges</label>
+                <div className="space-y-2">
+                  {(formData.templateData?.tags || []).map((tag: any, idx: number) => (
+                    <div key={idx} className="flex items-center gap-2 bg-gray-900 p-2 rounded">
+                      <input
+                        type="text"
+                        value={tag.text || ''}
+                        onChange={(e) => {
+                          const newTags = [...(formData.templateData?.tags || [])];
+                          newTags[idx] = { ...tag, text: e.target.value };
+                          setFormData({
+                            ...formData,
+                            templateData: {
+                              ...formData.templateData,
+                              tags: newTags
+                            }
+                          });
+                        }}
+                        className="flex-1 bg-gray-950 border border-gray-700 rounded px-2 py-1 text-white text-sm"
+                        placeholder="e.g., Limited offer"
+                      />
+                      <select
+                        value={tag.color || 'red'}
+                        onChange={(e) => {
+                          const newTags = [...(formData.templateData?.tags || [])];
+                          newTags[idx] = { ...tag, color: e.target.value };
+                          setFormData({
+                            ...formData,
+                            templateData: {
+                              ...formData.templateData,
+                              tags: newTags
+                            }
+                          });
+                        }}
+                        className="bg-gray-950 border border-gray-700 rounded px-2 py-1 text-white text-sm"
+                      >
+                        <option value="red">Red</option>
+                        <option value="orange">Orange</option>
+                        <option value="green">Green</option>
+                        <option value="blue">Blue</option>
+                        <option value="yellow">Yellow</option>
+                        <option value="purple">Purple</option>
+                      </select>
+                      <label className="flex items-center gap-1 text-xs text-gray-400">
+                        <input
+                          type="checkbox"
+                          checked={tag.isEnabled !== false}
+                          onChange={(e) => {
+                            const newTags = [...(formData.templateData?.tags || [])];
+                            newTags[idx] = { ...tag, isEnabled: e.target.checked };
+                            setFormData({
+                              ...formData,
+                              templateData: {
+                                ...formData.templateData,
+                                tags: newTags
+                              }
+                            });
+                          }}
+                          className="rounded"
+                        />
+                        Show
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newTags = (formData.templateData?.tags || []).filter((_: any, i: number) => i !== idx);
+                          setFormData({
+                            ...formData,
+                            templateData: {
+                              ...formData.templateData,
+                              tags: newTags
+                            }
+                          });
+                        }}
+                        className="text-red-400 hover:text-red-300"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newTags = [...(formData.templateData?.tags || []), {
+                        text: '',
+                        color: 'red',
+                        isEnabled: true,
+                        order: (formData.templateData?.tags || []).length
+                      }];
+                      setFormData({
+                        ...formData,
+                        templateData: {
+                          ...formData.templateData,
+                          tags: newTags
+                        }
+                      });
+                    }}
+                    className="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 rounded text-sm flex items-center justify-center gap-2"
+                  >
+                    <Plus size={16} /> Add Tag
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Tags appear at the top of the popup (e.g., "Limited offer", "Holiday sale")</p>
+              </div>
+
+              {/* Features List Section */}
+              <div className="mb-4">
+                <label className="block text-sm text-gray-300 mb-2">Features List (with Badges)</label>
+                <div className="space-y-2">
+                  {(formData.templateData?.features || []).map((feature: any, idx: number) => (
+                    <div key={idx} className="flex items-center gap-2 bg-gray-900 p-2 rounded">
+                      <input
+                        type="text"
+                        value={feature.text || ''}
+                        onChange={(e) => {
+                          const newFeatures = [...(formData.templateData?.features || [])];
+                          newFeatures[idx] = { ...feature, text: e.target.value };
+                          setFormData({
+                            ...formData,
+                            templateData: {
+                              ...formData.templateData,
+                              features: newFeatures
+                            }
+                          });
+                        }}
+                        className="flex-1 bg-gray-950 border border-gray-700 rounded px-2 py-1 text-white text-sm"
+                        placeholder="e.g., Seedance Pro Fast"
+                      />
+                      <select
+                        value={feature.badgeType || ''}
+                        onChange={(e) => {
+                          const newFeatures = [...(formData.templateData?.features || [])];
+                          newFeatures[idx] = { ...feature, badgeType: e.target.value };
+                          setFormData({
+                            ...formData,
+                            templateData: {
+                              ...formData.templateData,
+                              features: newFeatures
+                            }
+                          });
+                        }}
+                        className="bg-gray-950 border border-gray-700 rounded px-2 py-1 text-white text-sm"
+                      >
+                        <option value="">No Badge</option>
+                        <option value="unlimited">Unlimited (Green)</option>
+                        <option value="pro">Pro (Blue)</option>
+                        <option value="included">Included (Purple)</option>
+                      </select>
+                      <label className="flex items-center gap-1 text-xs text-gray-400">
+                        <input
+                          type="checkbox"
+                          checked={feature.isEnabled !== false}
+                          onChange={(e) => {
+                            const newFeatures = [...(formData.templateData?.features || [])];
+                            newFeatures[idx] = { ...feature, isEnabled: e.target.checked };
+                            setFormData({
+                              ...formData,
+                              templateData: {
+                                ...formData.templateData,
+                                features: newFeatures
+                              }
+                            });
+                          }}
+                          className="rounded"
+                        />
+                        Show
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newFeatures = (formData.templateData?.features || []).filter((_: any, i: number) => i !== idx);
+                          setFormData({
+                            ...formData,
+                            templateData: {
+                              ...formData.templateData,
+                              features: newFeatures
+                            }
+                          });
+                        }}
+                        className="text-red-400 hover:text-red-300"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newFeatures = [...(formData.templateData?.features || []), {
+                        text: '',
+                        badgeType: '',
+                        isEnabled: true,
+                        order: (formData.templateData?.features || []).length
+                      }];
+                      setFormData({
+                        ...formData,
+                        templateData: {
+                          ...formData.templateData,
+                          features: newFeatures
+                        }
+                      });
+                    }}
+                    className="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 rounded text-sm flex items-center justify-center gap-2"
+                  >
+                    <Plus size={16} /> Add Feature
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Features appear as a list with checkmarks and badges (e.g., "Unlimited" badge)</p>
               </div>
 
               {/* CTA */}
@@ -1378,6 +1632,24 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                     payload.promoCode = formData.promoCode.toUpperCase().trim();
                   }
 
+                  // Auto-generate validity text if enabled
+                  let templateValidityText = formData.templateData?.validityText || '';
+                  if (formData.templateData?.autoGenerateValidity && formData.endTime) {
+                    const endDate = new Date(formData.endTime);
+                    const day = endDate.getDate();
+                    const month = endDate.toLocaleString('en-US', { month: 'short' });
+                    templateValidityText = `Limited-time offer — ends ${day}${getOrdinalSuffix(day)} ${month}`;
+                  }
+
+                  // Build features list - add validity text as first item if provided
+                  let featuresList = (formData.templateData?.features || []).filter((f: any) => f.text && f.isEnabled);
+                  if (templateValidityText) {
+                    featuresList = [
+                      { text: templateValidityText, badgeType: '', isEnabled: true, order: -1 },
+                      ...featuresList.map((f: any, idx: number) => ({ ...f, order: idx }))
+                    ];
+                  }
+
                   // For OFFER_SPLIT_IMAGE_RIGHT_CONTENT template
                   if (formData.templateId === 'OFFER_SPLIT_IMAGE_RIGHT_CONTENT') {
                     payload.templateData = {
@@ -1387,7 +1659,7 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                       mainHeading: formData.templateData.mainHeading,
                       subHeading: formData.templateData.subHeading,
                       description: formData.templateData.description,
-                      features: (formData.templateData?.features || []).filter((f: any) => f.text && f.isEnabled),
+                      features: featuresList,
                       ctaText: formData.templateData.ctaText || 'Get Discount Now',
                       ctaAction: formData.templateData.ctaAction || 'apply_offer',
                       ctaUrl: formData.templateData?.ctaUrl || ''
