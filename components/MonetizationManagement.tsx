@@ -1283,10 +1283,10 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                         placeholder="e.g., Seedance Pro Fast"
                       />
                       <select
-                        value={feature.badgeType || ''}
+                        value={feature.badgeType || 'unlimited'}
                         onChange={(e) => {
                           const newFeatures = [...(formData.templateData?.features || [])];
-                          newFeatures[idx] = { ...feature, badgeType: e.target.value };
+                          newFeatures[idx] = { ...feature, badgeType: e.target.value || 'unlimited' };
                           setFormData({
                             ...formData,
                             templateData: {
@@ -1297,10 +1297,9 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                         }}
                         className="bg-gray-950 border border-gray-700 rounded px-2 py-1 text-white text-sm"
                       >
-                        <option value="">No Badge</option>
                         <option value="unlimited">Unlimited (Green)</option>
-                        <option value="pro">Pro (Blue)</option>
-                        <option value="included">Included (Purple)</option>
+                        <option value="pro">Pro (Dark Green)</option>
+                        <option value="included">Included (Golden Yellow)</option>
                       </select>
                       <label className="flex items-center gap-1 text-xs text-gray-400">
                         <input
@@ -1344,7 +1343,7 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                     onClick={() => {
                       const newFeatures = [...(formData.templateData?.features || []), {
                         text: '',
-                        badgeType: '',
+                        badgeType: 'unlimited', // Default to unlimited badge
                         isEnabled: true,
                         order: (formData.templateData?.features || []).length
                       }];
