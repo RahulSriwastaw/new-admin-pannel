@@ -4229,6 +4229,51 @@ export default function App() {
                 />
               </div>
             </div>
+            {/* Model Selection for Replicate Provider */}
+            {t.provider === 'Replicate' && (
+              <div className="mt-3">
+                <label className="text-xs text-gray-500 uppercase block mb-1">Replicate Model</label>
+                <select
+                  value={t.modelIdentifier || (t.key === 'remove-bg' ? 'lucataco/remove-bg' : '')}
+                  onChange={(e) => setToolsConfig(prev => ({ id: prev.id, tools: prev.tools.map((x, i) => i === idx ? { ...x, modelIdentifier: e.target.value } : x) }))}
+                  className="w-full bg-gray-950 border border-gray-800 rounded px-3 py-2 text-white text-sm"
+                >
+                  {t.key === 'remove-bg' && (
+                    <>
+                      <option value="lucataco/remove-bg">lucataco/remove-bg (Recommended)</option>
+                      <option value="cjwbw/rembg">cjwbw/rembg</option>
+                    </>
+                  )}
+                  {t.key === 'upscale' && (
+                    <>
+                      <option value="nightmareai/real-esrgan">nightmareai/real-esrgan</option>
+                    </>
+                  )}
+                  {t.key === 'face-enhance' && (
+                    <>
+                      <option value="tencentarc/gfpgan">tencentarc/gfpgan</option>
+                    </>
+                  )}
+                  {t.key === 'colorize' && (
+                    <>
+                      <option value="jantic/deoldify">jantic/deoldify</option>
+                    </>
+                  )}
+                  {t.key === 'style' && (
+                    <>
+                      <option value="lucataco/anime-line-drawing">lucataco/anime-line-drawing</option>
+                    </>
+                  )}
+                </select>
+                {t.key === 'remove-bg' && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    <a href="https://replicate.com/lucataco/remove-bg" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">
+                      View model details →
+                    </a>
+                  </p>
+                )}
+              </div>
+            )}
             <div className="mt-3 flex justify-end">
               <button onClick={async () => { const updated = await api.updateToolsConfig(toolsConfig.tools); setToolsConfig(updated); addLog(`Updated tool: ${t.name}`, LogLevel.SUCCESS, 'AdminPanel'); }} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm">Save</button>
             </div>

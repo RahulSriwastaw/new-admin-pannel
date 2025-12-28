@@ -185,7 +185,7 @@ export interface FinanceConfig {
 
 export interface ToolConfig {
   id: string;
-  tools: { key: string; name: string; cost: number; isActive: boolean; provider?: string; apiKey?: string }[];
+  tools: { key: string; name: string; cost: number; isActive: boolean; provider?: string; apiKey?: string; modelIdentifier?: string }[];
 }
 
 // Admin Management Types
