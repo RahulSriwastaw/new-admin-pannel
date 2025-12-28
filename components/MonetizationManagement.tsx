@@ -703,9 +703,9 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
             <div className="space-y-4 bg-gray-950/50 p-4 rounded-lg border border-gray-700">
               <h5 className="text-sm font-semibold text-white mb-3">Template: Offer Split Layout</h5>
               
-              {/* Left Image Section */}
+              {/* Template Banner Image Section - ONLY for template-based popups */}
               <div className="mb-4">
-                <label className="block text-sm text-gray-300 mb-1">Left Banner Image *</label>
+                <label className="block text-sm text-gray-300 mb-1">Template Banner Image *</label>
                 {(formData.templateData?.leftImageUrl || imagePreview) && (
                   <div className="mb-3 relative">
                     <img
@@ -722,8 +722,9 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                           ...formData,
                           templateData: {
                             ...formData.templateData,
-                            leftImageUrl: ''
-                          }
+                            leftImageUrl: '' // Clear template image
+                          },
+                          image: '' // Also clear legacy image field
                         });
                       }}
                       className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white rounded-full p-1.5"
@@ -753,6 +754,14 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                         }
                         setImageFile(file);
                         setImagePreview(URL.createObjectURL(file));
+                        // Clear URL input when file is selected
+                        setFormData({
+                          ...formData,
+                          templateData: {
+                            ...formData.templateData,
+                            leftImageUrl: ''
+                          }
+                        });
                       }
                     }}
                   />
@@ -761,13 +770,21 @@ function PopupModal({ popup, onClose, onSave }: { popup: Popup | null; onClose: 
                   <input
                     type="text"
                     value={formData.templateData?.leftImageUrl || ''}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      templateData: {
-                        ...formData.templateData,
-                        leftImageUrl: e.target.value
+                    onChange={(e) => {
+                      const url = e.target.value;
+                      setFormData({
+                        ...formData,
+                        templateData: {
+                          ...formData.templateData,
+                          leftImageUrl: url
+                        }
+                      });
+                      // Clear file when URL is entered
+                      if (url) {
+                        setImageFile(null);
+                        setImagePreview(url);
                       }
-                    })}
+                    }}
                     className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
                     placeholder="Or enter Cloudinary URL..."
                     disabled={!!imageFile}
