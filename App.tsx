@@ -4240,7 +4240,8 @@ export default function App() {
                 >
                   {t.key === 'remove-bg' && (
                     <>
-                      <option value="lucataco/remove-bg">lucataco/remove-bg (Recommended)</option>
+                      <option value="lucataco/remove-bg:95fcc2a26d3899cd6c2691c900465aaeff466285a65c14638cc5f36f34befaf1">lucataco/remove-bg (Recommended - with version)</option>
+                      <option value="lucataco/remove-bg">lucataco/remove-bg (without version)</option>
                       <option value="cjwbw/rembg">cjwbw/rembg</option>
                     </>
                   )}
