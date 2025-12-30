@@ -58,6 +58,32 @@ export function SubscriptionManagement() {
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [newPlan, setNewPlan] = useState<any>({
+    name: '',
+    slug: '',
+    tagline: '',
+    tag: '',
+    tagColor: '#3B82F6',
+    pricing: {
+      monthly: { price: 0, originalPrice: 0, discount: 0 },
+      quarterly: { price: 0, originalPrice: 0, discount: 0 },
+      yearly: { price: 0, originalPrice: 0, discount: 0 }
+    },
+    features: {
+      creditsPerMonth: 0,
+      imageGenerationsPerMonth: 0,
+      concurrentImageGenerations: 1,
+      concurrentVideoGenerations: 0,
+      allStylesAndModels: true,
+      commercialTerms: 'General Commercial Terms',
+      imageVisibility: 'Private',
+      prioritySupport: false,
+      queuePriority: 'Normal',
+      unlimitedRealtimeGenerations: false
+    },
+    displayOrder: 0,
+    isActive: true
+  });
 
   useEffect(() => {
     loadData();
@@ -85,6 +111,55 @@ export function SubscriptionManagement() {
     if (!confirm('Are you sure you want to delete this plan?')) return;
     try {
       await api.deleteSubscriptionPlan(id);
+      loadData();
+    } catch (error: any) {
+      alert(`Error: ${error.message}`);
+    }
+  };
+
+  const handleSavePlan = async () => {
+    try {
+      if (editingPlan) {
+        // Update existing plan
+        await api.updateSubscriptionPlan(editingPlan._id, newPlan);
+        alert('Plan updated successfully!');
+      } else {
+        // Create new plan
+        if (!newPlan.name || !newPlan.slug) {
+          alert('Please fill in name and slug');
+          return;
+        }
+        await api.addSubscriptionPlan(newPlan);
+        alert('Plan created successfully!');
+      }
+      setShowPlanModal(false);
+      setEditingPlan(null);
+      setNewPlan({
+        name: '',
+        slug: '',
+        tagline: '',
+        tag: '',
+        tagColor: '#3B82F6',
+        pricing: {
+          monthly: { price: 0, originalPrice: 0, discount: 0 },
+          quarterly: { price: 0, originalPrice: 0, discount: 0 },
+          yearly: { price: 0, originalPrice: 0, discount: 0 }
+        },
+        features: {
+          creditsPerMonth: 0,
+          imageGenerationsPerMonth: 0,
+          concurrentImageGenerations: 1,
+          concurrentVideoGenerations: 0,
+          allStylesAndModels: true,
+          commercialTerms: 'General Commercial Terms',
+          imageVisibility: 'Private',
+          prioritySupport: false,
+          queuePriority: 'Normal',
+          unlimitedRealtimeGenerations: false
+        },
+        displayOrder: 0,
+        isActive: true
+      });
       loadData();
     } catch (error: any) {
       alert(`Error: ${error.message}`);
@@ -182,6 +257,32 @@ export function SubscriptionManagement() {
             <button
               onClick={() => {
                 setEditingPlan(null);
+                setNewPlan({
+                  name: '',
+                  slug: '',
+                  tagline: '',
+                  tag: '',
+                  tagColor: '#3B82F6',
+                  pricing: {
+                    monthly: { price: 0, originalPrice: 0, discount: 0 },
+                    quarterly: { price: 0, originalPrice: 0, discount: 0 },
+                    yearly: { price: 0, originalPrice: 0, discount: 0 }
+                  },
+                  features: {
+                    creditsPerMonth: 0,
+                    imageGenerationsPerMonth: 0,
+                    concurrentImageGenerations: 1,
+                    concurrentVideoGenerations: 0,
+                    allStylesAndModels: true,
+                    commercialTerms: 'General Commercial Terms',
+                    imageVisibility: 'Private',
+                    prioritySupport: false,
+                    queuePriority: 'Normal',
+                    unlimitedRealtimeGenerations: false
+                  },
+                  displayOrder: 0,
+                  isActive: true
+                });
                 setShowPlanModal(true);
               }}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -239,6 +340,17 @@ export function SubscriptionManagement() {
                     <button
                       onClick={() => {
                         setEditingPlan(plan);
+                        setNewPlan({
+                          name: plan.name,
+                          slug: plan.slug,
+                          tagline: plan.tagline,
+                          tag: plan.tag || '',
+                          tagColor: plan.tagColor || '#3B82F6',
+                          pricing: plan.pricing,
+                          features: plan.features,
+                          displayOrder: plan.displayOrder,
+                          isActive: plan.isActive
+                        });
                         setShowPlanModal(true);
                       }}
                       className="flex-1 px-3 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
@@ -404,13 +516,13 @@ export function SubscriptionManagement() {
         </div>
       )}
 
-      {/* Plan Modal - Simplified for now */}
+      {/* Plan Modal */}
       {showPlanModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">
-                {editingPlan ? 'Edit Plan' : 'Add Plan'}
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-white">
+                {editingPlan ? 'Edit Subscription Plan' : 'Create New Subscription Plan'}
               </h3>
               <button
                 onClick={() => {
@@ -422,29 +534,288 @@ export function SubscriptionManagement() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <p className="text-gray-400 mb-4">
-              Plan creation/editing form would go here. This is a placeholder for the full form implementation.
-            </p>
-            <div className="flex gap-2 justify-end">
+
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="bg-gray-950 border border-gray-800 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-gray-300 mb-4">Basic Information</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-gray-500 uppercase block mb-1">Plan Name *</label>
+                    <input
+                      type="text"
+                      value={newPlan.name}
+                      onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value, slug: e.target.value.toLowerCase().replace(/\s+/g, '-') })}
+                      placeholder="e.g., Standard"
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 uppercase block mb-1">Slug *</label>
+                    <input
+                      type="text"
+                      value={newPlan.slug}
+                      onChange={(e) => setNewPlan({ ...newPlan, slug: e.target.value })}
+                      placeholder="e.g., standard"
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-gray-500 uppercase block mb-1">Tagline</label>
+                    <input
+                      type="text"
+                      value={newPlan.tagline}
+                      onChange={(e) => setNewPlan({ ...newPlan, tagline: e.target.value })}
+                      placeholder="e.g., For rising creators to level up their game"
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 uppercase block mb-1">Tag (optional)</label>
+                    <input
+                      type="text"
+                      value={newPlan.tag}
+                      onChange={(e) => setNewPlan({ ...newPlan, tag: e.target.value })}
+                      placeholder="e.g., MOST POPULAR"
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 uppercase block mb-1">Tag Color</label>
+                    <input
+                      type="color"
+                      value={newPlan.tagColor}
+                      onChange={(e) => setNewPlan({ ...newPlan, tagColor: e.target.value })}
+                      className="w-full h-10 bg-gray-900 border border-gray-700 rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 uppercase block mb-1">Display Order</label>
+                    <input
+                      type="number"
+                      value={newPlan.displayOrder}
+                      onChange={(e) => setNewPlan({ ...newPlan, displayOrder: parseInt(e.target.value) || 0 })}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="flex items-center gap-2 text-sm text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={newPlan.isActive}
+                        onChange={(e) => setNewPlan({ ...newPlan, isActive: e.target.checked })}
+                        className="rounded"
+                      />
+                      Active
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pricing */}
+              <div className="bg-gray-950 border border-gray-800 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-gray-300 mb-4">Pricing</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  {['monthly', 'quarterly', 'yearly'].map((cycle) => (
+                    <div key={cycle} className="space-y-2">
+                      <label className="text-xs text-gray-500 uppercase block">{cycle}</label>
+                      <input
+                        type="number"
+                        placeholder="Price"
+                        value={newPlan.pricing[cycle as keyof typeof newPlan.pricing].price || 0}
+                        onChange={(e) => setNewPlan({
+                          ...newPlan,
+                          pricing: {
+                            ...newPlan.pricing,
+                            [cycle]: {
+                              ...newPlan.pricing[cycle as keyof typeof newPlan.pricing],
+                              price: parseFloat(e.target.value) || 0
+                            }
+                          }
+                        })}
+                        className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Original Price (optional)"
+                        value={newPlan.pricing[cycle as keyof typeof newPlan.pricing].originalPrice || 0}
+                        onChange={(e) => setNewPlan({
+                          ...newPlan,
+                          pricing: {
+                            ...newPlan.pricing,
+                            [cycle]: {
+                              ...newPlan.pricing[cycle as keyof typeof newPlan.pricing],
+                              originalPrice: parseFloat(e.target.value) || 0
+                            }
+                          }
+                        })}
+                        className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Features */}
+              <div className="bg-gray-950 border border-gray-800 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-gray-300 mb-4">Features</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-gray-500 uppercase block mb-1">Credits Per Month *</label>
+                    <input
+                      type="number"
+                      value={newPlan.features.creditsPerMonth}
+                      onChange={(e) => setNewPlan({
+                        ...newPlan,
+                        features: { ...newPlan.features, creditsPerMonth: parseInt(e.target.value) || 0 }
+                      })}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 uppercase block mb-1">Image Generations/Month</label>
+                    <input
+                      type="number"
+                      value={newPlan.features.imageGenerationsPerMonth}
+                      onChange={(e) => setNewPlan({
+                        ...newPlan,
+                        features: { ...newPlan.features, imageGenerationsPerMonth: parseInt(e.target.value) || 0 }
+                      })}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 uppercase block mb-1">Concurrent Image Generations</label>
+                    <input
+                      type="number"
+                      value={newPlan.features.concurrentImageGenerations}
+                      onChange={(e) => setNewPlan({
+                        ...newPlan,
+                        features: { ...newPlan.features, concurrentImageGenerations: parseInt(e.target.value) || 1 }
+                      })}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 uppercase block mb-1">Concurrent Video Generations</label>
+                    <input
+                      type="number"
+                      value={newPlan.features.concurrentVideoGenerations}
+                      onChange={(e) => setNewPlan({
+                        ...newPlan,
+                        features: { ...newPlan.features, concurrentVideoGenerations: parseInt(e.target.value) || 0 }
+                      })}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 uppercase block mb-1">Commercial Terms</label>
+                    <input
+                      type="text"
+                      value={newPlan.features.commercialTerms}
+                      onChange={(e) => setNewPlan({
+                        ...newPlan,
+                        features: { ...newPlan.features, commercialTerms: e.target.value }
+                      })}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 uppercase block mb-1">Image Visibility</label>
+                    <select
+                      value={newPlan.features.imageVisibility}
+                      onChange={(e) => setNewPlan({
+                        ...newPlan,
+                        features: { ...newPlan.features, imageVisibility: e.target.value }
+                      })}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                    >
+                      <option value="Private">Private</option>
+                      <option value="Public">Public</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 uppercase block mb-1">Queue Priority</label>
+                    <select
+                      value={newPlan.features.queuePriority}
+                      onChange={(e) => setNewPlan({
+                        ...newPlan,
+                        features: { ...newPlan.features, queuePriority: e.target.value }
+                      })}
+                      className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm"
+                    >
+                      <option value="Normal">Normal</option>
+                      <option value="High">High</option>
+                      <option value="Highest">Highest</option>
+                    </select>
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <label className="flex items-center gap-2 text-sm text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={newPlan.features.allStylesAndModels}
+                        onChange={(e) => setNewPlan({
+                          ...newPlan,
+                          features: { ...newPlan.features, allStylesAndModels: e.target.checked }
+                        })}
+                        className="rounded"
+                      />
+                      All Styles and Models
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={newPlan.features.prioritySupport}
+                        onChange={(e) => setNewPlan({
+                          ...newPlan,
+                          features: { ...newPlan.features, prioritySupport: e.target.checked }
+                        })}
+                        className="rounded"
+                      />
+                      Priority Support
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={newPlan.features.unlimitedRealtimeGenerations}
+                        onChange={(e) => setNewPlan({
+                          ...newPlan,
+                          features: { ...newPlan.features, unlimitedRealtimeGenerations: e.target.checked }
+                        })}
+                        className="rounded"
+                      />
+                      Unlimited Realtime Generations (Creator only)
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <button
+                onClick={handleSavePlan}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded text-sm font-medium"
+              >
+                <Save className="h-4 w-4 inline mr-2" />
+                {editingPlan ? 'Update Plan' : 'Create Plan'}
+              </button>
+              {editingPlan && (
+                <button
+                  onClick={() => handleDeletePlan(editingPlan._id)}
+                  className="px-4 bg-red-900/50 hover:bg-red-900 text-red-400 rounded text-sm"
+                >
+                  <Trash2 className="h-4 w-4 inline mr-1" />
+                  Delete
+                </button>
+              )}
               <button
                 onClick={() => {
                   setShowPlanModal(false);
                   setEditingPlan(null);
                 }}
-                className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
+                className="px-4 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-sm"
               >
                 Cancel
-              </button>
-              <button
-                onClick={() => {
-                  // Save logic would go here
-                  setShowPlanModal(false);
-                  setEditingPlan(null);
-                  loadData();
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Save
               </button>
             </div>
           </div>
