@@ -105,7 +105,6 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [pointsPackages, setPointsPackages] = useState<PointsPackage[]>([]);
   const [paymentGateways, setPaymentGateways] = useState<PaymentGatewayConfig[]>([]);
   const [financeConfig, setFinanceConfig] = useState<FinanceConfig>({ costPerCredit: 0, currency: 'INR', taxRate: 0 });
   const [subAdmins, setSubAdmins] = useState<SubAdmin[]>([]);
@@ -305,8 +304,6 @@ export default function App() {
   }, [transactions]);
 
   // Package & Gateway State
-  const [activePackage, setActivePackage] = useState<PointsPackage | null>(null);
-  const [showPackageModal, setShowPackageModal] = useState(false);
   const [activeGateway, setActiveGateway] = useState<PaymentGatewayConfig | null>(null);
   const [showGatewayModal, setShowGatewayModal] = useState(false);
   const [isTestingGateway, setIsTestingGateway] = useState(false);
@@ -422,7 +419,6 @@ export default function App() {
         api.getAIModels(),
         api.getTemplates(),
         api.getCategories(),
-        api.getPointsPackages(),
         api.getPaymentGateways(),
         api.getFinanceConfig(),
         api.getSubAdmins(),
@@ -438,7 +434,6 @@ export default function App() {
       setAiModels(fetchedModels);
       setTemplates(fetchedTemplates);
       setCategories(fetchedCategories);
-      setPointsPackages(fetchedPackages);
       setPaymentGateways(fetchedGateways);
       setFinanceConfig(fetchedFinanceConfig);
       setSubAdmins(fetchedSubAdmins);
@@ -1171,57 +1166,6 @@ export default function App() {
     addLog("Finance configuration updated.", LogLevel.SUCCESS, "AdminPanel");
   };
 
-  const handleSavePackage = async () => {
-    if (!activePackage || !activePackage.id) return;
-    if (String(activePackage.id).startsWith('new')) {
-      const { id, ...pkgData } = activePackage;
-      const newPkg = await api.addPointsPackage(pkgData);
-      setPointsPackages(prev => [...prev, newPkg]);
-      addLog(`New package '${newPkg.name}' created.`, LogLevel.SUCCESS, "AdminPanel");
-    } else {
-      await api.updatePointsPackage(activePackage.id, activePackage);
-      setPointsPackages(prev => prev.map(p => p.id === activePackage.id ? activePackage : p));
-      addLog(`Package '${activePackage.name}' updated.`, LogLevel.INFO, "AdminPanel");
-    }
-    setShowPackageModal(false);
-    setActivePackage(null);
-  };
-
-  const handleDeletePackage = async (id: string) => {
-    if (!id || id === 'undefined' || id === 'null' || id === '') {
-      console.error('Invalid package ID for deletion:', id);
-      addLog(`Cannot delete package: Invalid ID`, LogLevel.ERROR, "AdminPanel");
-      return;
-    }
-    const packageId = String(id);
-    console.log('Deleting package with ID:', packageId);
-    setConfirmModal({
-      isOpen: true,
-      title: 'Delete Package',
-      message: "Are you sure you want to delete this package? This cannot be undone.",
-      type: 'danger',
-      confirmText: 'Delete',
-      onConfirm: async () => {
-        try {
-          console.log('Confirming deletion for package ID:', packageId);
-          await api.deletePointsPackage(packageId);
-          setPointsPackages(prev => {
-            const filtered = prev.filter(p => String(p.id) !== packageId);
-            console.log('Packages after deletion:', filtered.length, 'remaining out of', prev.length);
-            return filtered;
-          });
-          setShowPackageModal(false);
-          setActivePackage(null);
-          addLog(`Package deleted successfully.`, LogLevel.SUCCESS, "AdminPanel");
-          closeConfirmModal();
-        } catch (error: any) {
-          console.error('Failed to delete package:', error);
-          addLog(`Failed to delete package: ${error.message || 'Unknown error'}`, LogLevel.ERROR, "AdminPanel");
-          closeConfirmModal();
-        }
-      }
-    });
-  };
 
   const handleSaveGateway = async () => {
     if (!activeGateway) return;
@@ -2632,77 +2576,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Packages */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-            <div className="flex justify-between items-center mb-4">
-              <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Points Packages</h4>
-              <button onClick={() => { setActivePackage({ id: `new_${Date.now()}`, name: '', price: 0, points: 0, bonusPoints: 0, isActive: true, isPopular: false, tag: '' } as PointsPackage); setShowPackageModal(true); }} className="text-indigo-400 hover:text-white"><Plus size={16} /></button>
-            </div>
-            <div className="space-y-2">
-              {pointsPackages.map(pkg => (
-                <div key={pkg.id} className="flex justify-between items-center p-3 bg-gray-950 border border-gray-800 rounded">
-                  <div className="flex items-center gap-3 flex-1">
-                    <div className="flex-1">
-                      <div className="text-white text-sm font-bold">{pkg.name}</div>
-                      <div className="text-xs text-gray-500">{pkg.points} pts • ₹{pkg.price}</div>
-                    </div>
-                    {pkg.isPopular && <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded">POPULAR</span>}
-                    {!pkg.isActive && <span className="text-[10px] bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded">INACTIVE</span>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={(e) => { 
-                        e.preventDefault();
-                        e.stopPropagation(); 
-                        console.log('Edit button clicked for package:', pkg);
-                        if (!pkg || !pkg.id) {
-                          console.error('Package or Package ID is missing', pkg);
-                          return;
-                        }
-                        const packageData: PointsPackage = {
-                          id: String(pkg.id),
-                          name: String(pkg.name || ''),
-                          price: Number(pkg.price || 0),
-                          points: Number(pkg.points || 0),
-                          bonusPoints: Number(pkg.bonusPoints || 0),
-                          isPopular: Boolean(pkg.isPopular || false),
-                          isActive: pkg.isActive !== undefined ? Boolean(pkg.isActive) : true,
-                          tag: String(pkg.tag || '')
-                        };
-                        console.log('Setting active package:', packageData);
-                        setActivePackage(packageData);
-                        console.log('Opening modal');
-                        setShowPackageModal(true);
-                      }} 
-                      className="text-gray-500 hover:text-white p-1" 
-                      aria-label="Edit Package"
-                      type="button"
-                    >
-                      <Edit2 size={14} />
-                    </button>
-                    <button 
-                      onClick={(e) => { 
-                        e.preventDefault();
-                        e.stopPropagation(); 
-                        console.log('Delete button clicked for package:', pkg);
-                        if (!pkg || !pkg.id) {
-                          console.error('Package or Package ID is missing for delete', pkg);
-                          return;
-                        }
-                        handleDeletePackage(String(pkg.id)); 
-                      }} 
-                      className="text-gray-500 hover:text-red-400 p-1" 
-                      aria-label="Delete Package"
-                      type="button"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Gateways */}
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
             <div className="flex items-center justify-between mb-4">
@@ -2743,35 +2616,6 @@ export default function App() {
           </div>
         </div>
       </div>
-
-      {/* Package Modal */}
-      {showPackageModal && activePackage && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-sm w-full">
-            <h3 className="text-lg font-bold text-white mb-4">{String(activePackage.id).startsWith('new') ? 'New Package' : 'Edit Package'}</h3>
-            <div className="space-y-3">
-              <input type="text" placeholder="Name" value={activePackage.name || ''} onChange={e => setActivePackage({ ...activePackage, name: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
-              <div className="grid grid-cols-2 gap-3">
-                <input type="number" placeholder="Price" value={activePackage.price || 0} onChange={e => setActivePackage({ ...activePackage, price: parseFloat(e.target.value) || 0 })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
-                <input type="number" placeholder="Points" value={activePackage.points || 0} onChange={e => setActivePackage({ ...activePackage, points: parseFloat(e.target.value) || 0 })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
-              </div>
-              <input type="number" placeholder="Bonus Points (optional)" value={activePackage.bonusPoints || 0} onChange={e => setActivePackage({ ...activePackage, bonusPoints: parseFloat(e.target.value) || 0 })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
-              <input type="text" placeholder="Tag (e.g. Best Value)" value={activePackage.tag || ''} onChange={e => setActivePackage({ ...activePackage, tag: e.target.value })} className="w-full bg-gray-950 border border-gray-700 rounded px-3 py-2 text-white text-sm" />
-              <label className="flex items-center gap-2 text-sm text-gray-300">
-                <input type="checkbox" checked={activePackage.isPopular || false} onChange={e => setActivePackage({ ...activePackage, isPopular: e.target.checked })} /> Mark as Popular
-              </label>
-              <label className="flex items-center gap-2 text-sm text-gray-300">
-                <input type="checkbox" checked={activePackage.isActive !== undefined ? activePackage.isActive : true} onChange={e => setActivePackage({ ...activePackage, isActive: e.target.checked })} /> Active
-              </label>
-            </div>
-            <div className="flex gap-2 mt-6">
-              <button onClick={handleSavePackage} className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded text-sm font-medium">Save</button>
-              {activePackage.id && !String(activePackage.id).startsWith('new') && <button onClick={() => handleDeletePackage(activePackage.id)} className="px-3 bg-red-900/50 hover:bg-red-900 text-red-400 rounded text-sm"><Trash2 size={16} /></button>}
-              <button onClick={() => { setShowPackageModal(false); setActivePackage(null); }} className="px-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded text-sm">Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Gateway Modal */}
       {showGatewayModal && activeGateway && (
