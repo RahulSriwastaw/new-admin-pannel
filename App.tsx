@@ -438,8 +438,8 @@ export default function App() {
       setFinanceConfig(fetchedFinanceConfig);
       setSubAdmins(fetchedSubAdmins);
       setNotifications(fetchedNotifications);
-      setWithdrawals(fetchedWithdrawals);
-      setWithdrawalStats(fetchedWithdrawalStats);
+      setWithdrawals(fetchedWithdrawals || []);
+      setWithdrawalStats(fetchedWithdrawalStats || { pending: 0, processing: 0, completed: 0, rejected: 0, pendingAmount: 0, completedAmount: 0 });
       try {
         const cfg = await api.getToolsConfig();
         setToolsConfig(cfg);
