@@ -4771,7 +4771,7 @@ export default function App() {
         <div className="flex items-center gap-4">
           <div className="text-right">
             <p className="text-xs text-gray-500 uppercase">Pending Amount</p>
-            <p className="text-xl font-bold text-white">${withdrawalStats.pendingAmount.toFixed(2)}</p>
+            <p className="text-xl font-bold text-white">${(withdrawalStats?.pendingAmount || 0).toFixed(2)}</p>
           </div>
           <button
             onClick={() => { fetchWithdrawals(withdrawalFilter); api.getWithdrawalStats().then(setWithdrawalStats); }}
@@ -4784,10 +4784,10 @@ export default function App() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-4 gap-4">
-        <StatCard title="Pending Requests" value={withdrawalStats.pending.toString()} icon={Clock} color="yellow" change="" />
-        <StatCard title="Processing" value={withdrawalStats.processing.toString()} icon={Activity} color="blue" change="" />
-        <StatCard title="Completed" value={withdrawalStats.completed.toString()} icon={CheckCircle} color="green" change={`$${withdrawalStats.completedAmount.toFixed(0)} paid`} trend="Paid" trendUp={true} />
-        <StatCard title="Rejected" value={withdrawalStats.rejected.toString()} icon={XSquare} color="red" change="" />
+        <StatCard title="Pending Requests" value={(withdrawalStats?.pending || 0).toString()} icon={Clock} color="yellow" change="" />
+        <StatCard title="Processing" value={(withdrawalStats?.processing || 0).toString()} icon={Activity} color="blue" change="" />
+        <StatCard title="Completed" value={(withdrawalStats?.completed || 0).toString()} icon={CheckCircle} color="green" change={`$${(withdrawalStats?.completedAmount || 0).toFixed(0)} paid`} trend="Paid" trendUp={true} />
+        <StatCard title="Rejected" value={(withdrawalStats?.rejected || 0).toString()} icon={XSquare} color="red" change="" />
       </div>
 
       {/* Filter Tabs */}
@@ -4828,7 +4828,8 @@ export default function App() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
-                {withdrawals.map(w => (
+                {withdrawals && withdrawals.length > 0 ? (
+                  withdrawals.map(w => (
                   <tr key={w.id} className="hover:bg-gray-800/50 transition-colors">
                     <td className="p-4">
                       <div>
