@@ -1143,6 +1143,7 @@ export default function App() {
 
   // Missing implementations
   const filteredTransactions = useMemo(() => {
+    if (!transactions || !Array.isArray(transactions)) return [];
     return transactions.filter(txn => {
       const matchesType = txnTypeFilter === 'all' || txn.type === txnTypeFilter;
       const matchesStatus = txnStatusFilter === 'all' || txn.status === txnStatusFilter;
@@ -2522,37 +2523,47 @@ export default function App() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
-                {paginatedTransactions.map(txn => (
-                  <tr key={txn.id} className="hover:bg-gray-800/50">
-                    <td className="px-4 py-3">
-                      <div className="text-white font-mono text-xs">{txn.id}</div>
-                      <div className="text-[10px] text-gray-500">{txn.userId}</div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="truncate max-w-[150px]" title={txn.description}>{txn.description}</div>
-                      <div className="text-[10px] text-gray-500">{new Date(txn.date).toLocaleDateString()}</div>
-                    </td>
-                    <td className="px-4 py-3 font-bold">
-                      <span className={txn.type === 'credit' ? 'text-green-400' : 'text-red-400'}>
-                        {txn.type === 'credit' ? '+' : '-'} ₹{txn.amount}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs">{txn.gateway}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase ${txn.status === 'success' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                        {txn.status}
-                      </span>
+                {paginatedTransactions && paginatedTransactions.length > 0 ? (
+                  paginatedTransactions.map(txn => (
+                    <tr key={txn.id} className="hover:bg-gray-800/50">
+                      <td className="px-4 py-3">
+                        <div className="text-white font-mono text-xs">{txn.id}</div>
+                        <div className="text-[10px] text-gray-500">{txn.userId}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="truncate max-w-[150px]" title={txn.description}>{txn.description}</div>
+                        <div className="text-[10px] text-gray-500">{new Date(txn.date).toLocaleDateString()}</div>
+                      </td>
+                      <td className="px-4 py-3 font-bold">
+                        <span className={txn.type === 'credit' ? 'text-green-400' : 'text-red-400'}>
+                          {txn.type === 'credit' ? '+' : '-'} ₹{txn.amount}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs">{txn.gateway}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase ${txn.status === 'success' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                          {txn.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                      No transactions found
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
-            <Pagination
-              totalItems={filteredTransactions.length}
-              itemsPerPage={itemsPerPage}
-              currentPage={txnPage}
-              onPageChange={setTxnPage}
-            />
+            {filteredTransactions && filteredTransactions.length > 0 && (
+              <Pagination
+                totalItems={filteredTransactions.length}
+                itemsPerPage={itemsPerPage}
+                currentPage={txnPage}
+                onPageChange={setTxnPage}
+              />
+            )}
           </div>
         </div>
 
@@ -2585,7 +2596,8 @@ export default function App() {
               </button>
             </div>
             <div className="space-y-2">
-              {paymentGateways.map(gw => (
+              {paymentGateways && paymentGateways.length > 0 ? (
+                paymentGateways.map(gw => (
                 <div key={gw.id} className="flex justify-between items-center p-3 bg-gray-950 border border-gray-800 rounded">
                   <div className="flex items-center gap-3">
                     <div className={`w-2 h-2 rounded-full ${gw.isActive ? 'bg-green-500' : 'bg-gray-600'}`}></div>
@@ -2611,7 +2623,10 @@ export default function App() {
                     </button>
                   </div>
                 </div>
-              ))}
+                ))
+              ) : (
+                <div className="text-center py-4 text-gray-500 text-sm">No payment gateways configured</div>
+              )}
             </div>
           </div>
         </div>
