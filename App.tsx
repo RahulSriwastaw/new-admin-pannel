@@ -4899,7 +4899,14 @@ export default function App() {
                       )}
                     </td>
                   </tr>
-                ))}
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-gray-500">
+                      No withdrawals found
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
