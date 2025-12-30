@@ -5,6 +5,7 @@ import { ConnectionVisualizer } from './components/ConnectionVisualizer';
 import { StatCard } from './components/StatCard';
 import CreatorProfileModal from './components/CreatorProfileModal';
 import { MonetizationManagement } from './components/MonetizationManagement';
+import { SubscriptionManagement } from './components/SubscriptionManagement';
 import {
   INITIAL_REPOS,
   BACKEND_URL,
@@ -93,7 +94,7 @@ export default function App() {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.CONNECTING);
   const [isFixing, setIsFixing] = useState(false);
   const [metrics, setMetrics] = useState<SystemMetrics>({ cpu: 0, memory: 0, requests: 0, latency: 0, activeUsers: 0, revenue: 0 });
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'creators' | 'templates' | 'finance' | 'ai-config' | 'ads' | 'withdrawals' | 'notifications' | 'settings' | 'profile' | 'monetization'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'users' | 'creators' | 'templates' | 'finance' | 'ai-config' | 'ads' | 'withdrawals' | 'notifications' | 'settings' | 'profile' | 'monetization' | 'subscriptions'>('dashboard');
 
   // Data State
   const [users, setUsers] = useState<User[]>([]);
@@ -5306,6 +5307,12 @@ export default function App() {
             </button>
           )}
 
+          {canPerformAction('manage_finance') && (
+            <button onClick={() => setActiveTab('subscriptions')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'subscriptions' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'}`}>
+              <DollarSign size={18} /> Subscriptions
+            </button>
+          )}
+
           {canPerformAction('manage_ai') && (
             <button onClick={() => setActiveTab('ai-config')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${activeTab === 'ai-config' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-gray-400 hover:bg-gray-900 hover:text-gray-200'}`}>
               <Bot size={18} /> AI Config
@@ -5372,6 +5379,7 @@ export default function App() {
         {activeTab === 'ads' && renderAdsManagement()}
         {activeTab === 'withdrawals' && renderWithdrawals()}
         {activeTab === 'monetization' && <MonetizationManagement />}
+        {activeTab === 'subscriptions' && <SubscriptionManagement />}
         {activeTab === 'notifications' && renderNotifications()}
         {activeTab === 'settings' && renderSettings()}
         {activeTab === 'profile' && renderProfile()}

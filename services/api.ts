@@ -334,6 +334,81 @@ export const api = {
     }
   },
 
+  // Subscription Plans
+  getSubscriptionPlans: () => fetchWithFallback<{ plans: any[] }>('/admin/subscriptions/plans', { plans: [] }),
+  
+  addSubscriptionPlan: async (plan: any) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/subscriptions/plans`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(plan)
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'Failed to create plan' }));
+        throw new Error(error.error || error.message || 'Failed to create plan');
+      }
+      return await res.json();
+    } catch (e: any) {
+      throw new Error(e.message || 'Failed to create plan');
+    }
+  },
+
+  updateSubscriptionPlan: async (id: string, updates: any) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/subscriptions/plans/${id}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(updates)
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'Failed to update plan' }));
+        throw new Error(error.error || error.message || 'Failed to update plan');
+      }
+      return true;
+    } catch (e: any) {
+      throw new Error(e.message || 'Failed to update plan');
+    }
+  },
+
+  deleteSubscriptionPlan: async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/subscriptions/plans/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'Failed to delete plan' }));
+        throw new Error(error.error || error.message || 'Failed to delete plan');
+      }
+      return true;
+    } catch (e: any) {
+      throw new Error(e.message || 'Failed to delete plan');
+    }
+  },
+
+  // User Subscriptions
+  getSubscriptions: (status?: string) => {
+    const url = status ? `/admin/subscriptions?status=${status}` : '/admin/subscriptions';
+    return fetchWithFallback<{ subscriptions: any[] }>(url, { subscriptions: [] });
+  },
+
+  cancelUserSubscription: async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/subscriptions/${id}/cancel`, {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'Failed to cancel subscription' }));
+        throw new Error(error.error || error.message || 'Failed to cancel subscription');
+      }
+      return true;
+    } catch (e: any) {
+      throw new Error(e.message || 'Failed to cancel subscription');
+    }
+  },
+
   // Payment Gateways
   getPaymentGateways: () => fetchWithFallback<PaymentGatewayConfig[]>('/admin/finance/gateways', [] as any),
   createPaymentGateway: async (config: Omit<PaymentGatewayConfig, 'id'>) => {
