@@ -32,6 +32,14 @@ const fetchWithFallback = async <T>(endpoint: string, _fallback: T): Promise<T> 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
+      if (response.status === 401) {
+        console.warn('Session expired (401), clearing token and reloading...');
+        localStorage.removeItem('token');
+        localStorage.removeItem('adminUser');
+        // Small delay to allow log to be seen if console open
+        setTimeout(() => window.location.reload(), 100);
+        throw new Error('Session expired. Please login again.');
+      }
       throw new Error(`API Error ${response.status} ${response.statusText}`);
     }
 
