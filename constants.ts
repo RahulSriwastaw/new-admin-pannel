@@ -2,9 +2,9 @@
 import { LogEntry, LogLevel, RepoConfig, User, CreatorApplication, AIModelConfig, Transaction, Template, PointsPackage, PaymentGatewayConfig, SubAdmin, AdminPermission, NotificationLog, FinanceConfig, Category } from './types';
 
 // Environment / Config Constants
-// Use relative path by default to leverage Vercel proxy
-export const BACKEND_URL = (typeof window !== 'undefined' && window.location.origin.includes('replit.dev')) ? window.location.origin : "https://new-backend-g2gw.onrender.com";
-export const API_BASE_URL = "/api";
+// Use BACKEND_URL for local dev, relative path for deployed proxy
+export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || ((typeof window !== 'undefined' && window.location.origin.includes('replit.dev')) ? window.location.origin : "https://new-backend-g2gw.onrender.com");
+export const API_BASE_URL = `${BACKEND_URL}/api`;
 
 export const USER_APP_URL = "https://rupantara-fronted.vercel.app";
 export const ADMIN_URL = "https://new-admin-pannel-nine.vercel.app/dashboard";

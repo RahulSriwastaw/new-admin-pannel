@@ -14,7 +14,7 @@ import {
   PERMISSIONS_LIST
 } from './constants';
 import { LogEntry, LogLevel, ConnectionStatus, User, CreatorApplication, Transaction, AIModelConfig, SystemMetrics, Template, AirtableConfig, PointsPackage, PaymentGatewayConfig, SubAdmin, AdminRole, AdminPermission, NotificationLog, NotificationTarget, NotificationType, FinanceConfig, Category, ToolConfig, AdsConfig, Withdrawal, WithdrawalStats, CreatorProfile } from './types';
-import { analyzeErrorLogs, simulateFixApplication } from './services/geminiService';
+import { analyzeErrorLogs, simulateFixApplication, generateTemplateFromPrompt } from './services/geminiService';
 import { api } from './services/api';
 import {
   Activity, Settings, Layout, Users, Palette, CreditCard, Bot, Bell, Search,
@@ -270,6 +270,11 @@ export default function App() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedTemplateForReject, setSelectedTemplateForReject] = useState<Template | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+
+  // AI Quick Fill State
+  const [aiPromptInput, setAiPromptInput] = useState('');
+  const [isAiFilling, setIsAiFilling] = useState(false);
+  const [isGeneratingDemoImage, setIsGeneratingDemoImage] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -1536,8 +1541,78 @@ export default function App() {
     setInputImagePreviewUrl('');
     setInputImageFile(null);
     setIsEditingTemplate(false);
+    setAiPromptInput('');
     setShowTemplateModal(true);
   }
+
+  // AI Quick Fill: Auto-fill template form using AI
+  const handleAiFillTemplate = async () => {
+    if (!aiPromptInput.trim()) {
+      alert('Please enter a prompt first');
+      return;
+    }
+
+    setIsAiFilling(true);
+    addLog('AI analyzing prompt to fill template form...', LogLevel.INFO, 'AI_Agent');
+
+    try {
+      const aiData = await generateTemplateFromPrompt(aiPromptInput, categories);
+
+      // Update all form fields with AI-generated data
+      setNewTemplate(prev => ({
+        ...prev,
+        title: aiData.title,
+        category: aiData.category,
+        subCategory: aiData.subCategory,
+        description: aiData.description,
+        tags: aiData.tags,
+        gender: aiData.gender as any,
+        ageGroup: aiData.ageGroup,
+        state: aiData.state,
+        negativePrompt: aiData.negativePrompt,
+        prompt: aiData.prompt
+      }));
+
+      addLog(`AI filled form with title: "${aiData.title}"`, LogLevel.SUCCESS, 'AI_Agent');
+    } catch (error) {
+      console.error('AI fill failed:', error);
+      addLog('AI form fill failed. Using prompt as-is.', LogLevel.ERROR, 'AI_Agent');
+      // Fallback: just set the prompt
+      setNewTemplate(prev => ({ ...prev, prompt: aiPromptInput }));
+    } finally {
+      setIsAiFilling(false);
+    }
+  };
+
+  // Generate demo image using AI
+  const handleGenerateDemoImage = async () => {
+    const promptToUse = newTemplate.prompt || aiPromptInput;
+    if (!promptToUse.trim()) {
+      alert('Please enter a prompt or use AI Quick Fill first');
+      return;
+    }
+
+    setIsGeneratingDemoImage(true);
+    addLog('Generating demo image with AI...', LogLevel.INFO, 'AI_Agent');
+
+    try {
+      const imageUrl = await api.generateDemoImage(promptToUse);
+      if (imageUrl) {
+        setPreviewUrl(imageUrl);
+        setNewTemplate(prev => ({ ...prev, imageUrl }));
+        addLog('Demo image generated successfully!', LogLevel.SUCCESS, 'AI_Agent');
+      } else {
+        throw new Error('No image URL returned');
+      }
+    } catch (error: any) {
+      console.error('Demo image generation failed:', error);
+      addLog(`Demo image generation failed: ${error.message}`, LogLevel.ERROR, 'AI_Agent');
+      // Show the specific error message from the API (e.g. "Image generation not available")
+      alert(error.message || 'Failed to generate demo image. Please try again or upload manually.');
+    } finally {
+      setIsGeneratingDemoImage(false);
+    }
+  };
 
   const handleDeleteTemplate = async (id: string, onSuccess?: () => void) => {
     setConfirmModal({
@@ -2194,6 +2269,59 @@ export default function App() {
                 </h3>
                 <button onClick={() => setShowTemplateModal(false)} className="text-gray-500 hover:text-white"><X size={20} /></button>
               </div>
+
+              {/* AI Quick Fill Section */}
+              {!isEditingTemplate && (
+                <div className="mb-6 p-4 bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border border-indigo-500/30 rounded-xl">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles size={18} className="text-yellow-400" />
+                    <span className="text-sm font-semibold text-white">AI Quick Fill</span>
+                    <span className="text-[10px] bg-yellow-500/20 text-yellow-300 px-2 py-0.5 rounded-full">NEW</span>
+                  </div>
+                  <textarea
+                    value={aiPromptInput}
+                    onChange={(e) => setAiPromptInput(e.target.value)}
+                    placeholder="Paste your template prompt here...&#10;e.g. 'Stylish man in royal kurta with mirror background, cinematic lighting, wedding vibe'"
+                    className="w-full bg-gray-950/80 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm resize-none h-20 placeholder-gray-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                  />
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={handleAiFillTemplate}
+                      disabled={isAiFilling || !aiPromptInput.trim()}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-lg font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isAiFilling ? (
+                        <>
+                          <RefreshCw size={16} className="animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles size={16} />
+                          AI Auto-Fill Form
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleGenerateDemoImage}
+                      disabled={isGeneratingDemoImage || (!aiPromptInput.trim() && !newTemplate.prompt)}
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isGeneratingDemoImage ? (
+                        <>
+                          <RefreshCw size={16} className="animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon size={16} />
+                          Generate Image
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-4">
                 <div>

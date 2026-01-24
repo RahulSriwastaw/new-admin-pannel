@@ -680,6 +680,32 @@ export const api = {
     return data.url;
   },
 
+  // Generate demo image using AI
+  generateDemoImage: async (prompt: string): Promise<string> => {
+    // Try multiple possible endpoints on the backend
+    const endpoints = ['/ai/generate', '/generate', '/ai/text-to-image'];
+
+    for (const endpoint of endpoints) {
+      try {
+        const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ prompt, type: 'text_to_image', model: 'gemini' })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const imageUrl = data.imageUrl || data.url || data.image || data.result;
+          if (imageUrl) return imageUrl;
+        }
+      } catch (e) {
+        console.log(`Endpoint ${endpoint} failed, trying next...`);
+      }
+    }
+
+    throw new Error('Image generation not available. Please upload an image manually.');
+  },
+
   addTemplate: async (template: Omit<Template, 'id' | 'useCount'>) => {
     try {
       const res = await fetch(`${API_BASE_URL}/admin/templates`, {
